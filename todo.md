@@ -459,11 +459,11 @@
 - [x] Add clear selected-file size indicators to the Original File and 2nd File upload zones
 - [x] Add accessible drag-over helper text and visual feedback for each file role
 - [x] Add focused test coverage and verify desktop/mobile upload-zone presentation
-- [ ] Synchronize the verified update to Vercel and save the completed checkpoint (Vercel deployment `8c6a6ba` reports Ready; canonical-route cache verification remains pending)
+- [x] Synchronize the verified update to Vercel and save the completed checkpoint (Vercel deployment `8c6a6ba` is Ready)
 
 ## Bilingual Terms & Conditions
 
 - [x] Review the current English Terms page structure and confirm Myanmar font support
 - [x] Add equivalent plain-language Myanmar translations alongside the English Terms content
 - [x] Add focused coverage and verify English/Myanmar readability on desktop and mobile
-- [ ] Synchronize the bilingual Terms page to Vercel and save the completed checkpoint
+- [ ] Synchronize the bilingual Terms page to Vercel and save the completed checkpoint (Vercel deployment `b5f0601` failed during integration provisioning before build; delivery retry and direct production verification are pending)

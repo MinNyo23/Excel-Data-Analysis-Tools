@@ -410,9 +410,9 @@
 
 ## Plain-Language Excel Workflow Guides
 
-- [ ] Review each existing Excel workflow’s required files, processing rules, and generated output
-- [ ] Create consistent easy-to-understand guidance for all workflow modules
-- [ ] Align all upload guidance and labels with the supported CSV and XLSX file formats
-- [ ] Add purpose, upload, process, output, and privacy guidance to each workflow screen
-- [ ] Correct workflow-route visibility so the new guide and existing upload workspace both remain visible
-- [ ] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint
+- [x] Review each existing Excel workflow’s required files, processing rules, and generated output
+- [x] Create consistent easy-to-understand guidance for all workflow modules
+- [x] Align all upload guidance and labels with the supported CSV and XLSX file formats
+- [x] Add purpose, upload, process, output, and privacy guidance to each workflow screen
+- [x] Correct workflow-route visibility so the new guide and existing upload workspace both remain visible
+- [x] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `9de75f9` is Ready)

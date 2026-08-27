@@ -7,7 +7,8 @@ describe("sidebar navigation interaction contract", () => {
     const layout = readFileSync(path.resolve(process.cwd(), "client/src/components/DashboardLayout.tsx"), "utf8");
 
     expect(layout).toContain('className="sidebar-navigation-link h-10');
-    expect(layout.match(/sidebar-navigation-link/g)).toHaveLength(3);
+    expect(layout.match(/sidebar-navigation-link/g)).toHaveLength(2);
+    expect(layout).toContain('tooltip="My account"');
   });
 
   it("includes hover, active, keyboard-focus, and reduced-motion rules", () => {

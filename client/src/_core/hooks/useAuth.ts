@@ -1,6 +1,6 @@
-import { startLogin } from "@/const";
 import { supabase, usesSupabaseAuth } from "@/lib/supabase";
 import { trpc } from "@/lib/trpc";
+import { useQueryClient } from "@tanstack/react-query";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -16,6 +16,7 @@ export function useAuth(options?: UseAuthOptions) {
   // desync it from an in-flight login's `state`.
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
   const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
@@ -29,28 +30,38 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    let clearedProcessHistory = 0;
+    let pendingError: unknown;
     try {
-      if (usesSupabaseAuth && supabase) await supabase.auth.signOut();
-      await logoutMutation.mutateAsync();
+      const result = await logoutMutation.mutateAsync() as { clearedProcessHistory?: number };
+      clearedProcessHistory = typeof result.clearedProcessHistory === "number" ? result.clearedProcessHistory : 0;
     } catch (error: unknown) {
       if (
         error instanceof TRPCClientError &&
         error.data?.code === "UNAUTHORIZED"
       ) {
-        return;
+        clearedProcessHistory = 0;
+      } else {
+        pendingError = error;
       }
-      throw error;
     } finally {
-      // Clear the Preview auto-login token mirrored into sessionStorage, so
-      // header-based sessions (Safari ITP / WebView) are logged out too. The
-      // backend cookie is cleared by the logout mutation.
+      try { if (usesSupabaseAuth && supabase) await supabase.auth.signOut(); } catch (error) { pendingError ??= error; }
+      // Clear application-created session and cached request data. Workbook
+      // bytes and output rows are transient React state and are discarded when
+      // the protected workspace unmounts after navigation to /login.
       try {
-        sessionStorage.removeItem("manus-cookie");
+        sessionStorage.clear();
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+          const key = localStorage.key(index);
+          if (key?.startsWith("excel-master-file-") || key?.startsWith("sb-")) localStorage.removeItem(key);
+        }
       } catch {}
+      queryClient.clear();
       utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
     }
-  }, [logoutMutation, utils]);
+    if (pendingError) throw pendingError;
+    return { success: true, clearedProcessHistory } as const;
+  }, [logoutMutation, queryClient, utils]);
 
   const state = useMemo(() => {
     return {
@@ -74,11 +85,9 @@ export function useAuth(options?: UseAuthOptions) {
     if (typeof window === "undefined") return;
     if (redirectPath && window.location.pathname === redirectPath) return;
 
-    // Navigate at this moment only. startLogin() mints the nonce + cookie itself.
+    // Navigate only after the auth state is established.
     if (redirectPath) {
       window.location.href = redirectPath;
-    } else {
-      void startLogin();
     }
   }, [
     redirectOnUnauthenticated,

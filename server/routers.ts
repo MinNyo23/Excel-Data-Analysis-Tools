@@ -120,16 +120,33 @@ async function auditSecurityEvent(userId: MetadataUserId, eventType: string, met
   try { await metadataStore.createAuditEvent(userId, eventType, metadata); } catch { console.warn("[SecurityAudit] Event was not recorded."); }
 }
 
+export async function clearProcessingDataOnLogout(
+  userId: MetadataUserId,
+  dependencies: { clearHistory?: (id: MetadataUserId) => Promise<{ deletedCount: number }>; audit?: (id: MetadataUserId, eventType: string, metadata?: Record<string, string | number | boolean | null | undefined>) => Promise<void> } = {},
+) {
+  const clearHistory = dependencies.clearHistory ?? metadataStore.clearProcessHistory;
+  const audit = dependencies.audit ?? auditSecurityEvent;
+  const result = await clearHistory(userId);
+  await audit(userId, "session_logout", { clearedProcessRecords: result.deletedCount });
+  return { clearedProcessHistory: result.deletedCount } as const;
+}
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: protectedProcedure.mutation(async ({ ctx }) => {
-      await auditSecurityEvent(ctx.user.id, "session_logout");
-      if (ctx.user.authProvider === "supabase") return { success: true } as const;
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return { success: true } as const;
+      let cleanup: { clearedProcessHistory: number };
+      try {
+        cleanup = await clearProcessingDataOnLogout(ctx.user.id);
+      } finally {
+        // Session termination must not depend on the metadata cleanup outcome.
+        if (ctx.user.authProvider !== "supabase") {
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+        }
+      }
+      return { success: true, ...cleanup } as const;
     }),
   }),
   excel: router({

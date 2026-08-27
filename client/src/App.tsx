@@ -1,13 +1,12 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Redirect, Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashboardLayout from "./components/DashboardLayout";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import AccountManagement from "./pages/AccountManagement";
 import Home from "./pages/Home";
-import ProfileSettings from "./pages/ProfileSettings";
 import TermsConditions from "./pages/TermsConditions";
 import RouteTransition from "./components/RouteTransition";
 import Login from "./pages/Login";
@@ -21,7 +20,7 @@ function Router() {
       <Route path={"/"}><AuthGate><Home /></AuthGate></Route>
       <Route path={"/login"} component={Login} />
       <Route path={"/tools/:tool"}><AuthGate><Home /></AuthGate></Route>
-      <Route path={"/profile"}><AuthGate><ProfileSettings /></AuthGate></Route>
+      <Route path={"/profile"}><Redirect to="/account" /></Route>
       <Route path={"/account"}><AuthGate><AccountManagement /></AuthGate></Route>
       <Route path={"/terms"} component={TermsConditions} />
       <Route path={"/404"} component={NotFound} />

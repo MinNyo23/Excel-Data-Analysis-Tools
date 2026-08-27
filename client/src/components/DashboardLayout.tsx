@@ -10,7 +10,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { FileSpreadsheet, FolderKanban, Layers3, ListTree, ScanSearch, Sheet, UploadCloud, UserRound, UserRoundCog } from "lucide-react";
+import { FileSpreadsheet, FolderKanban, Layers3, ListTree, ScanSearch, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 import AppFooter from "./AppFooter";
@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-3"><div className="rounded-xl border border-[#dce8dc] bg-white px-3 py-3 text-xs leading-relaxed text-[#66736b] group-data-[collapsible=icon]:hidden">Each tool creates a preview first. Download only after you review the output.</div></SidebarFooter>
-        <SidebarFooter className="px-2 pb-4 pt-0"><SidebarMenu><SidebarMenuItem><SidebarMenuButton isActive={location === "/profile"} tooltip="My profile" onClick={() => setLocation("/profile")} className="sidebar-navigation-link h-10 text-[#445149] data-[active=true]:bg-[#e4f1e7] data-[active=true]:text-[#0f6a51]"><UserRound size={16}/><span>My profile</span></SidebarMenuButton></SidebarMenuItem><SidebarMenuItem><SidebarMenuButton isActive={location === "/account"} tooltip="Account management" onClick={() => setLocation("/account")} className="sidebar-navigation-link h-10 text-[#445149] data-[active=true]:bg-[#e4f1e7] data-[active=true]:text-[#0f6a51]"><UserRoundCog size={16}/><span>Account management</span></SidebarMenuButton></SidebarMenuItem></SidebarMenu></SidebarFooter>
+        <SidebarFooter className="px-2 pb-4 pt-0"><SidebarMenu><SidebarMenuItem><SidebarMenuButton isActive={location === "/account" || location === "/profile"} tooltip="My account" onClick={() => setLocation("/account")} className="sidebar-navigation-link h-10 text-[#445149] data-[active=true]:bg-[#e4f1e7] data-[active=true]:text-[#0f6a51]"><UserRoundCog size={16}/><span>My account</span></SidebarMenuButton></SidebarMenuItem></SidebarMenu></SidebarFooter>
       </Sidebar>
       <SidebarInset className="bg-[#f6f8f3]">
         <header className="flex h-14 items-center border-b border-[#e5ece4] bg-[#fbfdf9] px-3 lg:px-5"><SidebarTrigger className="mr-3" /><div><p className="text-xs font-semibold text-[#1d2923]">Excel workflow workspace</p><p className="text-[11px] text-[#7a877f]">Files are processed in memory and not saved to this application</p></div></header>

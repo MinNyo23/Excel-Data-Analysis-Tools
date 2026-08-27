@@ -502,4 +502,14 @@
 - [x] Route signed-out protected navigation to the sign-in page and retain a safe return path after authentication
 - [x] Add authentication security tests for the login UI contract, safe redirect behavior, and server-side session protections
 - [x] Verify responsive sign-in behavior and document what login data is and is not stored
-- [ ] Synchronize the verified protected login experience to Vercel and confirm the production bundle
+- [x] Synchronize the verified protected login experience to Vercel and confirm the production bundle (GitHub commit `abd36d4`; canonical login bundle includes the passwordless sign-in copy and no-application-password disclosure)
+
+## Secure Logout and Unified Account Management
+
+- [x] Inspect the existing authentication logout, query cache, in-memory processing state, profile page, and account page behavior
+- [x] Combine profile settings, retention, history, export, and profile-deletion controls into one protected Account page
+- [x] Add a confirmed sign-out action that clears the active provider and backend session, browser cache, transient processing state, and the current user's saved process-history metadata
+- [x] Preserve login identity and encrypted profile data during standard sign-out-and-cleanup behavior
+- [x] Add security regression tests for user-scoped logout cleanup, cache clearing, session termination, and unified-account navigation
+- [x] Validate signed-out account routing on desktop and mobile; authenticated account controls are covered by source and procedure contract tests
+- [ ] Synchronize the verified unified-account and secure logout cleanup release to Vercel and confirm the live bundle

@@ -7,6 +7,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import AccountManagement from "./pages/AccountManagement";
 import Home from "./pages/Home";
+import ProfileSettings from "./pages/ProfileSettings";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -14,6 +15,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/tools/:tool"} component={Home} />
+      <Route path={"/profile"} component={ProfileSettings} />
       <Route path={"/account"} component={AccountManagement} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

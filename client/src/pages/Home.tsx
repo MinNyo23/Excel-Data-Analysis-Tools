@@ -15,7 +15,7 @@ import { getFriendlyApiMessage } from "@/lib/apiFeedback";
 import "@/privacy-diagram.css";
 import { JourneyFlowImage } from "@/components/JourneyFlowImage";
 import { JourneyFlowCaptions } from "@/components/JourneyFlowCaptions";
-import { WorkflowGuide, type WorkflowGuideContent } from "@/components/WorkflowGuide";
+import { WorkflowGuide, type WorkflowGuideContent, type WorkflowSampleTemplate } from "@/components/WorkflowGuide";
 import { BriefcaseBusiness, Building2, Download, FileSpreadsheet, FileUp, Layers3, Loader2, ListTree, Phone, RotateCcw, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
 const ACCEPTED_TYPES = ".xlsx,.csv";
@@ -38,6 +38,11 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose one or more CSV or XLSX corporate workbooks. For the full report, use files that contain Addition and/or Deletion sheets.",
     process: "The tool finds matching Addition and Deletion sheets, combines the records, adds the source filename, and prepares a summary report.",
     output: "Review the Summary Report, Addition, and Deletion previews, then download one consolidated XLSX workbook.",
+    templates: [
+      { label: "Addition data", format: "CSV", filename: "master-consolidation-addition-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/master-consolidation-addition-sample_36ebb951.csv" },
+      { label: "Deletion data", format: "CSV", filename: "master-consolidation-deletion-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/master-consolidation-deletion-sample_58db53f0.csv" },
+      { label: "Combined Addition + Deletion", format: "XLSX", filename: "master-consolidation-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/master-consolidation-sample_923bd2cf.xlsx" },
+    ],
   },
   "deletion-summary": {
     title: "Deletion summary list",
@@ -45,6 +50,10 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose one CSV or XLSX deletion file with an Entity Name column.",
     process: "The tool counts deletion records for every entity and keeps the original deletion rows for your review.",
     output: "Review the entity totals and source data, then download a workbook with Deletion Entity Summary and Deletion Data sheets.",
+    templates: [
+      { label: "Deletion list", format: "CSV", filename: "deletion-summary-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/deletion-summary-sample_540e54c3.csv" },
+      { label: "Deletion workbook", format: "XLSX", filename: "deletion-summary-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/deletion-summary-sample_e4475d60.xlsx" },
+    ],
   },
   duplicates: {
     title: "Duplicate separation",
@@ -52,6 +61,10 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose one CSV or XLSX deletion file with Employee Full Name and NRC No columns.",
     process: "The first record for each matching name-and-NRC combination stays in Clean Data; later matching records move to Duplicates Moved.",
     output: "Review both groups, then download one workbook with Clean Data and Duplicates Moved sheets.",
+    templates: [
+      { label: "Deletion records", format: "CSV", filename: "duplicate-separation-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/duplicate-separation-sample_2aa67fe9.csv" },
+      { label: "Deletion workbook", format: "XLSX", filename: "duplicate-separation-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/duplicate-separation-sample_dcac4c90.xlsx" },
+    ],
   },
   "entity-summary": {
     title: "Deletion with summary",
@@ -59,6 +72,10 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose one multi-sheet CSV or XLSX workbook. Each sheet you want to compare should include an Entity Name column.",
     process: "The tool counts each entity on every source sheet and creates one combined Entity Summary sheet.",
     output: "Review the totals across sheets, then download the workbook with the new Entity Summary and your original sheets.",
+    templates: [
+      { label: "One-sheet example", format: "CSV", filename: "deletion-with-summary-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/deletion-with-summary-sample_37115d26.csv" },
+      { label: "Two-sheet workbook", format: "XLSX", filename: "deletion-with-summary-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/deletion-with-summary-sample_71ff60db.xlsx" },
+    ],
   },
   "addition-exit": {
     title: "Addition and exit match",
@@ -66,6 +83,12 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose two CSV or XLSX files: your original Addition file and the Exit Data file you want to validate.",
     process: "The tool checks mobile numbers first, then NRC numbers, and separates records into match groups for review.",
     output: "Review the Both Matched, Mobile Only, NRC Only, and No Match groups, then download the match report.",
+    templates: [
+      { label: "Original Addition", format: "CSV", filename: "addition-exit-original-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/addition-exit-original-sample_8371a17b.csv" },
+      { label: "Exit Data", format: "CSV", filename: "addition-exit-exit-data-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/addition-exit-exit-data-sample_9f74ff3c.csv" },
+      { label: "Original Addition", format: "XLSX", filename: "addition-exit-original-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/addition-exit-original-sample_144e7ac3.xlsx" },
+      { label: "Exit Data", format: "XLSX", filename: "addition-exit-exit-data-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/addition-exit-exit-data-sample_ab34178e.xlsx" },
+    ],
   },
   onboard: {
     title: "Deletion check with onboard",
@@ -73,6 +96,12 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose two CSV or XLSX files: the original onboard file and the deletion file you want to check.",
     process: "The tool matches NRC numbers, adds available onboard details to matched records, and keeps unmatched records separate.",
     output: "Review the Summary, Matched List, and No Match List, then download the completed NRC check report.",
+    templates: [
+      { label: "Original Onboard", format: "CSV", filename: "onboard-original-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/onboard-original-sample_f749d402.csv" },
+      { label: "Deletion list", format: "CSV", filename: "onboard-deletion-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/onboard-deletion-sample_8db843a9.csv" },
+      { label: "Original Onboard", format: "XLSX", filename: "onboard-original-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/onboard-original-sample_77c14a10.xlsx" },
+      { label: "Deletion workbook", format: "XLSX", filename: "onboard-deletion-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/onboard-deletion-sample_656c4ab3.xlsx" },
+    ],
   },
   "ready-upload": {
     title: "Ready file to upload",
@@ -80,6 +109,10 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose one CSV or XLSX employee source file with the information you want to prepare for upload.",
     process: "The tool renames mapped columns, normalizes dates, adds required blank fields, and arranges the final upload columns.",
     output: "Review the converted preview and final column count, then download the ready-to-upload XLSX file.",
+    templates: [
+      { label: "Employee source data", format: "CSV", filename: "ready-file-to-upload-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/ready-file-to-upload-sample_a731343c.csv" },
+      { label: "Employee workbook", format: "XLSX", filename: "ready-file-to-upload-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/ready-file-to-upload-sample_a9cc994a.xlsx" },
+    ],
   },
   facility: {
     title: "Addition convert facility by facility",
@@ -87,6 +120,10 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose one CSV or XLSX Addition file with an Entity Name column.",
     process: "The tool counts records for each entity, keeps all data together, and creates a clean worksheet for every facility.",
     output: "Review the facility totals, then download a workbook with Summary, All Data, and one sheet for each facility.",
+    templates: [
+      { label: "Addition data", format: "CSV", filename: "facility-by-facility-sample.csv", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/facility-by-facility-sample_5b28ca8b.csv" },
+      { label: "Addition workbook", format: "XLSX", filename: "facility-by-facility-sample.xlsx", href: "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/facility-by-facility-sample_da70b6ba.xlsx" },
+    ],
   },
 };
 
@@ -171,6 +208,25 @@ function downloadBytes(base64: string, filename: string) {
   anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+async function downloadSampleTemplate(template: WorkflowSampleTemplate) {
+  try {
+    const response = await fetch(template.href, { credentials: "omit" });
+    if (!response.ok) throw new Error("The sample file could not be retrieved.");
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = template.filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`${template.label} sample downloaded.`);
+  } catch {
+    toast.error("The sample file could not be downloaded. Please try again.");
+  }
 }
 
 function downloadResult(result: Result) {
@@ -385,7 +441,7 @@ export default function Home() {
         <div className="brand"><div className="brand-mark"><Layers3 size={19} /></div><div><p className="eyebrow">OPERATIONS TOOLKIT</p><h1>Excel Master File</h1></div></div>
         <div className="topbar-note"><ShieldCheck size={16} /> Files are processed securely on the server</div>
       </header>
-      {activeWorkflowGuide && <section className="container workflow-guide-shell"><WorkflowGuide {...activeWorkflowGuide} /></section>}
+      {activeWorkflowGuide && <section className="container workflow-guide-shell"><WorkflowGuide {...activeWorkflowGuide} onDownloadTemplate={downloadSampleTemplate} /></section>}
       <section className="hero container">
         <div className="hero-copy"><Badge className="soft-badge">EXCEL OPERATIONS WORKSPACE</Badge><h2>Choose a workflow<br /><em>from the menu.</em></h2><p>Each tool has its own upload, preview, and download workspace. Select the process you need from the clearly visible navigation menu on the left.</p><details className="privacy-details" open><summary>Your file privacy</summary><p>Your selected CSV or XLSX file is used as temporary data for the workflow you choose. The tool processes it securely in memory, lets you review the result, and then returns the finished file for download. Uploaded workbooks, spreadsheet cells, previews, and generated files are not stored in this application database or file storage.</p><figure className="privacy-diagram privacy-journey-diagram"><figcaption><strong>Your journey from upload to download</strong><span>Follow the seven simple steps: sign in, choose a workflow, select valid CSV or XLSX files, process, review, and download your finished workbook.</span><a href={JOURNEY_FLOW_IMAGE_URL} target="_blank" rel="noreferrer">Open the full end-user journey flow</a></figcaption><div className="privacy-diagram-viewport"><JourneyFlowImage src={JOURNEY_FLOW_IMAGE_URL} alt="End-user journey flow: sign in, choose an Excel workflow, select valid CSV or XLSX files, process the file securely in memory, review the preview and totals, then download the finished XLSX file. The flow explains that workbook data is not saved to the application database." /></div><JourneyFlowCaptions /><p className="privacy-diagram-note">If a file is not accepted, read the message and select a valid CSV or XLSX file. The privacy reminder applies throughout every workflow step.</p></figure></details></div>
         <div className="hero-meta"><div><strong>01</strong><span>Choose tool</span></div><div><strong>02</strong><span>Upload data</span></div><div><strong>03</strong><span>Review output</span></div></div>

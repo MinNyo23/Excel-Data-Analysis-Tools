@@ -22,10 +22,12 @@ def normalize_file(file):
         return file
     source = base64.b64decode(file["data"])
     dataframe = read_csv_bytes(source)
+    base_name = os.path.splitext(name)[0]
+    normalized_name = base_name.lower()
+    sheet_name = "Addition" if "addition" in normalized_name or "add" in normalized_name else "Deletion" if "deletion" in normalized_name or "del" in normalized_name else "Sheet1"
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        dataframe.to_excel(writer, sheet_name="Sheet1", index=False)
-    base_name = os.path.splitext(name)[0]
+        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
     return {"name": f"{base_name}.xlsx", "data": base64.b64encode(output.getvalue()).decode("ascii")}
 
 

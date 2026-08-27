@@ -61,16 +61,12 @@ def process(payload):
                 df_add["Source_File"] = raw_filename
                 addition_dfs.append(df_add)
                 add_count = len(df_add)
-            else:
-                errors.append(f"No Addition sheet found in {file_name}")
 
             if del_sheet:
                 df_del = pd.read_excel(excel_file, sheet_name=del_sheet)
                 df_del["Source_File"] = raw_filename
                 deletion_dfs.append(df_del)
                 del_count = len(df_del)
-            else:
-                errors.append(f"No Deletion sheet found in {file_name}")
 
             summary_data.append(
                 {
@@ -82,6 +78,11 @@ def process(payload):
             )
         except Exception as exc:
             errors.append(f"Error reading {file_name}: {exc}")
+
+    if summary_data and not addition_dfs:
+        errors.append("No Addition sheet found in the selected files")
+    if summary_data and not deletion_dfs:
+        errors.append("No Deletion sheet found in the selected files")
 
     combined_addition = pd.concat(addition_dfs, ignore_index=True) if addition_dfs else pd.DataFrame()
     combined_deletion = pd.concat(deletion_dfs, ignore_index=True) if deletion_dfs else pd.DataFrame()

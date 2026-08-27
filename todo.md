@@ -416,3 +416,11 @@
 - [x] Add purpose, upload, process, output, and privacy guidance to each workflow screen
 - [x] Correct workflow-route visibility so the new guide and existing upload workspace both remain visible
 - [x] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `9de75f9` is Ready)
+
+## Downloadable Workflow Sample Templates
+
+- [x] Review every workflow’s exact required input files, worksheet names, and column contracts
+- [x] Design privacy-safe sample rows and truthful CSV/XLSX template schemas for all workflows
+- [x] Add accessible per-workflow CSV and XLSX template download controls beside the usage guidance
+- [x] Add automated coverage for the template content, file types, and download controls
+- [ ] Verify desktop/mobile presentation, synchronize to Vercel, and save the completed checkpoint

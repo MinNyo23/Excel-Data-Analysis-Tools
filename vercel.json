@@ -9,14 +9,18 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob: https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer https://d36hbw14aib5lz.cloudfront.net; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://lltzfiewqyhdbfvjqxon.supabase.co https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer; upgrade-insecure-requests"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; frame-src 'none'; form-action 'self'; img-src 'self' data: blob: https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer https://d36hbw14aib5lz.cloudfront.net; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://lltzfiewqyhdbfvjqxon.supabase.co https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer; worker-src 'none'; media-src 'none'; manifest-src 'self'; upgrade-insecure-requests"
         },
+        { "key": "Access-Control-Allow-Origin", "value": "https://excel-master-file-tool.vercel.app" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-read=(), clipboard-write=(), display-capture=(), fullscreen=(), hid=(), serial=(), web-share=(), xr-spatial-tracking=()" },
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
         { "key": "Cross-Origin-Resource-Policy", "value": "same-origin" },
+        { "key": "Origin-Agent-Cluster", "value": "?1" },
+        { "key": "X-DNS-Prefetch-Control", "value": "off" },
+        { "key": "X-Download-Options", "value": "noopen" },
         { "key": "X-Permitted-Cross-Domain-Policies", "value": "none" }
       ]
     }

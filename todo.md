@@ -424,3 +424,10 @@
 - [x] Add accessible per-workflow CSV and XLSX template download controls beside the usage guidance
 - [x] Add automated coverage for the template content, file types, and download controls
 - [x] Verify desktop/mobile presentation, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `16b0598` is Ready)
+
+## Security Header Hardening
+
+- [x] Inspect the current Vercel configuration and live response headers across the application and sample-template assets
+- [x] Add proportionate browser security headers without breaking Supabase authentication, managed API access, or downloads
+- [x] Add automated contract coverage for the enhanced header policy
+- [ ] Validate local build, live Vercel headers, and critical application routes before saving the completed checkpoint

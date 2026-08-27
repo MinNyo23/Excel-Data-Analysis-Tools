@@ -39,10 +39,17 @@ describe("browser and API security contracts", () => {
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("frame-src 'none'");
+    expect(csp).toContain("script-src-attr 'none'");
+    expect(csp).toContain("worker-src 'none'");
     expect(csp).toContain("https://lltzfiewqyhdbfvjqxon.supabase.co");
     expect(csp).toContain("https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer");
+    expect(valueFor("Access-Control-Allow-Origin")).toBe("https://excel-master-file-tool.vercel.app");
     expect(valueFor("X-Content-Type-Options")).toBe("nosniff");
     expect(valueFor("X-Frame-Options")).toBe("DENY");
+    expect(valueFor("Origin-Agent-Cluster")).toBe("?1");
+    expect(valueFor("X-DNS-Prefetch-Control")).toBe("off");
+    expect(valueFor("Permissions-Policy")).toContain("clipboard-read=()");
     expect(valueFor("X-Permitted-Cross-Domain-Policies")).toBe("none");
   });
 });

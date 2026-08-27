@@ -129,13 +129,16 @@ export function externalApiCors(req: Request, res: Response, next: NextFunction)
 export function securityHeaders(req: Request, res: Response, next: NextFunction) {
   const isSecure = req.protocol === "https" || String(req.headers["x-forwarded-proto"] || "").split(",").some(value => value.trim() === "https");
   res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-DNS-Prefetch-Control", "off");
+  res.setHeader("X-Download-Options", "noopen");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-read=(), clipboard-write=(), display-capture=(), fullscreen=(), hid=(), serial=(), web-share=(), xr-spatial-tracking=()");
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Origin-Agent-Cluster", "?1");
   // Public managed-storage redirects are intentionally embedded by the Vercel
   // frontend. All other application responses remain same-origin isolated.
   res.setHeader("Cross-Origin-Resource-Policy", req.path.startsWith("/manus-storage/") ? "cross-origin" : "same-origin");
-  res.setHeader("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.manus.computer; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:");
+  res.setHeader("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.manus.computer; frame-src 'none'; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; connect-src 'self' https:; worker-src 'none'; media-src 'none'; manifest-src 'self'");
   if (isSecure) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   if (req.path.startsWith("/api/")) res.setHeader("Cache-Control", "no-store");
   next();

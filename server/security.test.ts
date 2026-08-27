@@ -65,8 +65,12 @@ describe("application security controls", () => {
     securityHeaders({ path: "/api/trpc", protocol: "https", headers: {} } as any, { setHeader: (name: string, value: unknown) => headers.set(name, value) } as any, () => { continued = true; });
     expect(continued).toBe(true);
     expect(headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(headers.get("X-DNS-Prefetch-Control")).toBe("off");
+    expect(headers.get("X-Download-Options")).toBe("noopen");
+    expect(headers.get("Origin-Agent-Cluster")).toBe("?1");
     expect(headers.get("Cache-Control")).toBe("no-store");
     expect(String(headers.get("Content-Security-Policy"))).toContain("object-src 'none'");
+    expect(String(headers.get("Content-Security-Policy"))).toContain("script-src-attr 'none'");
     expect(headers.get("Strict-Transport-Security")).toContain("max-age=31536000");
   });
 

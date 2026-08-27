@@ -445,3 +445,11 @@
 - [x] Remove template URLs and download handling from every workflow configuration
 - [x] Remove obsolete sample-template tests and update related guide coverage
 - [x] Validate desktop/mobile workflows, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `d673b9a` is Ready)
+
+## Paired-File Matching Workflow UX Refinement
+
+- [x] Review the Addition & Exit and Deletion & Onboard upload, processor, and output contracts
+- [x] Add distinct numbered Original File and 2nd File drag-and-drop zones with clear CSV/XLSX tags
+- [x] Add optional Phone, NRC, and Corporate Name column confirmation with safe server-side mapping support
+- [x] Add parsing progress feedback, clear multi-sheet export actions, and Reset / Process New Files controls
+- [ ] Add focused coverage, validate desktop/mobile behavior, synchronize to Vercel, and save the completed checkpoint

@@ -444,4 +444,4 @@
 - [x] Remove the Sample Files download section from the reusable workflow guide
 - [x] Remove template URLs and download handling from every workflow configuration
 - [x] Remove obsolete sample-template tests and update related guide coverage
-- [ ] Validate desktop/mobile workflows, synchronize to Vercel, and save the completed checkpoint
+- [x] Validate desktop/mobile workflows, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `d673b9a` is Ready)

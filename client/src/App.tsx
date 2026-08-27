@@ -9,6 +9,7 @@ import AccountManagement from "./pages/AccountManagement";
 import Home from "./pages/Home";
 import ProfileSettings from "./pages/ProfileSettings";
 import TermsConditions from "./pages/TermsConditions";
+import RouteTransition from "./components/RouteTransition";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -40,7 +41,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          <DashboardLayout><Router /></DashboardLayout>
+          <DashboardLayout><RouteTransition><Router /></RouteTransition></DashboardLayout>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

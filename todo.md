@@ -373,3 +373,9 @@
 - [x] Review current sidebar navigation classes and interaction states
 - [x] Add smooth hover, keyboard-focus, active-press, and reduced-motion behavior to sidebar links
 - [x] Verify desktop and mobile navigation, synchronize to Vercel, and save the completed checkpoint
+
+## Route Transition Refinement
+
+- [ ] Review active-route rendering and current animation patterns
+- [ ] Add a shared smooth route-transition wrapper with reduced-motion support
+- [ ] Add automated coverage, verify routes on desktop and mobile, synchronize to Vercel, and save the completed checkpoint

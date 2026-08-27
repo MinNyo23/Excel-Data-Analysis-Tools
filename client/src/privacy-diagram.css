@@ -36,8 +36,7 @@
 
 .privacy-diagram img {
   display: block;
-  width: 100%;
-  min-width: 720px;
+  width: min(100%, 720px);
   height: auto;
   border: 1px solid #dce8db;
   border-radius: 8px;
@@ -45,8 +44,19 @@
 }
 
 .privacy-diagram-viewport {
-  overflow-x: auto;
+  display: flex;
+  justify-content: center;
   border-radius: 8px;
+}
+
+.privacy-journey-diagram .privacy-diagram-viewport {
+  padding: 4px;
+  background: linear-gradient(135deg, #f1f8ef, #ffffff 55%, #eef7ee);
+}
+
+.privacy-journey-diagram img {
+  width: min(100%, 560px);
+  box-shadow: 0 12px 26px rgba(28, 83, 57, .08);
 }
 
 .privacy-diagram-note {
@@ -55,5 +65,5 @@
 
 @media (max-width: 680px) {
   .privacy-diagram { padding: 10px; }
-  .privacy-diagram img { min-width: 620px; }
+  .privacy-diagram img { width: 100%; }
 }

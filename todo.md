@@ -379,3 +379,9 @@
 - [x] Review active-route rendering and current animation patterns
 - [x] Add a shared smooth route-transition wrapper with reduced-motion support
 - [x] Add automated coverage, verify routes on desktop and mobile, synchronize to Vercel, and save the completed checkpoint
+
+## Tool Overview Journey-Flow Diagram Update
+
+- [ ] Review the existing Tool Overview privacy diagram and its explanatory reference text
+- [ ] Replace the existing image with the user-provided end-user journey flow and update its accessible text and reference copy
+- [ ] Add coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint

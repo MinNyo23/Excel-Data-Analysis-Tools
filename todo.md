@@ -340,9 +340,9 @@
 
 ## End-to-End Security and API Review
 
-- [ ] Inventory browser, API, authentication, metadata, and workbook-processing trust boundaries
-- [ ] Review protected procedures, external API authentication, origins, rate limits, headers, and error handling
-- [ ] Verify the no-persistent-workbook-data boundary and server-only secret exposure controls
-- [ ] Check dependency vulnerabilities, production HTTP headers, and API responses for unintended disclosure
-- [ ] Apply and test any proportionate security improvements identified by the review
-- [ ] Run the complete validation suite, document the final security posture, and synchronize verified changes to Vercel
+- [x] Inventory browser, API, authentication, metadata, and workbook-processing trust boundaries
+- [x] Review protected procedures, external API authentication, origins, rate limits, headers, and error handling
+- [x] Verify the no-persistent-workbook-data boundary and server-only secret exposure controls
+- [x] Check dependency vulnerabilities, production HTTP headers, and API responses for unintended disclosure
+- [x] Apply and test any proportionate security improvements identified by the review
+- [x] Run the complete validation suite, document the final security posture, and synchronize verified changes to Vercel

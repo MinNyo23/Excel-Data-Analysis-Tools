@@ -493,4 +493,13 @@
 - [x] Add an accessible immediate warning when a selected paired upload exceeds the shared 10 MB limit
 - [x] Keep a valid previously selected file unchanged when an oversized replacement is attempted
 - [x] Add regression coverage and verify the paired upload zones on desktop and mobile
-- [ ] Synchronize the verified warning to Vercel and confirm the production bundle
+- [x] Synchronize the verified warning to Vercel and confirm the production bundle (GitHub commit `187a60b`; canonical bundle includes the shared immediate size-validation path)
+
+## Dedicated Secure Login Experience
+
+- [x] Inspect the active passwordless authentication, session cookie, and persisted account-data boundaries
+- [x] Add a professional standalone sign-in page that uses the current passwordless login flow without collecting or storing passwords
+- [x] Route signed-out protected navigation to the sign-in page and retain a safe return path after authentication
+- [x] Add authentication security tests for the login UI contract, safe redirect behavior, and server-side session protections
+- [x] Verify responsive sign-in behavior and document what login data is and is not stored
+- [ ] Synchronize the verified protected login experience to Vercel and confirm the production bundle

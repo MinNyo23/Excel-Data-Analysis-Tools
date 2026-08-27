@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { getFriendlyApiMessage } from "@/lib/apiFeedback";
 import { BriefcaseBusiness, Building2, Clock3, FileSpreadsheet, History, Loader2, Phone, Settings2, ShieldCheck, Trash2, UserRound } from "lucide-react";
@@ -25,6 +24,7 @@ function storedFileNames(value: string) {
 
 export default function ProfileSettings() {
   const { isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const profileQuery = trpc.profile.me.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const historyQuery = trpc.processHistory.list.useQuery(undefined, { enabled: isAuthenticated, retry: false });
@@ -63,7 +63,7 @@ export default function ProfileSettings() {
   }, {})), [historyQuery.data]);
 
   if (!isAuthenticated) {
-    return <main className="profile-settings-page container"><section className="profile-settings-hero"><Badge className="soft-badge">PROFILE & ACCOUNT</Badge><h1>Your account, <em>in one private place.</em></h1><p>Sign in to update your protected profile, choose your process-history retention, and see completed Excel tasks.</p></section><Card className="profile-card"><CardContent className="profile-sign-in"><ShieldCheck size={25}/><div><strong>Sign in to open your profile</strong><p>Profile settings and process history are available only to your signed-in account.</p></div><Button className="process-button" onClick={() => startLogin()}>Sign in</Button></CardContent></Card></main>;
+    return <main className="profile-settings-page container"><section className="profile-settings-hero"><Badge className="soft-badge">PROFILE & ACCOUNT</Badge><h1>Your account, <em>in one private place.</em></h1><p>Sign in to update your protected profile, choose your process-history retention, and see completed Excel tasks.</p></section><Card className="profile-card"><CardContent className="profile-sign-in"><ShieldCheck size={25}/><div><strong>Sign in to open your profile</strong><p>Profile settings and process history are available only to your signed-in account.</p></div><Button className="process-button" onClick={() => setLocation("/login?returnTo=%2Fprofile")}>Sign in</Button></CardContent></Card></main>;
   }
 
   return <main className="profile-settings-page container">

@@ -19,7 +19,7 @@ describe("dedicated profile and history page", () => {
   });
 
   it("exposes the protected page through an explicit route and sidebar navigation item", () => {
-    expect(routes).toContain('<Route path={"/profile"} component={ProfileSettings} />');
+    expect(routes).toContain('<Route path={"/profile"}><AuthGate><ProfileSettings /></AuthGate></Route>');
     expect(sidebar).toContain('location === "/profile"');
     expect(sidebar).toContain("My profile");
   });

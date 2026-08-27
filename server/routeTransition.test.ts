@@ -13,10 +13,12 @@ describe("route transition contract", () => {
     expect(transition).toContain("duration: reduceMotion ? 0 : 0.22");
   });
 
-  it("wraps the router once so tool, profile, account, and Terms pages share the transition", () => {
+  it("wraps the router once while allowing the sign-in page to bypass workspace navigation chrome", () => {
     const app = readFileSync(path.resolve(process.cwd(), "client/src/App.tsx"), "utf8");
 
     expect(app).toContain('import RouteTransition from "./components/RouteTransition"');
-    expect(app).toContain("<DashboardLayout><RouteTransition><Router /></RouteTransition></DashboardLayout>");
+    expect(app).toContain("const routedContent = <RouteTransition><Router /></RouteTransition>;");
+    expect(app).toContain('if (location.startsWith("/login")) return routedContent;');
+    expect(app).toContain("return <DashboardLayout>{routedContent}</DashboardLayout>;");
   });
 });

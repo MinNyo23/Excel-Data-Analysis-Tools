@@ -10,15 +10,19 @@ import Home from "./pages/Home";
 import ProfileSettings from "./pages/ProfileSettings";
 import TermsConditions from "./pages/TermsConditions";
 import RouteTransition from "./components/RouteTransition";
+import Login from "./pages/Login";
+import { AuthGate } from "./components/AuthGate";
+import { useLocation } from "wouter";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/tools/:tool"} component={Home} />
-      <Route path={"/profile"} component={ProfileSettings} />
-      <Route path={"/account"} component={AccountManagement} />
+      <Route path={"/"}><AuthGate><Home /></AuthGate></Route>
+      <Route path={"/login"} component={Login} />
+      <Route path={"/tools/:tool"}><AuthGate><Home /></AuthGate></Route>
+      <Route path={"/profile"}><AuthGate><ProfileSettings /></AuthGate></Route>
+      <Route path={"/account"}><AuthGate><AccountManagement /></AuthGate></Route>
       <Route path={"/terms"} component={TermsConditions} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
@@ -32,6 +36,13 @@ function Router() {
 //   to keep consistent foreground/background color across components
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
+function AppContent() {
+  const [location] = useLocation();
+  const routedContent = <RouteTransition><Router /></RouteTransition>;
+  if (location.startsWith("/login")) return routedContent;
+  return <DashboardLayout>{routedContent}</DashboardLayout>;
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -41,7 +52,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          <DashboardLayout><RouteTransition><Router /></RouteTransition></DashboardLayout>
+          <AppContent />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

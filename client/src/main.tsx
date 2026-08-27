@@ -5,8 +5,8 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { startLogin } from "./const";
 import { supabase } from "./lib/supabase";
+import { getLoginPathForCurrentLocation } from "./lib/loginNavigation";
 import { getFriendlyApiMessage, isPassiveCurrentUserQuery, isUnauthenticatedApiError, reportRateLimitIfPresent } from "./lib/apiFeedback";
 import { RateLimitFeedback, RateLimitFeedbackProvider } from "./components/RateLimitFeedback";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  startLogin();
+  if (window.location.pathname !== "/login") window.location.replace(getLoginPathForCurrentLocation());
 };
 
 queryClient.getQueryCache().subscribe(event => {

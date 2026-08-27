@@ -13,13 +13,11 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 // call would desync it from an in-flight login and the callback would reject it
 // with "invalid oauth state". It returns void by design, so there is no URL to
 // stash across renders.
-export const startLogin = async () => {
+export const startLogin = async (email?: string) => {
   if (usesSupabaseAuth && supabase) {
-    const email = window.prompt("Enter your email address to receive a secure sign-in link.");
-    if (!email) return;
+    if (!email) throw new Error("An email address is required for passwordless sign-in.");
     const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
     if (error) throw new Error("Supabase sign-in could not be started.");
-    window.alert("Check your email for the secure sign-in link.");
     return;
   }
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;

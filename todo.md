@@ -467,3 +467,23 @@
 - [x] Add equivalent plain-language Myanmar translations alongside the English Terms content
 - [x] Add focused coverage and verify English/Myanmar readability on desktop and mobile
 - [x] Synchronize the bilingual Terms page to Vercel and save the completed checkpoint (initial deployment `b5f0601` failed during integration provisioning; retry `a78f448` is Ready after the optional provisioning stage was skipped, and the canonical bundle was verified to include Myanmar Terms text)
+
+## Security Review and Recommendations
+
+- [x] Inspect current browser headers, API controls, upload validation, account protections, and dependency status
+- [x] Assess remaining risks against current application design and public security guidance
+- [x] Prepare a prioritized security recommendation report that explains the purpose and implementation scope of each control
+
+## Verify Paired Upload Feedback
+
+- [x] Verify selected-file size indicators and role-specific drag-over helper text in the reusable paired upload component
+- [x] Confirm the production Addition & Exit and Deletion & Onboard pages include the verified upload feedback
+- [x] Correct and test any missing file-size or drag-over feedback behavior (no correction required; existing functionality and focused regression tests passed)
+
+## Immediate Paired Upload Validation Feedback
+
+- [x] Confirm the server-enforced upload size limit and mirror it accurately in paired-file selection feedback
+- [x] Show an immediate accessible helper message when a selected paired file is not CSV or XLSX
+- [x] Display the maximum permitted file size beside each selected-file size indicator
+- [x] Add regression coverage and verify both paired workflow pages on desktop and mobile
+- [ ] Synchronize the validated paired-upload feedback update to Vercel and confirm the production bundle

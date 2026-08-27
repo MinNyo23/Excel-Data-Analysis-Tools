@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
+import { MAX_UPLOAD_FILE_BYTES } from "@shared/uploadLimits";
 
-export const MAX_UPLOAD_FILE_BYTES = 10 * 1024 * 1024;
+export { MAX_UPLOAD_FILE_BYTES } from "@shared/uploadLimits";
 export const MAX_UPLOAD_BATCH_BYTES = 20 * 1024 * 1024;
 export const MAX_UPLOAD_FILES = 10;
 const MAX_ZIP_ENTRIES = 500;

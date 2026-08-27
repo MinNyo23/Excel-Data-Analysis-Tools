@@ -15,7 +15,10 @@ describe("paired matching workflow UX", () => {
     expect(panel).toContain(".XLSX");
     expect(panel).toContain(".CSV");
     expect(panel).toContain("formatFileSize");
-    expect(panel).toContain("Selected · {formatFileSize(originalFile.size)}");
+    expect(panel).toContain("Selected · {formatFileSize(originalFile.size)} · {MAX_UPLOAD_FILE_SIZE_LABEL} max");
+    expect(panel).toContain("isSupportedWorkbookFileName(file.name)");
+    expect(panel).toContain("Only CSV and XLSX files are allowed.");
+    expect(panel).toContain('role="alert"');
     expect(panel).toContain("Release to select this Original File");
     expect(panel).toContain("Release to select this 2nd File");
     expect(panel).toContain("OPTIONAL COLUMN CONFIRMATION");

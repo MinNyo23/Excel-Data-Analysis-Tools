@@ -438,3 +438,10 @@
 - [x] Create a simple, recognizable green shielded-spreadsheet favicon asset
 - [x] Add the favicon and browser metadata to the document head with focused automated coverage
 - [x] Verify local and Vercel browser-tab delivery, then save the completed checkpoint (Vercel deployment `398c988` is Ready)
+
+## Remove Workflow Sample Downloads
+
+- [x] Remove the Sample Files download section from the reusable workflow guide
+- [x] Remove template URLs and download handling from every workflow configuration
+- [x] Remove obsolete sample-template tests and update related guide coverage
+- [ ] Validate desktop/mobile workflows, synchronize to Vercel, and save the completed checkpoint

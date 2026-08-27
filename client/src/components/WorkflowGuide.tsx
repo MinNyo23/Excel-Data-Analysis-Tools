@@ -1,11 +1,4 @@
-import { Download, FileCheck2, FileSpreadsheet, FileUp, ShieldCheck } from "lucide-react";
-
-export type WorkflowSampleTemplate = {
-  label: string;
-  format: "CSV" | "XLSX";
-  filename: string;
-  href: string;
-};
+import { Download, FileCheck2, FileUp, ShieldCheck } from "lucide-react";
 
 export type WorkflowGuideContent = {
   title: string;
@@ -13,14 +6,9 @@ export type WorkflowGuideContent = {
   upload: string;
   process: string;
   output: string;
-  templates: WorkflowSampleTemplate[];
 };
 
-type WorkflowGuideProps = WorkflowGuideContent & {
-  onDownloadTemplate: (template: WorkflowSampleTemplate) => void;
-};
-
-export function WorkflowGuide({ title, purpose, upload, process, output, templates, onDownloadTemplate }: WorkflowGuideProps) {
+export function WorkflowGuide({ title, purpose, upload, process, output }: WorkflowGuideContent) {
   return (
     <aside className="workflow-guide" aria-labelledby="workflow-guide-title">
       <div className="workflow-guide-intro">
@@ -42,19 +30,6 @@ export function WorkflowGuide({ title, purpose, upload, process, output, templat
           <div><strong>3. Review and download</strong><p>{output}</p></div>
         </article>
       </div>
-      <section className="workflow-guide-templates" aria-label={`${title} sample templates`}>
-        <div className="workflow-guide-templates-heading">
-          <span><FileSpreadsheet size={15} /> SAMPLE FILES</span>
-          <p>Download a privacy-safe example with the expected columns, then upload it to try this workflow.</p>
-        </div>
-        <div className="workflow-guide-template-grid">
-          {templates.map(template => <button key={template.href} type="button" className="workflow-guide-template" onClick={() => onDownloadTemplate(template)}>
-            <span className="workflow-guide-template-format">{template.format}</span>
-            <span className="workflow-guide-template-label">{template.label}</span>
-            <Download size={15} aria-hidden="true" />
-          </button>)}
-        </div>
-      </section>
       <p className="workflow-guide-privacy"><ShieldCheck size={15} /> Your selected files are processed temporarily in memory. Workbook contents and downloaded files are not saved in the application database.</p>
     </aside>
   );

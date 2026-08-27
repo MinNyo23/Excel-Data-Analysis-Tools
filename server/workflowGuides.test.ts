@@ -16,7 +16,7 @@ describe("plain-language Excel workflow guides", () => {
     ["consolidation", "deletion-summary", "duplicates", "entity-summary", "addition-exit", "onboard", "ready-upload", "facility"].forEach(key => {
       expect(home).toMatch(new RegExp(`["']?${key}["']?\\s*:`));
     });
-    expect(home).toContain("<WorkflowGuide {...activeWorkflowGuide} onDownloadTemplate={downloadSampleTemplate} />");
+    expect(home).toContain("<WorkflowGuide {...activeWorkflowGuide} />");
   });
 
   it("aligns master consolidation file guidance with the supported CSV and XLSX formats", () => {

@@ -39,6 +39,11 @@ function AcceptedFileTags() {
   return <div className="accepted-file-tags" aria-label="Accepted file types"><span>.XLSX</span><span>.CSV</span></div>;
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function MappingSelect({ label, icon, value, columns, onChange }: { label: string; icon: ReactNode; value: string; columns: string[]; onChange: (value: string) => void }) {
   return <label className="mapping-select"><span>{icon}{label}</span><select value={value} onChange={event => onChange(event.target.value)} disabled={columns.length === 0}><option value="">Automatic detection</option>{columns.map(column => <option key={column} value={column}>{column}</option>)}</select></label>;
 }
@@ -60,11 +65,11 @@ export function PairedFileUploadPanel({ originalFile, secondFile, originalLabel,
     <div className="paired-dropzone-grid">
       <section className={`paired-file-zone ${dragTarget === "original" ? "is-dragging" : ""}`} {...dropHandlers("original")} role="button" tabIndex={0} onClick={() => originalInputRef.current?.click()} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") originalInputRef.current?.click(); }} aria-label={`Choose ${originalLabel}`}>
         <input ref={originalInputRef} type="file" accept=".xlsx,.csv" hidden onChange={event => selectFile("original", event.target.files?.[0])} />
-        <span className="paired-step-number">01</span><span className="paired-zone-icon"><FileSpreadsheet size={21} /></span><strong>{originalLabel}</strong><p>{originalFile ? originalFile.name : originalDescription}</p><AcceptedFileTags /><small>{originalFile ? "Selected · choose again to replace" : "Drop file here or browse"}</small>
+        <span className="paired-step-number">01</span><span className="paired-zone-icon"><FileSpreadsheet size={21} /></span><strong>{originalLabel}</strong><p>{originalFile ? originalFile.name : originalDescription}</p>{originalFile && <span className="selected-file-size"><CheckCircle2 size={13}/> Selected · {formatFileSize(originalFile.size)}</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "original" ? "Release to select this Original File" : originalFile ? "Selected · choose again to replace" : "Drop Original File here or browse"}</small>
       </section>
       <section className={`paired-file-zone ${dragTarget === "second" ? "is-dragging" : ""}`} {...dropHandlers("second")} role="button" tabIndex={0} onClick={() => secondInputRef.current?.click()} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") secondInputRef.current?.click(); }} aria-label={`Choose ${secondLabel}`}>
         <input ref={secondInputRef} type="file" accept=".xlsx,.csv" hidden onChange={event => selectFile("second", event.target.files?.[0])} />
-        <span className="paired-step-number">02</span><span className="paired-zone-icon"><FileUp size={21} /></span><strong>{secondLabel}</strong><p>{secondFile ? secondFile.name : secondDescription}</p><AcceptedFileTags /><small>{secondFile ? "Selected · choose again to replace" : "Drop file here or browse"}</small>
+        <span className="paired-step-number">02</span><span className="paired-zone-icon"><FileUp size={21} /></span><strong>{secondLabel}</strong><p>{secondFile ? secondFile.name : secondDescription}</p>{secondFile && <span className="selected-file-size"><CheckCircle2 size={13}/> Selected · {formatFileSize(secondFile.size)}</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "second" ? "Release to select this 2nd File" : secondFile ? "Selected · choose again to replace" : "Drop 2nd File here or browse"}</small>
       </section>
     </div>
     <details className="column-mapping-panel" open>

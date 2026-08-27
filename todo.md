@@ -453,3 +453,10 @@
 - [x] Add optional Phone, NRC, and Corporate Name column confirmation with safe server-side mapping support
 - [x] Add parsing progress feedback, clear multi-sheet export actions, and Reset / Process New Files controls
 - [x] Add focused coverage, validate desktop/mobile behavior, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `b045f92` is Ready)
+
+## Paired Upload-Zone Feedback
+
+- [x] Add clear selected-file size indicators to the Original File and 2nd File upload zones
+- [x] Add accessible drag-over helper text and visual feedback for each file role
+- [x] Add focused test coverage and verify desktop/mobile upload-zone presentation
+- [ ] Synchronize the verified update to Vercel and save the completed checkpoint

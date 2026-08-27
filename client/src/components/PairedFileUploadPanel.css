@@ -12,9 +12,11 @@
 .paired-zone-icon { display: grid; width: 37px; height: 37px; place-items: center; border-radius: 11px; color: #187550; background: #dff1df; }
 .paired-file-zone strong { display: block; margin-top: 14px; color: #254f36; font-size: 13px; }
 .paired-file-zone p { min-height: 32px; margin: 4px 0 9px; color: #718176; font-size: 10px; line-height: 1.45; word-break: break-word; }
+.selected-file-size { display: inline-flex; align-items: center; gap: 4px; margin: -4px 0 8px; color: #287251; font-size: 9px; font-weight: 800; }
 .accepted-file-tags { display: flex; gap: 5px; margin-top: auto; }
 .accepted-file-tags span { padding: 3px 5px; border: 1px solid #c8e0ca; border-radius: 5px; color: #458052; background: rgba(255,255,255,.75); font-family: 'DM Mono', monospace; font-size: 8px; font-weight: 800; }
-.paired-file-zone small { margin-top: 7px; color: #809084; font-size: 9px; }
+.paired-file-zone small { margin-top: 7px; color: #6f8776; font-size: 9px; font-weight: 600; }
+.paired-file-zone.is-dragging small { color: #1f754c; }
 .column-mapping-panel { padding: 13px; border: 1px solid #d5e8d7; border-radius: 14px; background: #fbfefb; }
 .column-mapping-panel summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #2d5f41; cursor: pointer; list-style: none; }
 .column-mapping-panel summary::-webkit-details-marker { display: none; }

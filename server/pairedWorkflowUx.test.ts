@@ -14,6 +14,10 @@ describe("paired matching workflow UX", () => {
     expect(panel).toContain("2nd File");
     expect(panel).toContain(".XLSX");
     expect(panel).toContain(".CSV");
+    expect(panel).toContain("formatFileSize");
+    expect(panel).toContain("Selected · {formatFileSize(originalFile.size)}");
+    expect(panel).toContain("Release to select this Original File");
+    expect(panel).toContain("Release to select this 2nd File");
     expect(panel).toContain("OPTIONAL COLUMN CONFIRMATION");
     expect(panel).toContain("Phone");
     expect(panel).toContain("NRC");

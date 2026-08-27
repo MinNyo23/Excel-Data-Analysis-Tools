@@ -26,9 +26,14 @@ describe("dedicated login security", () => {
     expect(login).not.toContain('type="password"');
     expect(login).toContain("No password is collected by this application.");
     expect(login).toContain("RESEND_COOLDOWN_SECONDS = 60");
+    expect(login).not.toContain('href="/terms"');
+    expect(login).toContain("Terms &amp; Conditions are available after sign-in.");
     expect(app).toContain('<Route path={"/login"} component={Login} />');
     expect(app).toContain("<AuthGate><Home /></AuthGate>");
     expect(app).toContain('<Route path={"/"}><AuthGate><Home /></AuthGate></Route>');
+    expect(app).toContain('<Route path={"/terms"}><AuthGate><TermsConditions /></AuthGate></Route>');
+    expect(app).toContain('if (location.startsWith("/login") || loading || !isAuthenticated) return routedContent;');
+    expect(source("client/src/components/AuthGate.tsx")).toContain("<Redirect to={getLoginPathForCurrentLocation()} />");
     expect(authEntry).toContain("signInWithOtp");
     expect(authEntry).toContain("emailRedirectTo: window.location.origin");
     expect(authEntry).not.toContain("window.prompt");

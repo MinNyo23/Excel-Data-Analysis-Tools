@@ -18,7 +18,7 @@ describe("footer and terms contract", () => {
     const terms = readFileSync(path.resolve(process.cwd(), "client/src/pages/TermsConditions.tsx"), "utf8");
     const bilingualStyles = readFileSync(path.resolve(process.cwd(), "client/src/pages/TermsConditions.css"), "utf8");
 
-    expect(app).toContain('<Route path={"/terms"} component={TermsConditions} />');
+    expect(app).toContain('<Route path={"/terms"}><AuthGate><TermsConditions /></AuthGate></Route>');
     expect(terms).toContain("does not intentionally store uploaded workbooks");
     expect(terms).toContain("Acceptable use");
     expect(terms).toContain("not legal advice");

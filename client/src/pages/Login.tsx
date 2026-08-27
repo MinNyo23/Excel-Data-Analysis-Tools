@@ -81,7 +81,7 @@ export default function Login() {
           <Button type="submit" className="login-submit" disabled={isSending || cooldown > 0}>{isSending ? <><Loader2 className="animate-spin" size={17}/> Sending secure link…</> : cooldown > 0 ? `You can resend in ${cooldown}s` : <><Mail size={17}/>{usesSupabaseAuth ? "Email me a secure sign-in link" : "Continue with secure sign-in"}</>}</Button>
         </form>
         <div className="login-privacy-note"><ShieldCheck size={15}/><p><strong>What is saved:</strong> your provider-managed identity and limited account metadata. <strong>What is not saved:</strong> passwords, uploaded workbooks, worksheets, previews, or output files.</p></div>
-        <p className="login-terms">By continuing, you agree to use the workspace responsibly. <a href="/terms">View Terms &amp; Conditions</a></p>
+        <p className="login-terms">By continuing, you agree to use the workspace responsibly. Terms &amp; Conditions are available after sign-in.</p>
       </div>
     </section>
   </main>;

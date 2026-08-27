@@ -12,6 +12,7 @@ import RouteTransition from "./components/RouteTransition";
 import Login from "./pages/Login";
 import { AuthGate } from "./components/AuthGate";
 import { useLocation } from "wouter";
+import { useAuth } from "./_core/hooks/useAuth";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -22,10 +23,10 @@ function Router() {
       <Route path={"/tools/:tool"}><AuthGate><Home /></AuthGate></Route>
       <Route path={"/profile"}><Redirect to="/account" /></Route>
       <Route path={"/account"}><AuthGate><AccountManagement /></AuthGate></Route>
-      <Route path={"/terms"} component={TermsConditions} />
-      <Route path={"/404"} component={NotFound} />
+      <Route path={"/terms"}><AuthGate><TermsConditions /></AuthGate></Route>
+      <Route path={"/404"}><AuthGate><NotFound /></AuthGate></Route>
       {/* Final fallback route */}
-      <Route component={NotFound} />
+      <Route><AuthGate><NotFound /></AuthGate></Route>
     </Switch>
   );
 }
@@ -37,8 +38,9 @@ function Router() {
 
 function AppContent() {
   const [location] = useLocation();
+  const { isAuthenticated, loading } = useAuth();
   const routedContent = <RouteTransition><Router /></RouteTransition>;
-  if (location.startsWith("/login")) return routedContent;
+  if (location.startsWith("/login") || loading || !isAuthenticated) return routedContent;
   return <DashboardLayout>{routedContent}</DashboardLayout>;
 }
 

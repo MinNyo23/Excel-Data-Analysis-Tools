@@ -512,4 +512,12 @@
 - [x] Preserve login identity and encrypted profile data during standard sign-out-and-cleanup behavior
 - [x] Add security regression tests for user-scoped logout cleanup, cache clearing, session termination, and unified-account navigation
 - [x] Validate signed-out account routing on desktop and mobile; authenticated account controls are covered by source and procedure contract tests
-- [ ] Synchronize the verified unified-account and secure logout cleanup release to Vercel and confirm the live bundle
+- [x] Synchronize the verified unified-account and secure logout cleanup release to Vercel and confirm the live bundle (GitHub commit `eafa36e`; canonical bundle includes the secure sign-out-and-clear-history controls)
+
+## Restrict Internal Pages Until Sign-In
+
+- [x] Remove the pre-login Terms & Conditions navigation from the dedicated sign-in page
+- [x] Require authentication before rendering the Terms & Conditions route or any other internal page
+- [x] Add regression coverage for signed-out route redirection and the absence of internal-page links from the login UI
+- [x] Verify signed-out Terms, workflow, and unknown routes do not render internal content before redirecting to sign-in
+- [ ] Synchronize the restriction to Vercel and confirm the live bundle

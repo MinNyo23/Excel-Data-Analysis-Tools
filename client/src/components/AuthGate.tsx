@@ -1,6 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
-import { useLocation } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginPathForCurrentLocation, takeLoginReturnPath } from "@/lib/loginNavigation";
 
@@ -9,7 +9,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) setLocation(getLoginPathForCurrentLocation());
     if (!loading && isAuthenticated && location === "/") {
       const returnPath = takeLoginReturnPath();
       if (returnPath !== "/") setLocation(returnPath);
@@ -17,6 +16,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, [isAuthenticated, loading, location, setLocation]);
 
   if (loading) return <main className="auth-gate-loading" aria-live="polite"><Loader2 className="animate-spin" size={22}/><span>Checking your secure session…</span></main>;
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated) return <Redirect to={getLoginPathForCurrentLocation()} />;
   return <>{children}</>;
 }

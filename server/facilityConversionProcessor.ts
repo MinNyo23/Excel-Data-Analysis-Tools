@@ -1,0 +1,2 @@
+import {spawn} from 'node:child_process';import path from 'node:path';
+export function processFacilityConversion(file:{name:string;data:string}):Promise<any>{return new Promise((resolve,reject)=>{const p=spawn('python3',[path.resolve(process.cwd(),'scripts/process_facility_conversion.py')],{stdio:['pipe','pipe','pipe']});let o='',e='';p.stdout.on('data',c=>o+=c);p.stderr.on('data',c=>e+=c);p.on('close',c=>c?reject(new Error(e||'Facility conversion failed')):resolve(JSON.parse(o)));p.stdin.end(JSON.stringify({file}));});}

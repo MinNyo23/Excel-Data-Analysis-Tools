@@ -1,0 +1,59 @@
+.privacy-diagram {
+  display: grid;
+  gap: 10px;
+  margin: 13px 0 2px;
+  padding: 14px;
+  border: 1px solid #c9dfc9;
+  border-radius: 12px;
+  background: #fbfef9;
+}
+
+.privacy-diagram figcaption {
+  display: grid;
+  gap: 3px;
+}
+
+.privacy-diagram strong {
+  color: #245b45;
+  font-size: 12px;
+}
+
+.privacy-diagram figcaption span,
+.privacy-diagram-note {
+  color: #62766a;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.privacy-diagram figcaption a {
+  width: fit-content;
+  color: #246044;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.privacy-diagram img {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  height: auto;
+  border: 1px solid #dce8db;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.privacy-diagram-viewport {
+  overflow-x: auto;
+  border-radius: 8px;
+}
+
+.privacy-diagram-note {
+  margin: 0;
+}
+
+@media (max-width: 680px) {
+  .privacy-diagram { padding: 10px; }
+  .privacy-diagram img { min-width: 620px; }
+}

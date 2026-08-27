@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1787132742002,
+      "tag": "0000_uneven_korvac",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1787220740548,
+      "tag": "0001_nosy_psylocke",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787302591725,
+      "tag": "0002_loving_jack_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787537173508,
+      "tag": "0003_rapid_darkstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787545881013,
+      "tag": "0004_cynical_joystick",
+      "breakpoints": true
+    }
+  ]
+}

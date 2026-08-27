@@ -1,0 +1,20 @@
+flowchart TD
+    A([1. Sign in]) --> B[2. Choose the Excel workflow you need]
+    B --> C[3. Select CSV or XLSX files]
+    C --> D{File accepted?}
+    D -->|No| E[Read the message, then choose a valid CSV/XLSX file]
+    E --> C
+    D -->|Yes| F[4. Click the process button]
+    F --> G[5. The tool processes your file securely in memory]
+    G --> H[6. Review the preview, totals, and any notices]
+    H --> I[7. Download the finished XLSX file to your device]
+    I --> J([Finished])
+
+    K[Your file privacy:<br/>workbook data is not saved<br/>to the application database] -. applies throughout .-> C
+
+    classDef step fill:#edf7ed,stroke:#4d8a59,color:#1f4430,stroke-width:2px;
+    classDef choice fill:#fff7df,stroke:#b8842a,color:#604300,stroke-width:2px;
+    classDef privacy fill:#f5f8ff,stroke:#6b88b5,color:#31466a,stroke-width:1.5px;
+    class A,B,C,E,F,G,H,I,J step;
+    class D choice;
+    class K privacy;

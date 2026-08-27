@@ -1,0 +1,31 @@
+flowchart TD
+    U[Signed-in user] --> B[React + TypeScript browser application]
+    B -->|HTTPS tRPC request<br/>base64 CSV/XLSX| G
+
+    subgraph SG[Express + tRPC security boundary]
+      direction TB
+      G[Express security gateway] --> H[Security headers<br/>CSP, HSTS, nosniff, COOP/CORP]
+      G --> O[Origin and API guards]
+      O --> A[OAuth session verification<br/>24-hour HttpOnly cookie]
+      A --> R[Per-user route rate limits]
+      R --> V[CSV/XLSX validator<br/>name, size, batch and archive checks]
+    end
+
+    subgraph WP[In-memory workbook processing]
+      direction TB
+      V -->|CSV only| N[Python CSV normalizer<br/>pandas + openpyxl]
+      V -->|XLSX| P[Workbook workflow processor<br/>Python + pandas + openpyxl]
+      N -->|in-memory XLSX| P
+      P --> D[Preview-safe response and<br/>generated XLSX bytes]
+    end
+
+    D --> B
+    B -->|Browser download| U
+    P -. No workbook bytes, sheet cells,<br/>preview rows, or generated files<br/>written to DB or object storage .-> X[No persistent workbook storage]
+
+    subgraph PS[Persistent account data only]
+      direction TB
+      A --> M[TypeScript database helpers<br/>Drizzle ORM]
+      M -->|Production remote connection:<br/>TLS certificate validation| DB[(Managed MySQL/TiDB database)]
+      DB --> T[User identity<br/>encrypted profile payload<br/>metadata-only history<br/>retention setting<br/>safe audit events]
+    end

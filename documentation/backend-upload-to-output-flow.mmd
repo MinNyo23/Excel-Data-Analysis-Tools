@@ -1,0 +1,37 @@
+sequenceDiagram
+    autonumber
+    actor U as Signed-in user
+    participant B as React browser
+    participant E as Express + tRPC backend
+    participant S as Security and validation layer
+    participant N as CSV normalizer (Python)<br/>only for CSV
+    participant W as Selected workflow (Python)<br/>pandas + openpyxl
+    participant D as MySQL/TiDB database
+
+    U->>B: Select CSV or XLSX
+    B->>E: HTTPS tRPC upload request<br/>(active file bytes)
+    E->>S: Validate session, rate, origin,<br/>type, size, file count, archive safety
+    alt Request rejected
+        S-->>B: Security or validation error
+    else Valid CSV
+        S->>N: Send CSV bytes by stdin
+        N->>N: pandas reads CSV and BytesIO creates XLSX
+        N-->>E: Normalized XLSX bytes by stdout
+        E->>W: Send active workbook bytes by stdin
+        W->>W: pandas analysis and openpyxl output<br/>using in-memory buffers
+        W-->>E: Preview + output XLSX bytes by stdout
+        E-->>B: Processing response
+        B-->>U: Show preview and download XLSX locally
+        B->>E: Optional metadata-only history record
+        E->>D: Save safe user-scoped metadata only
+    else Valid XLSX
+        S->>W: Send active workbook bytes by stdin
+        W->>W: pandas analysis and openpyxl output<br/>using in-memory buffers
+        W-->>E: Preview + output XLSX bytes by stdout
+        E-->>B: Processing response
+        B-->>U: Show preview and download XLSX locally
+        B->>E: Optional metadata-only history record
+        E->>D: Save safe user-scoped metadata only
+    end
+
+    Note over E,W: No file-system, object-storage, or database<br/>write occurs for workbook bytes or sheet data.

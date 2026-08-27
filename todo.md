@@ -466,4 +466,4 @@
 - [x] Review the current English Terms page structure and confirm Myanmar font support
 - [x] Add equivalent plain-language Myanmar translations alongside the English Terms content
 - [x] Add focused coverage and verify English/Myanmar readability on desktop and mobile
-- [ ] Synchronize the bilingual Terms page to Vercel and save the completed checkpoint (Vercel deployment `b5f0601` failed during integration provisioning before build; delivery retry and direct production verification are pending)
+- [x] Synchronize the bilingual Terms page to Vercel and save the completed checkpoint (initial deployment `b5f0601` failed during integration provisioning; retry `a78f448` is Ready after the optional provisioning stage was skipped, and the canonical bundle was verified to include Myanmar Terms text)

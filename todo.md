@@ -452,4 +452,4 @@
 - [x] Add distinct numbered Original File and 2nd File drag-and-drop zones with clear CSV/XLSX tags
 - [x] Add optional Phone, NRC, and Corporate Name column confirmation with safe server-side mapping support
 - [x] Add parsing progress feedback, clear multi-sheet export actions, and Reset / Process New Files controls
-- [ ] Add focused coverage, validate desktop/mobile behavior, synchronize to Vercel, and save the completed checkpoint
+- [x] Add focused coverage, validate desktop/mobile behavior, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `b045f92` is Ready)

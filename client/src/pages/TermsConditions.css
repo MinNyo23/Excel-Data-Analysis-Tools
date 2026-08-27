@@ -1,0 +1,8 @@
+.terms-title-my { margin: 1.25rem 0 .45rem; color: #315b41; font-family: 'Noto Sans Myanmar', 'Myanmar Text', 'Padauk', sans-serif; font-size: 1.35rem; font-weight: 800; line-height: 1.65; }
+.terms-title-my em { color: #197153; font-style: normal; }
+.terms-copy-my { font-family: 'Noto Sans Myanmar', 'Myanmar Text', 'Padauk', sans-serif !important; line-height: 1.9 !important; }
+.terms-date-my { margin-top: .3rem !important; font-family: 'Noto Sans Myanmar', 'Myanmar Text', 'Padauk', sans-serif !important; font-size: .76rem !important; }
+.terms-grid h3 { margin: 1rem 0 .38rem; color: #396248; font-family: 'Noto Sans Myanmar', 'Myanmar Text', 'Padauk', sans-serif; font-size: .9rem; line-height: 1.6; }
+.terms-grid p + .terms-copy-my { margin-top: .15rem; }
+.terms-notice-my { display: block; margin-top: .95rem; font-family: 'Noto Sans Myanmar', 'Myanmar Text', 'Padauk', sans-serif; }
+@media (max-width: 640px) { .terms-title-my { font-size: 1.16rem; } .terms-copy-my { line-height: 1.85 !important; } }

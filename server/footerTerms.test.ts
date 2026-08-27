@@ -16,11 +16,18 @@ describe("footer and terms contract", () => {
   it("registers terms content that explains the in-memory file boundary and acceptable use", () => {
     const app = readFileSync(path.resolve(process.cwd(), "client/src/App.tsx"), "utf8");
     const terms = readFileSync(path.resolve(process.cwd(), "client/src/pages/TermsConditions.tsx"), "utf8");
+    const bilingualStyles = readFileSync(path.resolve(process.cwd(), "client/src/pages/TermsConditions.css"), "utf8");
 
     expect(app).toContain('<Route path={"/terms"} component={TermsConditions} />');
     expect(terms).toContain("does not intentionally store uploaded workbooks");
     expect(terms).toContain("Acceptable use");
     expect(terms).toContain("not legal advice");
+    expect(terms).toContain('lang="my"');
+    expect(terms).toContain("စည်းမျဉ်းများနှင့်");
+    expect(terms).toContain("ဝန်ဆောင်မှုနှင့် ဖိုင်များ");
+    expect(terms).toContain("လက်ခံနိုင်သော အသုံးပြုမှု");
+    expect(terms).toContain("ကိုယ်ရေးအချက်အလက်");
+    expect(bilingualStyles).toContain("'Noto Sans Myanmar'");
   });
 
   it("uses a professional footer background with smooth accessible link interactions", () => {

@@ -385,3 +385,9 @@
 - [x] Review the existing Tool Overview privacy diagram and its explanatory reference text
 - [x] Replace the existing image with the user-provided end-user journey flow and update its accessible text and reference copy
 - [x] Add coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint
+
+## Production Journey-Flow Image Fix
+
+- [x] Inspect the Vercel production page and the supplied journey-flow image asset response
+- [ ] Fix the production asset delivery path without storing the image inside the application source
+- [ ] Verify the live image is visible, synchronize the fix, and save the corrected checkpoint

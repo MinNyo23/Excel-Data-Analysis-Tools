@@ -390,4 +390,5 @@
 
 - [x] Inspect the Vercel production page and the supplied journey-flow image asset response
 - [x] Fix the production asset delivery path without storing the image inside the application source
-- [ ] Verify the live image is visible, synchronize the fix, and save the corrected checkpoint
+- [x] Verify the live image is visible, synchronize the fix, and save the corrected checkpoint (Vercel deployment `f357121` is Ready)
+- [x] Confirm the live Vercel Tool Overview renders the supplied journey-flow image without a broken-image indicator

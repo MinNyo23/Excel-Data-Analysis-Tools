@@ -357,7 +357,7 @@
 
 ## Footer Developer Credit and Terms
 
-- [ ] Review the existing footer placement and application routes
-- [ ] Add a responsive developer credit and Terms & Conditions link to the footer
-- [ ] Add an accessible Terms & Conditions page that explains service, privacy, and acceptable-use boundaries
-- [ ] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint
+- [x] Review the existing footer placement and application routes
+- [x] Add a responsive developer credit and Terms & Conditions link to the footer
+- [x] Add an accessible Terms & Conditions page that explains service, privacy, and acceptable-use boundaries
+- [x] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint

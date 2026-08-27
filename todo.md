@@ -423,4 +423,4 @@
 - [x] Design privacy-safe sample rows and truthful CSV/XLSX template schemas for all workflows
 - [x] Add accessible per-workflow CSV and XLSX template download controls beside the usage guidance
 - [x] Add automated coverage for the template content, file types, and download controls
-- [ ] Verify desktop/mobile presentation, synchronize to Vercel, and save the completed checkpoint
+- [x] Verify desktop/mobile presentation, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `16b0598` is Ready)

@@ -395,8 +395,8 @@
 
 ## Journey-Flow Image Loading Experience
 
-- [ ] Review the journey-flow image markup and responsive image styles
-- [ ] Add an accessible loading skeleton and smooth fade-in after image load
-- [ ] Preserve error feedback and reduced-motion support for the image-loading state
-- [ ] Prevent benign signed-out query feedback from obscuring the Tool Overview image
-- [ ] Add automated coverage, verify responsive layouts, synchronize to Vercel, and save the completed checkpoint
+- [x] Review the journey-flow image markup and responsive image styles
+- [x] Add an accessible loading skeleton and smooth fade-in after image load
+- [x] Preserve error feedback and reduced-motion support for the image-loading state
+- [x] Prevent benign signed-out query feedback from obscuring the Tool Overview image
+- [x] Add automated coverage, verify responsive layouts, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `e3ae600` is Ready)

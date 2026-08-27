@@ -376,6 +376,6 @@
 
 ## Route Transition Refinement
 
-- [ ] Review active-route rendering and current animation patterns
-- [ ] Add a shared smooth route-transition wrapper with reduced-motion support
-- [ ] Add automated coverage, verify routes on desktop and mobile, synchronize to Vercel, and save the completed checkpoint
+- [x] Review active-route rendering and current animation patterns
+- [x] Add a shared smooth route-transition wrapper with reduced-motion support
+- [x] Add automated coverage, verify routes on desktop and mobile, synchronize to Vercel, and save the completed checkpoint

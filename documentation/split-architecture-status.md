@@ -72,6 +72,8 @@ The dedicated `/profile` page and sidebar navigation were added after the prior 
 
 Vercel completed the authorized `b045ea5` build successfully in 16 seconds. The production deployment now contains the dedicated profile-and-history page source and is ready for a live route check.
 
+The canonical production URL, `https://excel-master-file-tool.vercel.app/profile`, now returns HTTP 200 rather than the earlier 404. The served JavaScript bundle includes the new **My profile** navigation item, the **Past file processing** view, and the statement that uploaded workbooks, worksheet rows, previews, and generated files are never saved. This verifies that the deployed route contains the intended metadata-only privacy boundary. The signed-in profile and history records remain protected by Supabase authentication and row-level access controls; no test account data was entered during this route check.
+
 Earlier API-based preview deployment calls returned a permission inconsistency, but this did not alter the active Vercel project. The browser dashboard is now the source of truth for the triggered Git deployment status.
 
 ## Important Architecture Constraint

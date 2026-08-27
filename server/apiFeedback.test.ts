@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getFriendlyApiMessage, getRateLimitRetrySeconds } from "../client/src/lib/apiFeedback";
+import { getFriendlyApiMessage, getRateLimitRetrySeconds, isPassiveCurrentUserQuery, isUnauthenticatedApiError } from "../client/src/lib/apiFeedback";
 
 describe("API feedback helpers", () => {
   it("detects a typed rate-limit retry window and returns a helpful wait message", () => {
@@ -17,5 +17,15 @@ describe("API feedback helpers", () => {
     expect(getFriendlyApiMessage({ data: { code: "UNAUTHORIZED", httpStatus: 401 } }, "Fallback")).toMatch(/sign in again/i);
     expect(getFriendlyApiMessage({ data: { code: "BAD_REQUEST", httpStatus: 400 } }, "Fallback")).toMatch(/selected file or settings/i);
     expect(getFriendlyApiMessage(new Error("internal detail"), "The requested workbook could not be processed. Please try again.")).toBe("The requested workbook could not be processed. Please try again.");
+  });
+
+  it("identifies an expected signed-out API response so passive account reads can stay quiet", () => {
+    expect(isUnauthenticatedApiError({ data: { code: "UNAUTHORIZED", httpStatus: 401 } })).toBe(true);
+    expect(isUnauthenticatedApiError({ data: { code: "FORBIDDEN", httpStatus: 403 } })).toBe(false);
+  });
+
+  it("recognizes only the passive current-user query for quiet signed-out feedback", () => {
+    expect(isPassiveCurrentUserQuery([["auth", "me"], { type: "query" }])).toBe(true);
+    expect(isPassiveCurrentUserQuery([["profile", "me"], { type: "query" }])).toBe(false);
   });
 });

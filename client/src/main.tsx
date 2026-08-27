@@ -7,7 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { startLogin } from "./const";
 import { supabase } from "./lib/supabase";
-import { getFriendlyApiMessage, reportRateLimitIfPresent } from "./lib/apiFeedback";
+import { getFriendlyApiMessage, isPassiveCurrentUserQuery, isUnauthenticatedApiError, reportRateLimitIfPresent } from "./lib/apiFeedback";
 import { RateLimitFeedback, RateLimitFeedbackProvider } from "./components/RateLimitFeedback";
 import { toast } from "sonner";
 import "./index.css";
@@ -29,6 +29,9 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
+    // The unauthenticated account query establishes the signed-out UI. It is
+    // expected before a user signs in and should not cover the Tool Overview.
+    if (isUnauthenticatedApiError(error) || isPassiveCurrentUserQuery(event.query.queryKey)) return;
     const retryAfterSeconds = reportRateLimitIfPresent(error);
     toast.error(retryAfterSeconds ? "Requests are temporarily paused. See the countdown before trying again." : getFriendlyApiMessage(error, "We could not load this information. Please try again."));
     console.error("[API Query Error]", error);

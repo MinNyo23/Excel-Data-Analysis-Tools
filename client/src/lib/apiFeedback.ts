@@ -26,10 +26,21 @@ export function getRateLimitRetrySeconds(error: unknown) {
   return Number.isFinite(requested) ? Math.max(1, Math.min(600, Math.ceil(requested))) : 60;
 }
 
+export function isUnauthenticatedApiError(error: unknown) {
+  const details = apiErrorDetails(error);
+  return details.code === "UNAUTHORIZED" || details.httpStatus === 401;
+}
+
+export function isPassiveCurrentUserQuery(queryKey: unknown) {
+  if (!Array.isArray(queryKey)) return false;
+  const isCurrentUserPath = (candidate: unknown) => Array.isArray(candidate) && candidate[0] === "auth" && candidate[1] === "me";
+  return isCurrentUserPath(queryKey) || queryKey.some(isCurrentUserPath);
+}
+
 export function getFriendlyApiMessage(error: unknown, fallback: string) {
   const details = apiErrorDetails(error);
   if (getRateLimitRetrySeconds(error)) return "You have reached a temporary request limit. Please wait for the countdown before trying again.";
-  if (details.code === "UNAUTHORIZED" || details.httpStatus === 401) return "Your session has ended. Please sign in again and retry your action.";
+  if (isUnauthenticatedApiError(error)) return "Your session has ended. Please sign in again and retry your action.";
   if (details.code === "FORBIDDEN" || details.httpStatus === 403) return "This action is not available for your account or request.";
   if (details.httpStatus === 413 || /too large|exceeds the.*limit/i.test(details.message)) return "The upload is too large. Choose a smaller CSV or XLSX file and try again.";
   if (details.code === "BAD_REQUEST") return "We could not use that request. Please check your selected file or settings and try again.";

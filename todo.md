@@ -392,3 +392,11 @@
 - [x] Fix the production asset delivery path without storing the image inside the application source
 - [x] Verify the live image is visible, synchronize the fix, and save the corrected checkpoint (Vercel deployment `f357121` is Ready)
 - [x] Confirm the live Vercel Tool Overview renders the supplied journey-flow image without a broken-image indicator
+
+## Journey-Flow Image Loading Experience
+
+- [ ] Review the journey-flow image markup and responsive image styles
+- [ ] Add an accessible loading skeleton and smooth fade-in after image load
+- [ ] Preserve error feedback and reduced-motion support for the image-loading state
+- [ ] Prevent benign signed-out query feedback from obscuring the Tool Overview image
+- [ ] Add automated coverage, verify responsive layouts, synchronize to Vercel, and save the completed checkpoint

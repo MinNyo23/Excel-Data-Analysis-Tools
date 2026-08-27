@@ -4,7 +4,7 @@ import { consumeRateLimit, mutationOriginIsTrusted, securityHeaders, validateUpl
 import { uploadedFile } from "./routers";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { SESSION_MAX_AGE_MS } from "../shared/const";
-import { isSupportedWorkbookFileName } from "../shared/uploadLimits";
+import { getWorkbookSelectionError, isSupportedWorkbookFileName, MAX_UPLOAD_FILE_BYTES } from "../shared/uploadLimits";
 
 function safeXlsxBase64(entryCount = 1) {
   const local = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
@@ -36,6 +36,9 @@ describe("application security controls", () => {
     expect(isSupportedWorkbookFileName("source.XLSX")).toBe(true);
     expect(isSupportedWorkbookFileName("source.xls")).toBe(false);
     expect(isSupportedWorkbookFileName("source.pdf")).toBe(false);
+    expect(getWorkbookSelectionError({ name: "source.xlsx", size: MAX_UPLOAD_FILE_BYTES })).toBeNull();
+    expect(getWorkbookSelectionError({ name: "too-large.xlsx", size: MAX_UPLOAD_FILE_BYTES + 1 })).toBe("too-large.xlsx is too large. Choose a file no larger than 10 MB.");
+    expect(getWorkbookSelectionError({ name: "source.pdf", size: 10 })).toMatch(/Only CSV and XLSX/);
     expect(validateUploadedWorkbook({ name: "source.xlsx", data: safeXlsxBase64() })).toBeNull();
     expect(validateUploadedWorkbook({ name: "source.csv", data: Buffer.from("Name,Entity\nA,One\n").toString("base64") })).toBeNull();
     expect(validateUploadedWorkbook({ name: "source.xls", data: safeXlsxBase64() })).toMatch(/Only CSV and XLSX/);

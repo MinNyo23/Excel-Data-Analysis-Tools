@@ -486,4 +486,11 @@
 - [x] Show an immediate accessible helper message when a selected paired file is not CSV or XLSX
 - [x] Display the maximum permitted file size beside each selected-file size indicator
 - [x] Add regression coverage and verify both paired workflow pages on desktop and mobile
-- [ ] Synchronize the validated paired-upload feedback update to Vercel and confirm the production bundle
+- [x] Synchronize the validated paired-upload feedback update to Vercel and confirm the production bundle (GitHub commit `2acdb26`; canonical bundle includes the inline unsupported-file and 10 MB limit labels)
+
+## Immediate Oversized-File Warning
+
+- [x] Add an accessible immediate warning when a selected paired upload exceeds the shared 10 MB limit
+- [x] Keep a valid previously selected file unchanged when an oversized replacement is attempted
+- [x] Add regression coverage and verify the paired upload zones on desktop and mobile
+- [ ] Synchronize the verified warning to Vercel and confirm the production bundle

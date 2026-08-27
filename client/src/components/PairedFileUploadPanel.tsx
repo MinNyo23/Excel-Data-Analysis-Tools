@@ -2,7 +2,7 @@ import { Building2, CheckCircle2, FileSpreadsheet, FileUp, Loader2, Phone, Rotat
 import { useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { MAX_UPLOAD_FILE_SIZE_LABEL, isSupportedWorkbookFileName } from "@shared/uploadLimits";
+import { MAX_UPLOAD_FILE_SIZE_LABEL, getWorkbookSelectionError } from "@shared/uploadLimits";
 import "./PairedFileUploadPanel.css";
 
 export type PairMapping = {
@@ -56,8 +56,9 @@ export function PairedFileUploadPanel({ originalFile, secondFile, originalLabel,
   const [selectionError, setSelectionError] = useState<{ target: "original" | "second"; message: string } | null>(null);
   const selectFile = (target: "original" | "second", file?: File) => {
     if (!file) return;
-    if (!isSupportedWorkbookFileName(file.name)) {
-      setSelectionError({ target, message: "Only CSV and XLSX files are allowed. Choose a file ending in .csv or .xlsx." });
+    const error = getWorkbookSelectionError(file);
+    if (error) {
+      setSelectionError({ target, message: error });
       if (target === "original" && originalInputRef.current) originalInputRef.current.value = "";
       if (target === "second" && secondInputRef.current) secondInputRef.current.value = "";
       return;

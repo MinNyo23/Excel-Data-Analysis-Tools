@@ -10,14 +10,16 @@ describe("paired matching workflow UX", () => {
   it("provides distinct accessible paired-file zones, accepted type tags, optional mapping, progress, reset, and multi-sheet export controls", () => {
     const panel = source("client/src/components/PairedFileUploadPanel.tsx");
     const home = source("client/src/pages/Home.tsx");
+    const uploadLimits = source("shared/uploadLimits.ts");
     expect(home).toContain('originalLabel="Original File"');
     expect(panel).toContain("2nd File");
     expect(panel).toContain(".XLSX");
     expect(panel).toContain(".CSV");
     expect(panel).toContain("formatFileSize");
     expect(panel).toContain("Selected · {formatFileSize(originalFile.size)} · {MAX_UPLOAD_FILE_SIZE_LABEL} max");
-    expect(panel).toContain("isSupportedWorkbookFileName(file.name)");
-    expect(panel).toContain("Only CSV and XLSX files are allowed.");
+    expect(panel).toContain("getWorkbookSelectionError(file)");
+    expect(uploadLimits).toContain("Only CSV and XLSX files are allowed.");
+    expect(uploadLimits).toContain("Choose a file no larger than ${MAX_UPLOAD_FILE_SIZE_LABEL}.");
     expect(panel).toContain('role="alert"');
     expect(panel).toContain("Release to select this Original File");
     expect(panel).toContain("Release to select this 2nd File");

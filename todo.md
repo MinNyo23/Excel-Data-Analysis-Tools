@@ -367,3 +367,9 @@
 - [x] Review the shared footer’s current background and link styles
 - [x] Add a subtle professional footer background plus smooth hover and keyboard-focus effects
 - [x] Verify the refined footer on desktop and mobile, synchronize to Vercel, and save the completed checkpoint
+
+## Sidebar Navigation Interaction Refinement
+
+- [ ] Review current sidebar navigation classes and interaction states
+- [ ] Add smooth hover, keyboard-focus, active-press, and reduced-motion behavior to sidebar links
+- [ ] Verify desktop and mobile navigation, synchronize to Vercel, and save the completed checkpoint

@@ -382,6 +382,6 @@
 
 ## Tool Overview Journey-Flow Diagram Update
 
-- [ ] Review the existing Tool Overview privacy diagram and its explanatory reference text
-- [ ] Replace the existing image with the user-provided end-user journey flow and update its accessible text and reference copy
-- [ ] Add coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint
+- [x] Review the existing Tool Overview privacy diagram and its explanatory reference text
+- [x] Replace the existing image with the user-provided end-user journey flow and update its accessible text and reference copy
+- [x] Add coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint

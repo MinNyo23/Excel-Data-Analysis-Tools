@@ -331,9 +331,9 @@
 
 ## Dedicated Profile and Account Settings Page
 
-- [ ] Review existing encrypted profile, account-export, and metadata-history features for reuse
-- [ ] Add a dedicated signed-in profile page with editable encrypted account settings
-- [ ] Add a user-scoped processing-history view that exposes metadata only and no workbook data
-- [ ] Add profile-page navigation and protected unauthenticated states
-- [ ] Add automated coverage and responsive verification for the dedicated profile and history experience
-- [ ] Synchronize the dedicated profile page changes to the Vercel-linked repository and verify the deployed route
+- [x] Review existing encrypted profile, account-export, and metadata-history features for reuse
+- [x] Add a dedicated signed-in profile page with editable encrypted account settings
+- [x] Add a user-scoped processing-history view that exposes metadata only and no workbook data
+- [x] Add profile-page navigation and protected unauthenticated states
+- [x] Add automated coverage and responsive verification for the dedicated profile and history experience
+- [x] Synchronize the dedicated profile page changes to the Vercel-linked repository and verify the deployed route

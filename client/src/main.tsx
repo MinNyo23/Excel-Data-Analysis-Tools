@@ -7,6 +7,9 @@ import superjson from "superjson";
 import App from "./App";
 import { startLogin } from "./const";
 import { supabase } from "./lib/supabase";
+import { getFriendlyApiMessage, reportRateLimitIfPresent } from "./lib/apiFeedback";
+import { RateLimitFeedback, RateLimitFeedbackProvider } from "./components/RateLimitFeedback";
+import { toast } from "sonner";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -26,6 +29,8 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
+    const retryAfterSeconds = reportRateLimitIfPresent(error);
+    toast.error(retryAfterSeconds ? "Requests are temporarily paused. See the countdown before trying again." : getFriendlyApiMessage(error, "We could not load this information. Please try again."));
     console.error("[API Query Error]", error);
   }
 });
@@ -34,6 +39,7 @@ queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
+    reportRateLimitIfPresent(error);
     console.error("[API Mutation Error]", error);
   }
 });
@@ -80,7 +86,10 @@ const trpcClient = trpc.createClient({
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <RateLimitFeedbackProvider>
+        <RateLimitFeedback />
+        <App />
+      </RateLimitFeedbackProvider>
     </QueryClientProvider>
   </trpc.Provider>
 );

@@ -144,6 +144,10 @@ export function apiRequestGuards(req: Request, res: Response, next: NextFunction
   if (Number.isFinite(contentLength) && contentLength > 30 * 1024 * 1024) return res.status(413).json({ error: "Request body is too large." });
   if (!mutationOriginIsTrusted(req)) return res.status(403).json({ error: "Untrusted request origin." });
   const limit = consumeRateLimit(`api:${requestIdentity(req)}`, 120, 60_000);
-  if (!limit.allowed) { res.setHeader("Retry-After", Math.ceil(limit.retryAfterMs / 1000)); return res.status(429).json({ error: "Too many requests. Please try again shortly." }); }
+  if (!limit.allowed) {
+    const retryAfterSeconds = Math.ceil(limit.retryAfterMs / 1000);
+    res.setHeader("Retry-After", retryAfterSeconds);
+    return res.status(429).json({ error: "Too many requests. Please try again shortly.", retryAfterSeconds });
+  }
   next();
 }

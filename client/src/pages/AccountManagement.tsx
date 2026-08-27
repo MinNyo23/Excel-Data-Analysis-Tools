@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { getFriendlyApiMessage } from "@/lib/apiFeedback";
 import { CalendarDays, Clock3, Download, FileJson2, Loader2, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,14 +33,14 @@ export default function AccountManagement() {
   useEffect(() => { if (retentionQuery.data) setRetentionValue(retentionQuery.data.retentionDays === null ? "unlimited" : String(retentionQuery.data.retentionDays)); }, [retentionQuery.data]);
   const retentionMutation = trpc.processHistory.retention.update.useMutation({
     onSuccess: data => { utils.processHistory.retention.get.invalidate(); utils.processHistory.list.invalidate(); toast.success(data.deletedCount > 0 ? `${data.deletedCount} expired process record${data.deletedCount === 1 ? "" : "s"} removed.` : "Retention setting saved."); },
-    onError: error => toast.error(error.message || "Retention setting could not be saved."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "Retention setting could not be saved. Please try again.")),
   });
   const deleteProfile = trpc.profile.delete.useMutation({
     onSuccess: data => {
       utils.profile.me.invalidate();
       toast.success(data.deletedCount === 1 ? "Your editable profile data has been deleted." : "No editable profile data was stored.");
     },
-    onError: error => toast.error(error.message || "Your profile data could not be deleted."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "Your profile data could not be deleted. Please try again.")),
   });
 
   async function exportProfile() {
@@ -52,7 +53,7 @@ export default function AccountManagement() {
       downloadJson(result.data, `excel-master-file-account-data${dateSuffix}.json`);
       toast.success("Your account data export is ready.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Your account data could not be exported.");
+      toast.error(getFriendlyApiMessage(error, "Your account data could not be exported. Please try again."));
     } finally {
       setIsExporting(false);
     }

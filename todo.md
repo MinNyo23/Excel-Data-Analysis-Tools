@@ -346,3 +346,11 @@
 - [x] Check dependency vulnerabilities, production HTTP headers, and API responses for unintended disclosure
 - [x] Apply and test any proportionate security improvements identified by the review
 - [x] Run the complete validation suite, document the final security posture, and synchronize verified changes to Vercel
+
+## Friendly Error Handling and Rate-Limit Countdown
+
+- [ ] Review how API and workflow errors are currently surfaced to users
+- [ ] Add a reusable user-friendly error translator for API, upload, authentication, and rate-limit failures
+- [ ] Display a visible countdown and disable retrying workflow actions while a rate-limit retry window is active
+- [ ] Add automated coverage and responsive verification for the user-facing error and countdown states
+- [ ] Run full validation, synchronize the release to Vercel, and save the completed checkpoint

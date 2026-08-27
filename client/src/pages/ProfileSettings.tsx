@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { getFriendlyApiMessage } from "@/lib/apiFeedback";
 import { BriefcaseBusiness, Building2, Clock3, FileSpreadsheet, History, Loader2, Phone, Settings2, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,7 +41,7 @@ export default function ProfileSettings() {
 
   const profileMutation = trpc.profile.update.useMutation({
     onSuccess: () => { utils.profile.me.invalidate(); toast.success("Your profile has been saved securely."); },
-    onError: error => toast.error(error.message || "Your profile could not be saved."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "Your profile could not be saved. Please try again.")),
   });
   const retentionMutation = trpc.processHistory.retention.update.useMutation({
     onSuccess: data => {
@@ -48,11 +49,11 @@ export default function ProfileSettings() {
       utils.processHistory.list.invalidate();
       toast.success(data.deletedCount > 0 ? `${data.deletedCount} expired process record${data.deletedCount === 1 ? "" : "s"} removed.` : "History retention saved.");
     },
-    onError: error => toast.error(error.message || "History retention could not be saved."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "History retention could not be saved. Please try again.")),
   });
   const clearHistoryMutation = trpc.processHistory.clear.useMutation({
     onSuccess: data => { utils.processHistory.list.invalidate(); toast.success(`${data.deletedCount} process record${data.deletedCount === 1 ? "" : "s"} deleted.`); },
-    onError: error => toast.error(error.message || "Process history could not be cleared."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "Process history could not be cleared. Please try again.")),
   });
 
   const toolTotals = useMemo(() => Object.entries((historyQuery.data ?? []).reduce<Record<string, { label: string; count: number }>>((totals, item) => {

@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
+import { getFriendlyApiMessage } from "@/lib/apiFeedback";
 import "@/privacy-diagram.css";
 import { BriefcaseBusiness, Building2, Download, FileSpreadsheet, FileUp, Layers3, Loader2, ListTree, Phone, RotateCcw, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
@@ -130,14 +131,14 @@ export default function Home() {
   const profileQuery = trpc.profile.me.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const historyQuery = trpc.processHistory.list.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const historyMutation = trpc.processHistory.record.useMutation({ onSuccess: () => historyUtils.processHistory.list.invalidate() });
-  const clearHistoryMutation = trpc.processHistory.clear.useMutation({ onSuccess: data => { historyUtils.processHistory.list.invalidate(); toast.success(`${data.deletedCount} process record${data.deletedCount === 1 ? "" : "s"} deleted.`); }, onError: error => toast.error(error.message || "Process history could not be cleared.") });
+  const clearHistoryMutation = trpc.processHistory.clear.useMutation({ onSuccess: data => { historyUtils.processHistory.list.invalidate(); toast.success(`${data.deletedCount} process record${data.deletedCount === 1 ? "" : "s"} deleted.`); }, onError: error => toast.error(getFriendlyApiMessage(error, "Process history could not be cleared. Please try again.")) });
   const [profileForm, setProfileForm] = useState<EditableProfile>({ displayName: "", phoneNumber: "", organization: "", jobTitle: "" });
   useEffect(() => {
     if (profileQuery.data) setProfileForm(profileQuery.data.profile ?? { displayName: "", phoneNumber: "", organization: "", jobTitle: "" });
   }, [profileQuery.data]);
   const profileMutation = trpc.profile.update.useMutation({
     onSuccess: () => { historyUtils.profile.me.invalidate(); toast.success("Your profile has been saved securely."); },
-    onError: error => toast.error(error.message || "Your profile could not be saved."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "Your profile could not be saved. Please try again.")),
   });
   const toolTotals = useMemo(() => Object.entries((historyQuery.data ?? []).reduce<Record<string, { label: string; count: number }>>((totals, item) => {
     totals[item.toolKey] = totals[item.toolKey] ?? { label: item.toolName, count: 0 };
@@ -177,21 +178,21 @@ export default function Home() {
     if (!isAuthenticated || inputFileNames.length === 0) return;
     historyMutation.mutate({ toolKey, toolName, inputFileNames, outputFilename, totalRecords });
   }
-  const facilityMutation = trpc.facilityConversion.process.useMutation({ onSuccess: data => { const item = data as FacilityConversionResult; setFacilityResult(item); recordCompletion("facility", "Facility by facility", facilityFile ? [facilityFile.name] : [], item.outputFilename, item.recordCount); toast.success("Facility workbook is ready."); }, onError: error => toast.error(error.message || "The facility workbook could not be created.") });
-  const readyUploadMutation = trpc.readyUpload.process.useMutation({ onSuccess: data => { const item = data as ReadyUploadResult; setReadyUploadResult(item); recordCompletion("ready-upload", "Ready file to upload", readyUploadFile ? [readyUploadFile.name] : [], item.outputFilename, item.rowCount); toast.success("Upload-ready workbook is ready."); }, onError: error => toast.error(error.message || "The file could not be converted.") });
-  const onboardMutation = trpc.deletionOnboardMatch.process.useMutation({ onSuccess: data => { const item = data as DeletionOnboardMatchResult; setOnboardResult(item); recordCompletion("onboard", "Deletion & onboard check", [onboardFile?.name, deletionCheckFile?.name].filter((name): name is string => Boolean(name)), item.outputFilename, totalFromPreview(item.summary)); toast.success("NRC match report is ready."); }, onError: error => toast.error(error.message || "NRC matching failed.") });
-  const matchMutation = trpc.additionExitMatch.process.useMutation({ onSuccess: data => { const item = data as AdditionExitMatchResult; setMatchResult(item); recordCompletion("addition-exit", "Addition & exit match", [originalMatchFile?.name, exitMatchFile?.name].filter((name): name is string => Boolean(name)), item.outputFilename, totalFromPreview(item.summary)); toast.success("Addition match report is ready."); }, onError: error => toast.error(error.message || "The match report could not be created.") });
+  const facilityMutation = trpc.facilityConversion.process.useMutation({ onSuccess: data => { const item = data as FacilityConversionResult; setFacilityResult(item); recordCompletion("facility", "Facility by facility", facilityFile ? [facilityFile.name] : [], item.outputFilename, item.recordCount); toast.success("Facility workbook is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "The facility workbook could not be created. Please try again.")) });
+  const readyUploadMutation = trpc.readyUpload.process.useMutation({ onSuccess: data => { const item = data as ReadyUploadResult; setReadyUploadResult(item); recordCompletion("ready-upload", "Ready file to upload", readyUploadFile ? [readyUploadFile.name] : [], item.outputFilename, item.rowCount); toast.success("Upload-ready workbook is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "The file could not be converted. Please try again.")) });
+  const onboardMutation = trpc.deletionOnboardMatch.process.useMutation({ onSuccess: data => { const item = data as DeletionOnboardMatchResult; setOnboardResult(item); recordCompletion("onboard", "Deletion & onboard check", [onboardFile?.name, deletionCheckFile?.name].filter((name): name is string => Boolean(name)), item.outputFilename, totalFromPreview(item.summary)); toast.success("NRC match report is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "NRC matching could not be completed. Please try again.")) });
+  const matchMutation = trpc.additionExitMatch.process.useMutation({ onSuccess: data => { const item = data as AdditionExitMatchResult; setMatchResult(item); recordCompletion("addition-exit", "Addition & exit match", [originalMatchFile?.name, exitMatchFile?.name].filter((name): name is string => Boolean(name)), item.outputFilename, totalFromPreview(item.summary)); toast.success("Addition match report is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "The match report could not be created. Please try again.")) });
   const entitySummaryMutation = trpc.deletionWithSummary.process.useMutation({
     onSuccess: data => { const item = data as DeletionWithSummaryResult; setEntitySummaryResult(item); recordCompletion("entity-summary", "Deletion with summary", entitySummaryFile ? [entitySummaryFile.name] : [], item.outputFilename, item.entityCount); toast.success("Entity summary is ready to review."); },
-    onError: error => toast.error(error.message || "The entity summary could not be created."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "The entity summary could not be created. Please try again.")),
   });
   const duplicateMutation = trpc.deletionDuplicates.process.useMutation({
     onSuccess: data => { const item = data as DeletionDuplicatesResult; setDuplicateResult(item); recordCompletion("duplicates", "Duplicate separation", duplicateFile ? [duplicateFile.name] : [], item.outputFilename, item.originalCount); toast.success("Duplicate rows have been separated."); },
-    onError: error => toast.error(error.message || "The duplicate separation could not be completed."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "The duplicate separation could not be completed. Please try again.")),
   });
   const deletionMutation = trpc.deletionSummary.process.useMutation({
     onSuccess: data => { const item = data as DeletionSummaryResult; setDeletionSummary(item); recordCompletion("deletion-summary", "Deletion summary list", deletionFile ? [deletionFile.name] : [], item.outputFilename, item.deletionRowCount); toast.success("Deletion summary list is ready to review."); },
-    onError: error => toast.error(error.message || "The deletion summary could not be created."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "The deletion summary could not be created. Please try again.")),
   });
   const processMutation = trpc.excel.process.useMutation({
     onSuccess: data => {
@@ -200,7 +201,7 @@ export default function Home() {
       recordCompletion("consolidation", "Master consolidation", selectedFiles.map(item => item.file.name), item.outputFilename, item.additionCount + item.deletionCount);
       toast.success("Master workbook is ready to review.");
     },
-    onError: error => toast.error(error.message || "The files could not be processed."),
+    onError: error => toast.error(getFriendlyApiMessage(error, "The files could not be processed. Please check the selected workbook and try again.")),
   });
 
   const totalSize = useMemo(() => selectedFiles.reduce((sum, item) => sum + item.file.size, 0), [selectedFiles]);

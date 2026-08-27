@@ -22,6 +22,14 @@ describe("browser and API security contracts", () => {
     expect(supabaseAuth).not.toContain('metadata.role === "admin"');
   });
 
+  it("exposes only a bounded retry interval for rate-limited requests", () => {
+    const rateLimited = redactTRPCErrorShape({ message: "Too many requests", data: { code: "TOO_MANY_REQUESTS", httpStatus: 429, stack: "private stack" } }, "TOO_MANY_REQUESTS", { retryAfterSeconds: 42 });
+    const clamped = redactTRPCErrorShape({ message: "Too many requests", data: { code: "TOO_MANY_REQUESTS", httpStatus: 429 } }, "TOO_MANY_REQUESTS", { retryAfterSeconds: 9_999 });
+
+    expect(rateLimited).toEqual({ message: "Too many requests", data: { code: "TOO_MANY_REQUESTS", httpStatus: 429, retryAfterSeconds: 42 } });
+    expect(clamped.data.retryAfterSeconds).toBe(600);
+  });
+
   it("defines restrictive Vercel browser headers while allowing only the configured auth and processing services", () => {
     const vercelConfig = JSON.parse(readFileSync(path.resolve(process.cwd(), "vercel.json"), "utf8"));
     const headers = vercelConfig.headers[0].headers as Array<{ key: string; value: string }>;

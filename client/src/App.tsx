@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import AccountManagement from "./pages/AccountManagement";
 import Home from "./pages/Home";
 import ProfileSettings from "./pages/ProfileSettings";
+import TermsConditions from "./pages/TermsConditions";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -17,6 +18,7 @@ function Router() {
       <Route path={"/tools/:tool"} component={Home} />
       <Route path={"/profile"} component={ProfileSettings} />
       <Route path={"/account"} component={AccountManagement} />
+      <Route path={"/terms"} component={TermsConditions} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

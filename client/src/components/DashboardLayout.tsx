@@ -13,6 +13,7 @@ import {
 import { FileSpreadsheet, FolderKanban, Layers3, ListTree, ScanSearch, Sheet, UploadCloud, UserRound, UserRoundCog } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
+import AppFooter from "./AppFooter";
 
 const tools = [
   { icon: FolderKanban, label: "Tool overview", path: "/" },
@@ -52,6 +53,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <SidebarInset className="bg-[#f6f8f3]">
         <header className="flex h-14 items-center border-b border-[#e5ece4] bg-[#fbfdf9] px-3 lg:px-5"><SidebarTrigger className="mr-3" /><div><p className="text-xs font-semibold text-[#1d2923]">Excel workflow workspace</p><p className="text-[11px] text-[#7a877f]">Files are processed in memory and not saved to this application</p></div></header>
         <main>{children}</main>
+        <AppFooter />
       </SidebarInset>
     </SidebarProvider>
   );

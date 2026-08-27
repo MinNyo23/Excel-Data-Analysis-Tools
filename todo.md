@@ -354,3 +354,10 @@
 - [x] Display a visible countdown and disable retrying workflow actions while a rate-limit retry window is active
 - [x] Add automated coverage and responsive verification for the user-facing error and countdown states
 - [x] Run full validation, synchronize the release to Vercel, and save the completed checkpoint
+
+## Footer Developer Credit and Terms
+
+- [ ] Review the existing footer placement and application routes
+- [ ] Add a responsive developer credit and Terms & Conditions link to the footer
+- [ ] Add an accessible Terms & Conditions page that explains service, privacy, and acceptable-use boundaries
+- [ ] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint

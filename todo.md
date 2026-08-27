@@ -389,5 +389,5 @@
 ## Production Journey-Flow Image Fix
 
 - [x] Inspect the Vercel production page and the supplied journey-flow image asset response
-- [ ] Fix the production asset delivery path without storing the image inside the application source
+- [x] Fix the production asset delivery path without storing the image inside the application source
 - [ ] Verify the live image is visible, synchronize the fix, and save the corrected checkpoint

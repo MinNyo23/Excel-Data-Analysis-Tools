@@ -20,6 +20,7 @@ describe("in-app privacy journey diagram", () => {
     const vercelConfig = projectFile("vercel.json");
 
     expect(vercelConfig).toContain("img-src 'self' data: blob: https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer");
+    expect(vercelConfig).toContain("https://d36hbw14aib5lz.cloudfront.net");
   });
 
   it("keeps the portrait journey image centered and usable on small screens", () => {

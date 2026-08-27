@@ -70,6 +70,16 @@ describe("application security controls", () => {
     expect(headers.get("Strict-Transport-Security")).toContain("max-age=31536000");
   });
 
+  it("permits cross-origin embedding only for the public managed-storage redirect", () => {
+    const storageHeaders = new Map<string, unknown>();
+    securityHeaders({ path: "/manus-storage/end-user-journey-flow_7a1b9923.webp", protocol: "https", headers: {} } as any, { setHeader: (name: string, value: unknown) => storageHeaders.set(name, value) } as any, () => undefined);
+    expect(storageHeaders.get("Cross-Origin-Resource-Policy")).toBe("cross-origin");
+
+    const applicationHeaders = new Map<string, unknown>();
+    securityHeaders({ path: "/", protocol: "https", headers: {} } as any, { setHeader: (name: string, value: unknown) => applicationHeaders.set(name, value) } as any, () => undefined);
+    expect(applicationHeaders.get("Cross-Origin-Resource-Policy")).toBe("same-origin");
+  });
+
   it("keeps security-audit metadata free from profile, file, and token content", () => {
     expect(sanitizeSecurityAuditMetadata({ workflow: "ready-upload", recordCount: 2, fileName: "private.xlsx", profileValue: "private", token: "secret" })).toBe('{"workflow":"ready-upload","recordCount":2}');
   });

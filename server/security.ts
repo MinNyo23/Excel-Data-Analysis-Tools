@@ -132,7 +132,9 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-  res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+  // Public managed-storage redirects are intentionally embedded by the Vercel
+  // frontend. All other application responses remain same-origin isolated.
+  res.setHeader("Cross-Origin-Resource-Policy", req.path.startsWith("/manus-storage/") ? "cross-origin" : "same-origin");
   res.setHeader("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.manus.computer; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:");
   if (isSecure) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   if (req.path.startsWith("/api/")) res.setHeader("Cache-Control", "no-store");

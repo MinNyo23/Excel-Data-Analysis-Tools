@@ -431,3 +431,10 @@
 - [x] Add proportionate browser security headers without breaking Supabase authentication, managed API access, or downloads
 - [x] Add automated contract coverage for the enhanced header policy
 - [x] Validate local build, live Vercel headers, and critical application routes before saving the completed checkpoint (Vercel deployment `c98ac02` is Ready)
+
+## Shielded Spreadsheet Browser Tab Icon
+
+- [x] Review the current document-head icon setup and confirm the selected shielded-spreadsheet direction
+- [x] Create a simple, recognizable green shielded-spreadsheet favicon asset
+- [x] Add the favicon and browser metadata to the document head with focused automated coverage
+- [ ] Verify local and Vercel browser-tab delivery, then save the completed checkpoint

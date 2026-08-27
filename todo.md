@@ -403,7 +403,7 @@
 
 ## Journey-Flow Step Captions
 
-- [ ] Review the current journey-flow presentation and available explanatory copy
-- [ ] Add concise descriptive captions for each user journey step below the image
-- [ ] Apply responsive, accessible caption styling with clear visual hierarchy
-- [ ] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint
+- [x] Review the current journey-flow presentation and available explanatory copy
+- [x] Add concise descriptive captions for each user journey step below the image
+- [x] Apply responsive, accessible caption styling with clear visual hierarchy
+- [x] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `992702f` is Ready)

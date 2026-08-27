@@ -29,12 +29,15 @@ export async function authenticateSupabaseRequest(req: Request): Promise<Applica
   const { data, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !data.user) return null;
   const metadata = data.user.user_metadata ?? {};
+  // User metadata is editable by the user in Supabase Auth. Roles must instead
+  // come from the protected application-account record created by the database trigger.
+  const { data: account } = await supabaseAdmin.from("app_user_accounts").select("role").eq("user_id", data.user.id).maybeSingle();
   return {
     id: data.user.id,
     openId: data.user.id,
     name: typeof metadata.full_name === "string" ? metadata.full_name : typeof metadata.name === "string" ? metadata.name : null,
     email: data.user.email ?? null,
-    role: metadata.role === "admin" ? "admin" : "user",
+    role: account?.role === "admin" ? "admin" : "user",
     authProvider: "supabase",
   };
 }

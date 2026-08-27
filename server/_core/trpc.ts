@@ -4,8 +4,34 @@ import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import { consumeRateLimit } from "../security";
 
+type PublicErrorShape = {
+  message: string;
+  data: { code: string; httpStatus: number; [key: string]: unknown };
+};
+
+export function redactTRPCErrorShape(shape: PublicErrorShape, errorCode: string) {
+  const publicMessage = errorCode === "INTERNAL_SERVER_ERROR"
+    ? "Request could not be completed."
+    : errorCode === "NOT_FOUND"
+      ? "The requested API operation was not found."
+      : shape.message;
+  return {
+    ...shape,
+    message: publicMessage,
+    data: {
+      code: shape.data.code,
+      httpStatus: shape.data.httpStatus,
+    },
+  };
+}
+
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    // Do not expose internal stack traces, filesystem paths, procedure paths, or
+    // validation implementation details in the browser-facing API response.
+    return redactTRPCErrorShape(shape, error.code) as typeof shape;
+  },
 });
 
 export const router = t.router;

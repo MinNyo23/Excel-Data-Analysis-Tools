@@ -337,3 +337,12 @@
 - [x] Add profile-page navigation and protected unauthenticated states
 - [x] Add automated coverage and responsive verification for the dedicated profile and history experience
 - [x] Synchronize the dedicated profile page changes to the Vercel-linked repository and verify the deployed route
+
+## End-to-End Security and API Review
+
+- [ ] Inventory browser, API, authentication, metadata, and workbook-processing trust boundaries
+- [ ] Review protected procedures, external API authentication, origins, rate limits, headers, and error handling
+- [ ] Verify the no-persistent-workbook-data boundary and server-only secret exposure controls
+- [ ] Check dependency vulnerabilities, production HTTP headers, and API responses for unintended disclosure
+- [ ] Apply and test any proportionate security improvements identified by the review
+- [ ] Run the complete validation suite, document the final security posture, and synchronize verified changes to Vercel

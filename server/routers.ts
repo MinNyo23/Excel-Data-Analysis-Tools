@@ -15,6 +15,7 @@ import { applyProcessHistoryRetention, clearProcessHistory, createProcessHistory
 import { MAX_UPLOAD_FILES, validateUploadedWorkbook, validateUploadedWorkbookBatch } from "./security";
 import { normalizeUploadedFiles } from "./uploadNormalization";
 import { metadataStore, type MetadataUserId } from "./metadataStore";
+import { sanitizeGeneratedWorkbookOutput } from "./workbookOutputSecurity";
 
 export const uploadedFile = z.object({
   name: z.string().min(1).max(255),
@@ -125,29 +126,29 @@ export const appRouter = router({
   excel: router({
     process: uploadProcedure
       .input(z.object({ files: uploadedFiles(1) }))
-      .mutation(async ({ input }) => processExcelFiles(await normalizeUploadedFiles(input.files))),
+      .mutation(async ({ input }) => sanitizeGeneratedWorkbookOutput(await processExcelFiles(await normalizeUploadedFiles(input.files)))),
   }),
   deletionSummary: router({
     process: uploadProcedure
       .input(z.object({ file: uploadedFile }))
-      .mutation(async ({ input }) => processDeletionSummary((await normalizeUploadedFiles([input.file]))[0]!)),
+      .mutation(async ({ input }) => sanitizeGeneratedWorkbookOutput(await processDeletionSummary((await normalizeUploadedFiles([input.file]))[0]!))),
   }),
   deletionDuplicates: router({
     process: uploadProcedure
       .input(z.object({ file: uploadedFile }))
-      .mutation(async ({ input }) => processDeletionDuplicates((await normalizeUploadedFiles([input.file]))[0]!)),
+      .mutation(async ({ input }) => sanitizeGeneratedWorkbookOutput(await processDeletionDuplicates((await normalizeUploadedFiles([input.file]))[0]!))),
   }),
   deletionWithSummary: router({
     process: uploadProcedure
       .input(z.object({ file: uploadedFile }))
-      .mutation(async ({ input }) => processDeletionWithSummary((await normalizeUploadedFiles([input.file]))[0]!)),
+      .mutation(async ({ input }) => sanitizeGeneratedWorkbookOutput(await processDeletionWithSummary((await normalizeUploadedFiles([input.file]))[0]!))),
   }),
   additionExitMatch: router({
-    process: uploadProcedure.input(z.object({ original: uploadedFile, exit: uploadedFile }).superRefine((input, ctx) => { const error = validateUploadedWorkbookBatch([input.original, input.exit]); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({ input }) => { const [original, exit] = await normalizeUploadedFiles([input.original, input.exit]); return processAdditionExitMatch(original!, exit!); }),
+    process: uploadProcedure.input(z.object({ original: uploadedFile, exit: uploadedFile }).superRefine((input, ctx) => { const error = validateUploadedWorkbookBatch([input.original, input.exit]); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({ input }) => { const [original, exit] = await normalizeUploadedFiles([input.original, input.exit]); return sanitizeGeneratedWorkbookOutput(await processAdditionExitMatch(original!, exit!)); }),
   }),
-  deletionOnboardMatch: router({ process: uploadProcedure.input(z.object({ onboard: uploadedFile, deletion: uploadedFile }).superRefine((input, ctx) => { const error = validateUploadedWorkbookBatch([input.onboard, input.deletion]); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({input}) => { const [onboard, deletion] = await normalizeUploadedFiles([input.onboard, input.deletion]); return processDeletionOnboardMatch(onboard!, deletion!); }) }),
-  readyUpload: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => processReadyUpload((await normalizeUploadedFiles([input.file]))[0]!)) }),
-  facilityConversion: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => processFacilityConversion((await normalizeUploadedFiles([input.file]))[0]!)) }),
+  deletionOnboardMatch: router({ process: uploadProcedure.input(z.object({ onboard: uploadedFile, deletion: uploadedFile }).superRefine((input, ctx) => { const error = validateUploadedWorkbookBatch([input.onboard, input.deletion]); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({input}) => { const [onboard, deletion] = await normalizeUploadedFiles([input.onboard, input.deletion]); return sanitizeGeneratedWorkbookOutput(await processDeletionOnboardMatch(onboard!, deletion!)); }) }),
+  readyUpload: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => sanitizeGeneratedWorkbookOutput(await processReadyUpload((await normalizeUploadedFiles([input.file]))[0]!))) }),
+  facilityConversion: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => sanitizeGeneratedWorkbookOutput(await processFacilityConversion((await normalizeUploadedFiles([input.file]))[0]!))) }),
   processHistory: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       await metadataStore.applyRetention(ctx.user.id);

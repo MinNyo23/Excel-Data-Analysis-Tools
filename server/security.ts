@@ -68,17 +68,31 @@ export function validateUploadedWorkbookBatch(files: UploadedFileLike[]): string
   return null;
 }
 
-type RateLimitEntry = { startedAt: number; count: number };
+type RateLimitEntry = { startedAt: number; expiresAt: number; count: number };
 const rateLimitStore = new Map<string, RateLimitEntry>();
+const MAX_RATE_LIMIT_ENTRIES = 10_000;
+
+function makeRoomForRateLimitEntry(now: number) {
+  if (rateLimitStore.size < MAX_RATE_LIMIT_ENTRIES) return;
+  rateLimitStore.forEach((entry, key) => {
+    if (entry.expiresAt <= now) rateLimitStore.delete(key);
+  });
+  while (rateLimitStore.size >= MAX_RATE_LIMIT_ENTRIES) {
+    const oldestKey = rateLimitStore.keys().next().value as string | undefined;
+    if (!oldestKey) return;
+    rateLimitStore.delete(oldestKey);
+  }
+}
 
 export function consumeRateLimit(key: string, limit: number, windowMs: number, now = Date.now()) {
   const entry = rateLimitStore.get(key);
-  if (!entry || now - entry.startedAt >= windowMs) {
-    rateLimitStore.set(key, { startedAt: now, count: 1 });
+  if (!entry || entry.expiresAt <= now) {
+    makeRoomForRateLimitEntry(now);
+    rateLimitStore.set(key, { startedAt: now, expiresAt: now + windowMs, count: 1 });
     return { allowed: true, remaining: limit - 1, retryAfterMs: 0 };
   }
   entry.count += 1;
-  return { allowed: entry.count <= limit, remaining: Math.max(0, limit - entry.count), retryAfterMs: Math.max(0, windowMs - (now - entry.startedAt)) };
+  return { allowed: entry.count <= limit, remaining: Math.max(0, limit - entry.count), retryAfterMs: Math.max(0, entry.expiresAt - now) };
 }
 
 export function requestIdentity(req: Request) {

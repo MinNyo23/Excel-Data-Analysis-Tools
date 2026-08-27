@@ -400,3 +400,10 @@
 - [x] Preserve error feedback and reduced-motion support for the image-loading state
 - [x] Prevent benign signed-out query feedback from obscuring the Tool Overview image
 - [x] Add automated coverage, verify responsive layouts, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `e3ae600` is Ready)
+
+## Journey-Flow Step Captions
+
+- [ ] Review the current journey-flow presentation and available explanatory copy
+- [ ] Add concise descriptive captions for each user journey step below the image
+- [ ] Apply responsive, accessible caption styling with clear visual hierarchy
+- [ ] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint

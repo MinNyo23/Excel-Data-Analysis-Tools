@@ -22,4 +22,14 @@ describe("footer and terms contract", () => {
     expect(terms).toContain("Acceptable use");
     expect(terms).toContain("not legal advice");
   });
+
+  it("uses a professional footer background with smooth accessible link interactions", () => {
+    const styles = readFileSync(path.resolve(process.cwd(), "client/src/index.css"), "utf8");
+
+    expect(styles).toContain(".application-footer{display:flex");
+    expect(styles).toContain("background:linear-gradient(100deg,#edf5ec");
+    expect(styles).toContain(".application-footer-link:hover");
+    expect(styles).toContain(".application-footer-link:focus-visible");
+    expect(styles).toContain("@media(prefers-reduced-motion:reduce)");
+  });
 });

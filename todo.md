@@ -361,3 +361,9 @@
 - [x] Add a responsive developer credit and Terms & Conditions link to the footer
 - [x] Add an accessible Terms & Conditions page that explains service, privacy, and acceptable-use boundaries
 - [x] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint
+
+## Footer Visual Refinement
+
+- [ ] Review the shared footer’s current background and link styles
+- [ ] Add a subtle professional footer background plus smooth hover and keyboard-focus effects
+- [ ] Verify the refined footer on desktop and mobile, synchronize to Vercel, and save the completed checkpoint

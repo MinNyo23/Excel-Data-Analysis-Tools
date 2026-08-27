@@ -407,3 +407,12 @@
 - [x] Add concise descriptive captions for each user journey step below the image
 - [x] Apply responsive, accessible caption styling with clear visual hierarchy
 - [x] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint (Vercel deployment `992702f` is Ready)
+
+## Plain-Language Excel Workflow Guides
+
+- [ ] Review each existing Excel workflow’s required files, processing rules, and generated output
+- [ ] Create consistent easy-to-understand guidance for all workflow modules
+- [ ] Align all upload guidance and labels with the supported CSV and XLSX file formats
+- [ ] Add purpose, upload, process, output, and privacy guidance to each workflow screen
+- [ ] Correct workflow-route visibility so the new guide and existing upload workspace both remain visible
+- [ ] Add automated coverage, verify desktop and mobile layouts, synchronize to Vercel, and save the completed checkpoint

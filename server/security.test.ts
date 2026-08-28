@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { listSecurityAuditEventsForUser, sanitizeSecurityAuditMetadata, secureDatabaseConnectionOptions } from "./db";
-import { CLOUDFLARE_TURNSTILE_ORIGIN } from "../shared/contentSecurityPolicy";
+import { GOOGLE_RECAPTCHA_ORIGINS } from "../shared/contentSecurityPolicy";
 import { consumeRateLimit, mutationOriginIsTrusted, securityHeaders, validateUploadedWorkbook, validateUploadedWorkbookBatch } from "./security";
 import { uploadedFile } from "./routers";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -80,7 +80,7 @@ describe("application security controls", () => {
     expect(headers.get("Cache-Control")).toBe("no-store");
     expect(String(headers.get("Content-Security-Policy"))).toContain("object-src 'none'");
     expect(String(headers.get("Content-Security-Policy"))).toContain("script-src-attr 'none'");
-    expect(String(headers.get("Content-Security-Policy"))).toContain(CLOUDFLARE_TURNSTILE_ORIGIN);
+    for (const origin of GOOGLE_RECAPTCHA_ORIGINS) expect(String(headers.get("Content-Security-Policy"))).toContain(origin);
     expect(headers.get("Strict-Transport-Security")).toContain("max-age=31536000");
   });
 

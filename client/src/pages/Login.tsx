@@ -12,7 +12,11 @@ import { usesSupabaseAuth } from "@/lib/supabase";
 import "./Login.css";
 
 const RESEND_COOLDOWN_SECONDS = 60;
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+// Cloudflare's documented test key keeps the widget visible in local/v0 previews
+// when the project variable name exists but has no value yet. Production still
+// requires the real site key and will not silently fall back to a test key.
+const configuredTurnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+const TURNSTILE_SITE_KEY = configuredTurnstileSiteKey || (import.meta.env.DEV ? "1x00000000000000000000AA" : undefined);
 
 function getReturnPathFromLocation() {
   if (typeof window === "undefined") return "/";
@@ -89,7 +93,7 @@ export default function Login() {
         <p className="login-description">We will send a one-time sign-in link to your work email. No password is collected by this application.</p>
         <form onSubmit={sendSignInLink} noValidate>
           <label className="login-field"><span>Work email address</span><div><Mail size={17}/><Input type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={event => setEmail(event.target.value)} placeholder="you@company.com" disabled={isSending || cooldown > 0}/></div></label>
-          {captchaRequired && TURNSTILE_SITE_KEY && <div className="login-captcha" aria-label="Spam protection"><Turnstile key={captchaResetKey} siteKey={TURNSTILE_SITE_KEY} onSuccess={setCaptchaToken} onExpire={() => setCaptchaToken(null)} onError={() => { setCaptchaToken(null); setError("CAPTCHA could not be verified. Please try again."); }} /></div>}
+          {captchaRequired && TURNSTILE_SITE_KEY && <div className="login-captcha" aria-label="Spam protection"><Turnstile key={captchaResetKey} siteKey={TURNSTILE_SITE_KEY} options={{ appearance: "always", size: "flexible" }} onSuccess={setCaptchaToken} onExpire={() => setCaptchaToken(null)} onError={() => { setCaptchaToken(null); setError("CAPTCHA could not be verified. Please try again."); }} /></div>}
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}
           {message && <p className="login-feedback login-success" role="status">{message}</p>}
           <Button type="submit" className="login-submit" disabled={isSending || cooldown > 0 || (captchaRequired && !captchaToken)}>{isSending ? <><Loader2 className="animate-spin" size={17}/> Sending secure link…</> : cooldown > 0 ? `Email sent · wait ${cooldown}s` : <><Mail size={17}/>Email me a secure sign-in link</>}</Button>

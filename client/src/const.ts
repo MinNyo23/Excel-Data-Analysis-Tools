@@ -3,6 +3,8 @@ import { supabase, usesSupabaseAuth } from "./lib/supabase";
 
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
+const processingApiUrl = (import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+
 // Start the Manus OAuth login. Call this from an event handler or effect at the
 // moment you want to navigate, e.g. `onClick={() => startLogin()}`.
 //
@@ -16,7 +18,15 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 export const startLogin = async (email?: string, captchaToken?: string) => {
   if (usesSupabaseAuth && supabase) {
     if (!email) throw new Error("An email address is required for passwordless sign-in.");
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin, ...(captchaToken ? { captchaToken } : {}) } });
+    if (!captchaToken) throw new Error("CAPTCHA verification is required.");
+    const verificationResponse = await fetch(`${processingApiUrl}/api/auth/verify-recaptcha`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ token: captchaToken }),
+    });
+    if (!verificationResponse.ok) throw new Error("CAPTCHA verification failed. Please complete the check again.");
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin, captchaToken } });
     if (error) {
       const message = error.message.toLowerCase();
       if (message.includes("captcha")) throw new Error("CAPTCHA verification failed. Please complete the check again.");

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
-import { GOOGLE_RECAPTCHA_ORIGINS } from "@shared/contentSecurityPolicy";
+import { CLOUDFLARE_TURNSTILE_ORIGIN } from "@shared/contentSecurityPolicy";
 import { MAX_UPLOAD_FILE_BYTES } from "@shared/uploadLimits";
 
 export { MAX_UPLOAD_FILE_BYTES } from "@shared/uploadLimits";
@@ -140,8 +140,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   // Public managed-storage redirects are intentionally embedded by the Vercel
   // frontend. All other application responses remain same-origin isolated.
   res.setHeader("Cross-Origin-Resource-Policy", req.path.startsWith("/manus-storage/") ? "cross-origin" : "same-origin");
-  const recaptchaOrigins = GOOGLE_RECAPTCHA_ORIGINS.join(" ");
-  res.setHeader("Content-Security-Policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.manus.computer; frame-src ${recaptchaOrigins}; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' ${recaptchaOrigins}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; connect-src 'self' https: ${recaptchaOrigins}; worker-src 'none'; media-src 'none'; manifest-src 'self'`);
+  res.setHeader("Content-Security-Policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.manus.computer; frame-src ${CLOUDFLARE_TURNSTILE_ORIGIN}; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' ${CLOUDFLARE_TURNSTILE_ORIGIN}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; connect-src 'self' https: ${CLOUDFLARE_TURNSTILE_ORIGIN}; worker-src 'none'; media-src 'none'; manifest-src 'self'`);
   if (isSecure) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   if (req.path.startsWith("/api/")) res.setHeader("Cache-Control", "no-store");
   next();

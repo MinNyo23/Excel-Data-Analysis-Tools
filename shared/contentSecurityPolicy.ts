@@ -1,5 +1,2 @@
-/** Google reCAPTCHA origins required for login CAPTCHA widgets. */
-export const GOOGLE_RECAPTCHA_ORIGINS = [
-  "https://www.google.com",
-  "https://www.gstatic.com",
-] as const;
+/** Cloudflare Turnstile origin required for login CAPTCHA widgets. */
+export const CLOUDFLARE_TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";

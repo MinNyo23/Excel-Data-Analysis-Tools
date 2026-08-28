@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { startLogin } from "@/const";
 import { getSafeReturnPath } from "@shared/loginPaths";
 import { KeyRound, Loader2, Mail, ShieldCheck, Sparkles } from "lucide-react";
-import ReCAPTCHA from "react-google-recaptcha";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -12,10 +12,11 @@ import { usesSupabaseAuth } from "@/lib/supabase";
 import "./Login.css";
 
 const RESEND_COOLDOWN_SECONDS = 60;
-// Google's documented test key keeps the checkbox usable in local/v0 previews.
-// Production still requires the real site key and will not silently fall back to a test key.
-const configuredRecaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
-const RECAPTCHA_SITE_KEY = configuredRecaptchaSiteKey || (import.meta.env.DEV ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : undefined);
+// Cloudflare's documented test key keeps the widget visible in local/v0 previews
+// when the project variable name exists but has no value yet. Production still
+// requires the real site key and will not silently fall back to a test key.
+const configuredTurnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+const TURNSTILE_SITE_KEY = configuredTurnstileSiteKey || (import.meta.env.DEV ? "1x00000000000000000000AA" : undefined);
 
 function getReturnPathFromLocation() {
   if (typeof window === "undefined") return "/";
@@ -34,7 +35,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
-  const captchaRequired = Boolean(RECAPTCHA_SITE_KEY);
+  const captchaRequired = Boolean(TURNSTILE_SITE_KEY);
 
   useEffect(() => {
     if (!loading && isAuthenticated) setLocation(returnPath);
@@ -77,7 +78,7 @@ export default function Login() {
       const fallback = "We could not start secure sign-in. Please wait a moment and try again.";
       const message = err instanceof Error ? err.message : fallback;
       setError(message);
-      // Google reCAPTCHA tokens are single-use once submitted to Supabase.
+      // Turnstile tokens are single-use once submitted to Supabase.
       resetCaptcha();
     } finally {
       setIsSending(false);
@@ -98,7 +99,7 @@ export default function Login() {
         <p className="login-description">We will send a one-time sign-in link to your work email. No password is collected by this application.</p>
         <form onSubmit={sendSignInLink} noValidate>
           <label className="login-field"><span>Work email address</span><div><Mail size={17}/><Input type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={event => setEmail(event.target.value)} placeholder="you@company.com" disabled={isSending || cooldown > 0}/></div></label>
-          {captchaRequired && RECAPTCHA_SITE_KEY && <div className="login-captcha" aria-label="Spam protection"><ReCAPTCHA key={captchaResetKey} sitekey={RECAPTCHA_SITE_KEY} onChange={token => setCaptchaToken(token)} onExpired={resetCaptcha} onErrored={() => { resetCaptcha(); setError("CAPTCHA could not be verified. Please try again."); }} /></div>}
+          {captchaRequired && TURNSTILE_SITE_KEY && <div className="login-captcha" aria-label="Spam protection"><Turnstile key={captchaResetKey} siteKey={TURNSTILE_SITE_KEY} options={{ appearance: "always", size: "flexible" }} onSuccess={setCaptchaToken} onExpire={resetCaptcha} onError={() => { resetCaptcha(); setError("CAPTCHA could not be verified. Please try again."); }} /></div>}
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}
           {message && <p className="login-feedback login-success" role="status">{message}</p>}
           <Button type="submit" className="login-submit" disabled={isSending || cooldown > 0 || (captchaRequired && !captchaToken)}>{isSending ? <><Loader2 className="animate-spin" size={17}/> Sending secure link…</> : cooldown > 0 ? `Email sent · wait ${cooldown}s` : <><Mail size={17}/>Email me a secure sign-in link</>}</Button>

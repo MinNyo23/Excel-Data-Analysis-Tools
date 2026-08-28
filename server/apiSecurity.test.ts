@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { GOOGLE_RECAPTCHA_ORIGINS } from "../shared/contentSecurityPolicy";
+import { CLOUDFLARE_TURNSTILE_ORIGIN } from "../shared/contentSecurityPolicy";
 import { redactTRPCErrorShape } from "./_core/trpc";
 
 describe("browser and API security contracts", () => {
@@ -40,8 +40,8 @@ describe("browser and API security contracts", () => {
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'none'");
-    expect(csp).toContain(`frame-src ${GOOGLE_RECAPTCHA_ORIGINS.join(" ")}`);
-    for (const origin of GOOGLE_RECAPTCHA_ORIGINS) expect(csp).toContain(origin);
+    expect(csp).toContain(`frame-src ${CLOUDFLARE_TURNSTILE_ORIGIN}`);
+    expect(csp).toContain(CLOUDFLARE_TURNSTILE_ORIGIN);
     expect(csp).toContain("script-src-attr 'none'");
     expect(csp).toContain("worker-src 'none'");
     expect(csp).toContain("https://lltzfiewqyhdbfvjqxon.supabase.co");

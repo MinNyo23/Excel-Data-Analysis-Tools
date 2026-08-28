@@ -38,10 +38,10 @@ function Router() {
 
 function AppContent() {
   const [location] = useLocation();
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const routedContent = <RouteTransition><Router /></RouteTransition>;
   if (location.startsWith("/login") || loading || !isAuthenticated) return routedContent;
-  return <DashboardLayout>{routedContent}</DashboardLayout>;
+  return <DashboardLayout key={user?.id ?? "authenticated-workspace"}>{routedContent}</DashboardLayout>;
 }
 
 function App() {

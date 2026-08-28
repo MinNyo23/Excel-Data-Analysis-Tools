@@ -1,4 +1,9 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+
+// v0 injects project variables outside the repository. Load that file explicitly
+// so the Vite client receives the configured Supabase and Turnstile settings.
+dotenv.config({ path: "/vercel/share/.env.project" });
+dotenv.config();
 import express from "express";
 import { createServer } from "http";
 import net from "net";

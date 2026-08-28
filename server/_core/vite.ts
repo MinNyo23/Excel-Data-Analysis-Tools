@@ -45,10 +45,15 @@ export async function setupVite(app: Express, server: Server) {
       // WebSocket upgrade route. Remove the injected HMR client so it cannot
       // create a failing browser WebSocket connection; normal page refreshes
       // still load the latest client entry thanks to the cache-busting URL.
-      const page = (await vite.transformIndexHtml(url, template)).replace(
-        /<script\b[^>]*\bsrc=["']\/\@vite\/client(?:\?[^"']*)?["'][^>]*>\s*<\/script\s*>/gi,
-        ""
-      );
+      const page = (await vite.transformIndexHtml(url, template))
+        // Vite 7 can inject its client as either a script tag or an inline
+        // import. The managed preview proxy does not support that WebSocket,
+        // so remove both forms before sending HTML to the browser.
+        .replace(
+          /<script\b[^>]*\bsrc=["'][^"']*\/?@vite\/client(?:\?[^"']*)?["'][^>]*>\s*<\/script\s*>/gi,
+          ""
+        )
+        .replace(/(?:import\s+[^;]*from\s+|import\s*)["'][^"']*\/?@vite\/client["'];?/g, "");
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);

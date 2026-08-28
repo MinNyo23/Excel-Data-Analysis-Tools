@@ -4,7 +4,7 @@ import { startLogin } from "@/const";
 import { getSafeReturnPath } from "@shared/loginPaths";
 import { KeyRound, Loader2, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import ReCAPTCHA from "react-google-recaptcha";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { takeLoginReturnPath, saveLoginReturnPath } from "@/lib/loginNavigation";
@@ -33,7 +33,7 @@ export default function Login() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const captchaRef = useRef<ReCAPTCHA | null>(null);
   const captchaRequired = Boolean(RECAPTCHA_SITE_KEY);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function Login() {
 
   function resetCaptcha() {
     setCaptchaToken(null);
-    setCaptchaResetKey(value => value + 1);
+    captchaRef.current?.reset();
   }
 
   async function sendSignInLink(event?: React.FormEvent<HTMLFormElement>) {
@@ -98,7 +98,7 @@ export default function Login() {
         <p className="login-description">We will send a one-time sign-in link to your work email. No password is collected by this application.</p>
         <form onSubmit={sendSignInLink} noValidate>
           <label className="login-field"><span>Work email address</span><div><Mail size={17}/><Input type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={event => setEmail(event.target.value)} placeholder="you@company.com" disabled={isSending || cooldown > 0}/></div></label>
-          {captchaRequired && RECAPTCHA_SITE_KEY && <div className="login-captcha" aria-label="Spam protection"><ReCAPTCHA key={captchaResetKey} sitekey={RECAPTCHA_SITE_KEY} onChange={token => setCaptchaToken(token)} onExpired={resetCaptcha} onErrored={() => { resetCaptcha(); setError("CAPTCHA could not be verified. Please try again."); }} /></div>}
+          {captchaRequired && RECAPTCHA_SITE_KEY && <div className="login-captcha" aria-label="Spam protection"><ReCAPTCHA ref={captchaRef} sitekey={RECAPTCHA_SITE_KEY} onChange={token => setCaptchaToken(token)} onExpired={() => setCaptchaToken(null)} onErrored={() => { setCaptchaToken(null); setError("CAPTCHA could not be verified. Check that this is a Google reCAPTCHA v2 checkbox key registered for this domain."); }} /></div>}
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}
           {message && <p className="login-feedback login-success" role="status">{message}</p>}
           <Button type="submit" className="login-submit" disabled={isSending || cooldown > 0 || (captchaRequired && !captchaToken)}>{isSending ? <><Loader2 className="animate-spin" size={17}/> Sending secure link…</> : cooldown > 0 ? `Email sent · wait ${cooldown}s` : <><Mail size={17}/>Email me a secure sign-in link</>}</Button>

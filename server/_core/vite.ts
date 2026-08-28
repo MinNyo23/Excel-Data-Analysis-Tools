@@ -46,14 +46,12 @@ export async function setupVite(app: Express, server: Server) {
       // create a failing browser WebSocket connection; normal page refreshes
       // still load the latest client entry thanks to the cache-busting URL.
       const page = (await vite.transformIndexHtml(url, template))
-        // Vite 7 can inject its client as either a script tag or an inline
-        // import. The managed preview proxy does not support that WebSocket,
-        // so remove both forms before sending HTML to the browser.
-        .replace(
-          /<script\b[^>]*\bsrc=["'][^"']*\/?@vite\/client(?:\?[^"']*)?["'][^>]*>\s*<\/script\s*>/gi,
-          ""
-        )
-        .replace(/(?:import\s+[^;]*from\s+|import\s*)["'][^"']*\/?@vite\/client["'];?/g, "");
+        // The managed preview proxy does not support Vite's HMR WebSocket.
+        // Strip every Vite client form after all transformIndexHtml hooks run,
+        // including module scripts and inline imports injected by plugins.
+        .replace(/<script\b[^>]*\bsrc=["'][^"']*(?:@vite\/client|vite\/dist\/client)[^"']*["'][^>]*>[\s\S]*?<\/script\s*>/gi, "")
+        .replace(/<script\b[^>]*type=["']module["'][^>]*>[\s\S]*?import[\s\S]*?(?:@vite\/client|vite\/dist\/client)[\s\S]*?<\/script\s*>/gi, "")
+        .replace(/(?:import\s+(?:[^;]*?\s+from\s+)?|import\s*\()["'][^"']*(?:@vite\/client|vite\/dist\/client)[^"']*["']\)?\s*;?/g, "");
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);

@@ -47,6 +47,11 @@ export default function Login() {
     return () => window.clearTimeout(timer);
   }, [cooldown]);
 
+  function resetCaptcha() {
+    setCaptchaToken(null);
+    setCaptchaResetKey(value => value + 1);
+  }
+
   async function sendSignInLink(event?: React.FormEvent<HTMLFormElement>) {
     event?.preventDefault();
     setError(null);
@@ -67,13 +72,14 @@ export default function Login() {
       if (usesSupabaseAuth) {
         setMessage("A secure sign-in link has been sent. Check your email, then return to this browser to continue.");
         setCooldown(RESEND_COOLDOWN_SECONDS);
-        setCaptchaToken(null);
-        setCaptchaResetKey(value => value + 1);
+        resetCaptcha();
       }
-    } catch {
-      setError("We could not start secure sign-in. Please wait a moment and try again.");
-      setCaptchaToken(null);
-      setCaptchaResetKey(value => value + 1);
+    } catch (err) {
+      const fallback = "We could not start secure sign-in. Please wait a moment and try again.";
+      const message = err instanceof Error ? err.message : fallback;
+      setError(message);
+      // Turnstile tokens are single-use once submitted to Supabase.
+      resetCaptcha();
     } finally {
       setIsSending(false);
     }
@@ -93,7 +99,7 @@ export default function Login() {
         <p className="login-description">We will send a one-time sign-in link to your work email. No password is collected by this application.</p>
         <form onSubmit={sendSignInLink} noValidate>
           <label className="login-field"><span>Work email address</span><div><Mail size={17}/><Input type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={event => setEmail(event.target.value)} placeholder="you@company.com" disabled={isSending || cooldown > 0}/></div></label>
-          {captchaRequired && TURNSTILE_SITE_KEY && <div className="login-captcha" aria-label="Spam protection"><Turnstile key={captchaResetKey} siteKey={TURNSTILE_SITE_KEY} options={{ appearance: "always", size: "flexible" }} onSuccess={setCaptchaToken} onExpire={() => setCaptchaToken(null)} onError={() => { setCaptchaToken(null); setError("CAPTCHA could not be verified. Please try again."); }} /></div>}
+          {captchaRequired && TURNSTILE_SITE_KEY && <div className="login-captcha" aria-label="Spam protection"><Turnstile key={captchaResetKey} siteKey={TURNSTILE_SITE_KEY} options={{ appearance: "always", size: "flexible" }} onSuccess={setCaptchaToken} onExpire={resetCaptcha} onError={() => { resetCaptcha(); setError("CAPTCHA could not be verified. Please try again."); }} /></div>}
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}
           {message && <p className="login-feedback login-success" role="status">{message}</p>}
           <Button type="submit" className="login-submit" disabled={isSending || cooldown > 0 || (captchaRequired && !captchaToken)}>{isSending ? <><Loader2 className="animate-spin" size={17}/> Sending secure link…</> : cooldown > 0 ? `Email sent · wait ${cooldown}s` : <><Mail size={17}/>Email me a secure sign-in link</>}</Button>

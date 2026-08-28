@@ -17,7 +17,14 @@ export const startLogin = async (email?: string, captchaToken?: string) => {
   if (usesSupabaseAuth && supabase) {
     if (!email) throw new Error("An email address is required for passwordless sign-in.");
     const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin, ...(captchaToken ? { captchaToken } : {}) } });
-    if (error) throw new Error("Supabase sign-in could not be started.");
+    if (error) {
+      const message = error.message.toLowerCase();
+      if (message.includes("captcha")) throw new Error("CAPTCHA verification failed. Please complete the check again.");
+      if (error.status === 429 || message.includes("rate") || message.includes("too many")) {
+        throw new Error("Too many sign-in attempts. Please wait a moment and try again.");
+      }
+      throw new Error("We could not start secure sign-in. Please wait a moment and try again.");
+    }
     return;
   }
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;

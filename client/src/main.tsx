@@ -14,6 +14,37 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
+// A Supabase session can change without a full-page reload (for example when
+// one person signs out and another signs in in the same browser tab). Never
+// let user-scoped query results or transient workspace state cross that boundary.
+let activeSupabaseUserId: string | null | undefined;
+const clearTransientWorkspaceState = () => {
+  try {
+    for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = sessionStorage.key(index);
+      if (key && key !== "manus-cookie") sessionStorage.removeItem(key);
+    }
+  } catch {
+    // Browser storage may be unavailable in private or embedded contexts.
+  }
+};
+
+if (supabase) {
+  void supabase.auth.getSession().then(({ data }) => {
+    activeSupabaseUserId = data.session?.user.id ?? null;
+  });
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    const nextUserId = session?.user.id ?? null;
+    const userChanged = activeSupabaseUserId !== undefined && activeSupabaseUserId !== nextUserId;
+    activeSupabaseUserId = nextUserId;
+
+    if (!userChanged && event !== "SIGNED_OUT") return;
+    clearTransientWorkspaceState();
+    queryClient.clear();
+  });
+}
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;

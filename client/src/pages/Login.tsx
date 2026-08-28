@@ -12,10 +12,10 @@ import { usesSupabaseAuth } from "@/lib/supabase";
 import "./Login.css";
 
 const RESEND_COOLDOWN_SECONDS = 60;
-// Google's documented test key keeps the checkbox usable in local/v0 previews.
-// Production still requires the real site key and will not silently fall back to a test key.
+// The site key is public by design. Keep the fallback so the widget still renders
+// when a Vercel deployment was created before VITE_RECAPTCHA_SITE_KEY was added.
 const configuredRecaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
-const RECAPTCHA_SITE_KEY = configuredRecaptchaSiteKey || (import.meta.env.DEV ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : undefined);
+const RECAPTCHA_SITE_KEY = configuredRecaptchaSiteKey || "6LelH50tAAAAAG5OUL95xOWFRAtRQBWrWbl3C_9I";
 
 function getReturnPathFromLocation() {
   if (typeof window === "undefined") return "/";

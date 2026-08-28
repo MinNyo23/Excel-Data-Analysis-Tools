@@ -12,8 +12,15 @@ Set the following variables in **Project Settings → Environment Variables** fo
 | `VITE_SUPABASE_URL` | `https://lltzfiewqyhdbfvjqxon.supabase.co` | Browser-visible project URL. |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | The active publishable key in the selected Supabase project. | Browser-visible key designed for client use. |
 | `VITE_PROCESSING_API_URL` | `https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer` | Browser-visible API base URL for the retained managed processing backend. |
+| `VITE_RECAPTCHA_SITE_KEY` | Google reCAPTCHA site key registered for the application domains. | Browser-visible site key. |
 
-> **Never set `SUPABASE_SERVICE_ROLE_KEY` in Vercel.** It is server-only and remains in the managed processing backend, where it is used to verify Supabase sessions and access user-owned metadata safely.
+> **Never set `SUPABASE_SERVICE_ROLE_KEY` or `RECAPTCHA_SECRET_KEY` in the browser-facing Vercel frontend.** `RECAPTCHA_SECRET_KEY` is server-only and must be configured on the server that runs `server/recaptcha.ts`. The frontend sends the reCAPTCHA token to `/api/auth/verify-recaptcha`, which calls Google’s `siteverify` endpoint before the token is passed to Supabase Auth.
+
+## Server CAPTCHA Settings Required
+
+Configure `RECAPTCHA_SECRET_KEY` in the server environment. Optionally set `RECAPTCHA_ALLOWED_HOSTNAMES` to a comma-separated list such as `excel-master-file-tool.vercel.app` to reject successful Google tokens issued for unexpected hostnames.
+
+In the selected Supabase project, enable CAPTCHA protection with the matching Google reCAPTCHA secret as well. This keeps Supabase Auth’s own CAPTCHA validation enabled in addition to the application’s explicit server-side check.
 
 ## Supabase Auth Dashboard Setting Required
 

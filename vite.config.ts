@@ -184,6 +184,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    // The managed preview proxy does not provide Vite's WebSocket upgrade
+    // endpoint. Keep the browser from loading the HMR client at all.
+    hmr: false,
     host: true,
     allowedHosts: [
       ".manuspre.computer",

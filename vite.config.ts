@@ -1,3 +1,9 @@
+import dotenv from "dotenv";
+
+// Load v0-managed variables before Vite evaluates import.meta.env replacements.
+dotenv.config({ path: "/vercel/share/.env.project" });
+dotenv.config();
+
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
@@ -154,6 +160,15 @@ const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(
 
 export default defineConfig({
   plugins,
+  // Vite only exposes VITE_* values from local env files by default. The v0
+  // runtime keeps project variables in /vercel/share/.env.project, so forward
+  // the public auth settings explicitly to the browser bundle.
+  define: {
+    "import.meta.env.VITE_USE_SUPABASE_AUTH": JSON.stringify(process.env.VITE_USE_SUPABASE_AUTH),
+    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(process.env.VITE_SUPABASE_URL),
+    "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(process.env.VITE_SUPABASE_PUBLISHABLE_KEY),
+    "import.meta.env.VITE_TURNSTILE_SITE_KEY": JSON.stringify(process.env.VITE_TURNSTILE_SITE_KEY),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

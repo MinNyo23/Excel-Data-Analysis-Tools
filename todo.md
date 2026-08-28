@@ -520,4 +520,24 @@
 - [x] Require authentication before rendering the Terms & Conditions route or any other internal page
 - [x] Add regression coverage for signed-out route redirection and the absence of internal-page links from the login UI
 - [x] Verify signed-out Terms, workflow, and unknown routes do not render internal content before redirecting to sign-in
-- [ ] Synchronize the restriction to Vercel and confirm the live bundle
+- [x] Synchronize the restriction to Vercel and confirm the live bundle (GitHub commit `d0e51d7`; canonical login bundle contains the non-link Terms disclosure)
+
+## Personal-Mail Passwordless Email Delivery
+
+- [x] Confirm the current Supabase passwordless email provider, rate-limit behavior, and redirect configuration
+- [x] Select the personal-mail provider and obtain its official SMTP host, port, username, sender address, and app-specific credential requirements
+- [x] Configure Supabase custom SMTP without putting mailbox credentials in application source or client environment variables
+- [x] Verify sender authentication, sign-in-link delivery, and rate-limit expectations with a controlled test
+- [x] Document the provider configuration and any remaining Supabase dashboard step
+
+- [x] Configure Gmail / Google Workspace custom SMTP in Supabase using a dedicated App Password and verified sender identity
+- [x] Validate passwordless sign-in delivery and rate-limit behavior after Gmail SMTP configuration
+
+## CAPTCHA, Resend Countdown, and Branded Auth Email
+
+- [x] Inspect Supabase CAPTCHA support and choose a provider that can be configured securely for the passwordless login flow
+- [x] Add CAPTCHA-aware login submission with fail-closed behavior when a token is required or invalid
+- [x] Add a resend email button with a visible 60-second countdown and accessible disabled state
+- [x] Prepare a professional Supabase magic-link email template using the site brand and hosted logo asset
+- [x] Add security regression tests for CAPTCHA handling, resend throttling, and safe template content
+- [x] Configure required Supabase dashboard settings and validate the public Turnstile state and branded template; release synchronization and checkpoint remain tracked below

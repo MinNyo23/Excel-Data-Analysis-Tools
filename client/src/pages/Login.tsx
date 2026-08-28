@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { startLogin } from "@/const";
 import { getSafeReturnPath } from "@shared/loginPaths";
 import { KeyRound, Loader2, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -11,6 +12,7 @@ import { usesSupabaseAuth } from "@/lib/supabase";
 import "./Login.css";
 
 const RESEND_COOLDOWN_SECONDS = 60;
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
 
 function getReturnPathFromLocation() {
   if (typeof window === "undefined") return "/";
@@ -27,6 +29,9 @@ export default function Login() {
   const [cooldown, setCooldown] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const captchaRequired = usesSupabaseAuth && Boolean(TURNSTILE_SITE_KEY);
 
   useEffect(() => {
     if (!loading && isAuthenticated) setLocation(returnPath);
@@ -38,8 +43,8 @@ export default function Login() {
     return () => window.clearTimeout(timer);
   }, [cooldown]);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function sendSignInLink(event?: React.FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     setError(null);
     setMessage(null);
     const normalizedEmail = email.trim().toLowerCase();
@@ -47,16 +52,24 @@ export default function Login() {
       setError("Enter a valid work email address to receive your secure sign-in link.");
       return;
     }
+    if (captchaRequired && !captchaToken) {
+      setError("Please complete the CAPTCHA check before requesting an email.");
+      return;
+    }
     setIsSending(true);
     try {
       saveLoginReturnPath(returnPath);
-      await startLogin(normalizedEmail || undefined);
+      await startLogin(normalizedEmail || undefined, captchaToken ?? undefined);
       if (usesSupabaseAuth) {
         setMessage("A secure sign-in link has been sent. Check your email, then return to this browser to continue.");
         setCooldown(RESEND_COOLDOWN_SECONDS);
+        setCaptchaToken(null);
+        setCaptchaResetKey(value => value + 1);
       }
     } catch {
       setError("We could not start secure sign-in. Please wait a moment and try again.");
+      setCaptchaToken(null);
+      setCaptchaResetKey(value => value + 1);
     } finally {
       setIsSending(false);
     }
@@ -74,11 +87,13 @@ export default function Login() {
         <p className="login-eyebrow">WELCOME BACK</p>
         <h2>Sign in securely</h2>
         <p className="login-description">We will send a one-time sign-in link to your work email. No password is collected by this application.</p>
-        <form onSubmit={submit} noValidate>
+        <form onSubmit={sendSignInLink} noValidate>
           {usesSupabaseAuth && <label className="login-field"><span>Work email address</span><div><Mail size={17}/><Input type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={event => setEmail(event.target.value)} placeholder="you@company.com" disabled={isSending || cooldown > 0}/></div></label>}
+          {captchaRequired && TURNSTILE_SITE_KEY && <div className="login-captcha" aria-label="Spam protection"><Turnstile key={captchaResetKey} siteKey={TURNSTILE_SITE_KEY} onSuccess={setCaptchaToken} onExpire={() => setCaptchaToken(null)} onError={() => { setCaptchaToken(null); setError("CAPTCHA could not be verified. Please try again."); }} /></div>}
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}
           {message && <p className="login-feedback login-success" role="status">{message}</p>}
-          <Button type="submit" className="login-submit" disabled={isSending || cooldown > 0}>{isSending ? <><Loader2 className="animate-spin" size={17}/> Sending secure link…</> : cooldown > 0 ? `You can resend in ${cooldown}s` : <><Mail size={17}/>{usesSupabaseAuth ? "Email me a secure sign-in link" : "Continue with secure sign-in"}</>}</Button>
+          <Button type="submit" className="login-submit" disabled={isSending || cooldown > 0 || (captchaRequired && !captchaToken)}>{isSending ? <><Loader2 className="animate-spin" size={17}/> Sending secure link…</> : cooldown > 0 ? `Email sent · wait ${cooldown}s` : <><Mail size={17}/>{usesSupabaseAuth ? "Email me a secure sign-in link" : "Continue with secure sign-in"}</>}</Button>
+          {message && usesSupabaseAuth && <Button type="button" variant="outline" className="login-resend" onClick={() => void sendSignInLink()} disabled={isSending || cooldown > 0 || (captchaRequired && !captchaToken)}>{cooldown > 0 ? `Resend email in ${cooldown}s` : <><Mail size={16}/> Resend email</>}</Button>}
         </form>
         <div className="login-privacy-note"><ShieldCheck size={15}/><p><strong>What is saved:</strong> your provider-managed identity and limited account metadata. <strong>What is not saved:</strong> passwords, uploaded workbooks, worksheets, previews, or output files.</p></div>
         <p className="login-terms">By continuing, you agree to use the workspace responsibly. Terms &amp; Conditions are available after sign-in.</p>

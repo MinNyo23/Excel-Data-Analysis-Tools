@@ -46,7 +46,7 @@ export async function setupVite(app: Express, server: Server) {
       // create a failing browser WebSocket connection; normal page refreshes
       // still load the latest client entry thanks to the cache-busting URL.
       const page = (await vite.transformIndexHtml(url, template)).replace(
-        /<script\s+type="module"\s+src="\/@vite\/client"><\/script>/,
+        /<script\b[^>]*\bsrc=["']\/\@vite\/client(?:\?[^"']*)?["'][^>]*>\s*<\/script\s*>/gi,
         ""
       );
       res.status(200).set({ "Content-Type": "text/html" }).end(page);

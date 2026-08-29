@@ -12,10 +12,9 @@ import { usesSupabaseAuth } from "@/lib/supabase";
 import "./Login.css";
 
 const RESEND_COOLDOWN_SECONDS = 60;
-// The site key is public by design. Keep the fallback so the widget still renders
-// when a Vercel deployment was created before VITE_RECAPTCHA_SITE_KEY was added.
-const configuredRecaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
-const RECAPTCHA_SITE_KEY = configuredRecaptchaSiteKey || "6LelH50tAAAAAG5OUL95xOWFRAtRQBWrWbl3C_9I";
+// The site key is public by design and comes from the project environment.
+// Do not use a fallback key: Google keys are restricted to registered domains.
+const RECAPTCHA_SITE_KEY = (import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined)?.trim() || "";
 
 function getReturnPathFromLocation() {
   if (typeof window === "undefined") return "/";

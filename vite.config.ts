@@ -167,7 +167,7 @@ export default defineConfig({
     "import.meta.env.VITE_USE_SUPABASE_AUTH": JSON.stringify(process.env.VITE_USE_SUPABASE_AUTH),
     "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(process.env.VITE_SUPABASE_URL),
     "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(process.env.VITE_SUPABASE_PUBLISHABLE_KEY),
-    "import.meta.env.VITE_TURNSTILE_SITE_KEY": JSON.stringify(process.env.VITE_TURNSTILE_SITE_KEY),
+    "import.meta.env.VITE_RECAPTCHA_SITE_KEY": JSON.stringify(process.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"),
   },
   resolve: {
     alias: {

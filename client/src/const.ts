@@ -5,12 +5,17 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
 const configuredProcessingApiUrl = (import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.trim().replace(/\/$/, "") ?? "";
 
-function getProcessingApiUrl() {
-  if (!configuredProcessingApiUrl) return window.location.origin;
+function getRecaptchaVerificationUrl() {
+  // This endpoint is served by the same Express app as the Vite preview. Using
+  // a relative URL avoids invalid/missing VITE_PROCESSING_API_URL values and
+  // prevents a cross-origin request that browsers can block before the server
+  // receives the CAPTCHA token.
+  if (!configuredProcessingApiUrl) return "/api/auth/verify-recaptcha";
   try {
-    return new URL(configuredProcessingApiUrl, window.location.origin).origin;
+    const origin = new URL(configuredProcessingApiUrl, window.location.origin).origin;
+    return `${origin}/api/auth/verify-recaptcha`;
   } catch {
-    return window.location.origin;
+    return "/api/auth/verify-recaptcha";
   }
 }
 
@@ -28,7 +33,7 @@ export const startLogin = async (email?: string, captchaToken?: string) => {
   if (usesSupabaseAuth && supabase) {
     if (!email) throw new Error("An email address is required for passwordless sign-in.");
     if (!captchaToken) throw new Error("CAPTCHA verification is required.");
-    const verificationResponse = await fetch(`${getProcessingApiUrl()}/api/auth/verify-recaptcha`, {
+    const verificationResponse = await fetch(getRecaptchaVerificationUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "same-origin",

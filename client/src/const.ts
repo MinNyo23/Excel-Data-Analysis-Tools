@@ -3,7 +3,16 @@ import { supabase, usesSupabaseAuth } from "./lib/supabase";
 
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
-const processingApiUrl = (import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const configuredProcessingApiUrl = (import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.trim().replace(/\/$/, "") ?? "";
+
+function getProcessingApiUrl() {
+  if (!configuredProcessingApiUrl) return window.location.origin;
+  try {
+    return new URL(configuredProcessingApiUrl, window.location.origin).origin;
+  } catch {
+    return window.location.origin;
+  }
+}
 
 // Start the Manus OAuth login. Call this from an event handler or effect at the
 // moment you want to navigate, e.g. `onClick={() => startLogin()}`.
@@ -19,7 +28,7 @@ export const startLogin = async (email?: string, captchaToken?: string) => {
   if (usesSupabaseAuth && supabase) {
     if (!email) throw new Error("An email address is required for passwordless sign-in.");
     if (!captchaToken) throw new Error("CAPTCHA verification is required.");
-    const verificationResponse = await fetch(`${processingApiUrl}/api/auth/verify-recaptcha`, {
+    const verificationResponse = await fetch(`${getProcessingApiUrl()}/api/auth/verify-recaptcha`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "same-origin",

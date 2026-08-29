@@ -35,7 +35,10 @@ export const startLogin = async (email?: string, captchaToken?: string) => {
       body: JSON.stringify({ token: captchaToken }),
     });
     if (!verificationResponse.ok) throw new Error("CAPTCHA verification failed. Please complete the check again.");
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin, captchaToken } });
+    // The token was already verified by our server endpoint above. Do not pass it
+    // to Supabase again: Google reCAPTCHA tokens are single-use, so Supabase's
+    // second verification returns invalid-input-response.
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
     if (error) {
       const message = error.message.toLowerCase();
       if (message.includes("captcha")) throw new Error("CAPTCHA verification failed. Please complete the check again.");

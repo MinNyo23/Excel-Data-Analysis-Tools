@@ -66,7 +66,7 @@ export default function Login() {
     setIsSending(true);
     try {
       saveLoginReturnPath(returnPath);
-      await startLogin(normalizedEmail || undefined, captchaToken ?? undefined);
+      await startLogin(normalizedEmail || undefined, captchaToken ?? undefined, returnPath);
       if (usesSupabaseAuth) {
         setMessage("A secure sign-in link has been sent. Check your email, then return to this browser to continue.");
         setCooldown(RESEND_COOLDOWN_SECONDS);

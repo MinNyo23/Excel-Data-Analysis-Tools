@@ -35,7 +35,7 @@ describe("dedicated login security", () => {
     expect(app).toContain('if (location.startsWith("/login") || loading || !isAuthenticated) return routedContent;');
     expect(source("client/src/components/AuthGate.tsx")).toContain("<Redirect to={getLoginPathForCurrentLocation()} />");
     expect(authEntry).toContain("signInWithOtp");
-    expect(authEntry).toContain("emailRedirectTo: window.location.origin");
+    expect(authEntry).toContain("emailRedirectTo: `${window.location.origin}/login`");
     expect(authEntry).not.toContain("window.prompt");
     expect(authHook).not.toContain("manus-runtime-user-info");
     expect(queryBootstrap).toContain("getLoginPathForCurrentLocation");

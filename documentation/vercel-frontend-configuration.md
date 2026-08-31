@@ -32,4 +32,4 @@ In the selected Supabase project, add these entries to the Auth URL configuratio
 | Redirect URL | `https://excel-master-file-tool.vercel.app/**` |
 | Preview redirect URL | `https://*.vercel.app/**` |
 
-The Vercel project must deploy successfully once after the environment variables are saved. The deployment will build the static frontend with Supabase authentication enabled and preserve client-side routes such as `/tools/facility` and `/account`.
+The passwordless email callback is intentionally the exact public route `/login`, without a `returnTo` query string. If the wildcard entries are not enabled in Supabase, also add `https://excel-master-file-tool.vercel.app/login` and the matching preview `/login` URL explicitly. The Vercel project must deploy successfully once after the environment variables are saved. The deployment will build the static frontend with Supabase authentication enabled and preserve client-side routes such as `/tools/facility` and `/account`.

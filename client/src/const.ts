@@ -23,7 +23,10 @@ export const startLogin = async (email?: string, captchaToken?: string, returnPa
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/login?returnTo=${encodeURIComponent(returnPath.startsWith("/") ? returnPath : "/")}`,
+        // Always return to the exact public login route. Keeping query parameters
+        // out of the Supabase redirect target avoids redirect-allowlist mismatches;
+        // the requested workspace path is already stored locally before sending.
+        emailRedirectTo: `${window.location.origin}/login`,
         captchaToken,
       },
     });

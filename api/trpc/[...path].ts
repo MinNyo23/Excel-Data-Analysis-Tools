@@ -1,15 +1,19 @@
-import type { Request, Response } from "express";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL ?? "";
 const supabasePublishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
-const supabase = supabaseUrl && supabasePublishableKey
+const supabase: any = supabaseUrl && supabasePublishableKey
   ? createClient(supabaseUrl, supabasePublishableKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
   : null;
 
-function setApiHeaders(res: Response, origin?: string) {
+function header(req: any, name: string) {
+  const value = req?.headers?.[name] ?? req?.headers?.[name.toLowerCase()];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function setApiHeaders(res: any, origin?: string) {
   if (origin === "https://excel-master-file-tool.vercel.app" || origin?.endsWith(".vercel.app")) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
@@ -20,20 +24,20 @@ function setApiHeaders(res: Response, origin?: string) {
   res.setHeader("Pragma", "no-cache");
 }
 
-function trpcResponse(user: { id: string; openId: string; name: string | null; email: string | null; role: "user"; authProvider: "supabase" } | null) {
+function trpcResponse(user: unknown) {
   return [{ result: { data: { json: user } } }];
 }
 
-async function handleAuthMe(req: Request, res: Response) {
-  setApiHeaders(res, req.header("origin"));
-  if (req.method === "OPTIONS") return res.status(204).end();
+async function handleAuthMe(req: any, res: any) {
+  setApiHeaders(res, header(req, "origin"));
+  if (req?.method === "OPTIONS") return res.status(204).end();
 
-  const authorization = req.header("authorization") ?? "";
+  const authorization = header(req, "authorization") ?? "";
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
   if (!token || !supabase) return res.status(200).json(trpcResponse(null));
 
   const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) return res.status(200).json(trpcResponse(null));
+  if (error || !data?.user) return res.status(200).json(trpcResponse(null));
 
   const metadata = data.user.user_metadata ?? {};
   return res.status(200).json(trpcResponse({
@@ -46,8 +50,8 @@ async function handleAuthMe(req: Request, res: Response) {
   }));
 }
 
-export default async function handler(req: Request, res: Response) {
-  const path = (req.url ?? "").split("?", 1)[0];
+export default async function handler(req: any, res: any) {
+  const path = String(req?.url ?? "").split("?", 1)[0];
   if (path.endsWith("/auth.me")) return handleAuthMe(req, res);
 
   const { default: app } = await import("../index");

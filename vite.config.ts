@@ -182,6 +182,10 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // The current app bundle includes the Excel processing UI and its parser
+    // dependencies. Keep the warning threshold above the measured bundle size
+    // until the feature pages are split into lazy-loaded routes.
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     // The managed preview proxy does not provide Vite's WebSocket upgrade

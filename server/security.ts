@@ -111,13 +111,13 @@ export function consumeRateLimit(key: string, limit: number, windowMs: number, n
   return { allowed: entry.count <= limit, remaining: Math.max(0, limit - entry.count), retryAfterMs: Math.max(0, entry.expiresAt - now) };
 }
 
-export function requestIdentity(req: Request) {
+export function requestIdentity(req: any) {
   const forwarded = req.headers["x-forwarded-for"];
   const address = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0]?.trim() || req.ip || "unknown";
   return createHash("sha256").update(address).digest("hex").slice(0, 24);
 }
 
-export function mutationOriginIsTrusted(req: Request) {
+export function mutationOriginIsTrusted(req: any) {
   if (req.method !== "POST") return true;
   const origin = req.headers.origin;
   if (!origin) return true;
@@ -129,14 +129,14 @@ export function mutationOriginIsTrusted(req: Request) {
   try { return new URL(origin).origin === `${proto.trim()}://${host}`; } catch { return false; }
 }
 
-export function noStoreApiResponse(_req: Request, res: Response, next: NextFunction) {
+export function noStoreApiResponse(_req: any, res: any, next: any) {
   res.setHeader("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Vary", "Origin");
   next();
 }
 
-export function externalApiCors(req: Request, res: Response, next: NextFunction) {
+export function externalApiCors(req: any, res: any, next: any) {
   const origin = req.headers.origin;
   const configuredOrigins = allowedFrontendOrigins();
   if (origin && configuredOrigins.has(origin)) {
@@ -149,7 +149,7 @@ export function externalApiCors(req: Request, res: Response, next: NextFunction)
   return next();
 }
 
-export function securityHeaders(req: Request, res: Response, next: NextFunction) {
+export function securityHeaders(req: any, res: any, next: any) {
   const isSecure = req.protocol === "https" || String(req.headers["x-forwarded-proto"] || "").split(",").some(value => value.trim() === "https");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-DNS-Prefetch-Control", "off");
@@ -168,7 +168,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   next();
 }
 
-export function apiRequestGuards(req: Request, res: Response, next: NextFunction) {
+export function apiRequestGuards(req: any, res: any, next: any) {
   const contentLength = Number(req.headers["content-length"] ?? 0);
   if (Number.isFinite(contentLength) && contentLength > 30 * 1024 * 1024) return res.status(413).json({ error: "Request body is too large." });
   if (!mutationOriginIsTrusted(req)) return res.status(403).json({ error: "Untrusted request origin." });

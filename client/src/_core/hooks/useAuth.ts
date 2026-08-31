@@ -97,9 +97,11 @@ export function useAuth(options?: UseAuthOptions) {
     state.user,
   ]);
 
+  const refresh = useCallback(() => meQuery.refetch(), [meQuery.refetch]);
+
   return {
     ...state,
-    refresh: () => meQuery.refetch(),
+    refresh,
     logout,
   };
 }

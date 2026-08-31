@@ -13,6 +13,20 @@ const MAX_ZIP_COMPRESSION_RATIO = 200;
 
 type UploadedFileLike = { name: string; data: string };
 
+const DEFAULT_FRONTEND_ORIGINS = ["https://excel-master-file-tool.vercel.app"];
+const FRONTEND_ORIGIN_ENV_KEYS = ["ALLOWED_FRONTEND_ORIGINS", "FRONTEND_URL", "PUBLIC_APP_URL", "VERCEL_PROJECT_PRODUCTION_URL"] as const;
+
+function allowedFrontendOrigins() {
+  const origins = new Set(DEFAULT_FRONTEND_ORIGINS);
+  for (const key of FRONTEND_ORIGIN_ENV_KEYS) {
+    for (const value of (process.env[key] ?? "").split(",")) {
+      const origin = value.trim().replace(/\/$/, "");
+      if (origin) origins.add(origin);
+    }
+  }
+  return origins;
+}
+
 function isBase64(value: string) {
   return value.length > 0 && value.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(value);
 }
@@ -107,8 +121,8 @@ export function mutationOriginIsTrusted(req: Request) {
   if (req.method !== "POST") return true;
   const origin = req.headers.origin;
   if (!origin) return true;
-  const configuredOrigins = (process.env.ALLOWED_FRONTEND_ORIGINS ?? "").split(",").map(value => value.trim()).filter(Boolean);
-  if (configuredOrigins.includes(origin)) return true;
+  const configuredOrigins = allowedFrontendOrigins();
+  if (configuredOrigins.has(origin)) return true;
   const host = (req.headers["x-forwarded-host"] || req.headers.host || "") as string;
   const protoValue = req.headers["x-forwarded-proto"] || req.protocol || "https";
   const proto = Array.isArray(protoValue) ? protoValue[0] : protoValue.split(",")[0];
@@ -117,8 +131,8 @@ export function mutationOriginIsTrusted(req: Request) {
 
 export function externalApiCors(req: Request, res: Response, next: NextFunction) {
   const origin = req.headers.origin;
-  const configuredOrigins = (process.env.ALLOWED_FRONTEND_ORIGINS ?? "").split(",").map(value => value.trim()).filter(Boolean);
-  if (origin && configuredOrigins.includes(origin)) {
+  const configuredOrigins = allowedFrontendOrigins();
+  if (origin && configuredOrigins.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");

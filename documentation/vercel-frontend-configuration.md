@@ -1,6 +1,6 @@
 # Vercel Frontend Configuration
 
-The Vercel project hosts only the React/Vite frontend. It does not accept workbook uploads or run Python Excel code. The browser sends its Supabase access token and the active workbook bytes directly to the existing managed processing API, which validates and processes the workbook in memory.
+The Vercel project serves the React/Vite frontend and the same-origin `/api/trpc` authentication endpoint through `api/index.ts`. This avoids cross-origin authentication failures and temporary sandbox URLs. If workbook processing requires a larger external service, configure a stable HTTPS API explicitly with `VITE_USE_EXTERNAL_PROCESSING_API=true` and `VITE_PROCESSING_API_URL`; never point production at a temporary `*.manus.computer` sandbox URL.
 
 ## Vercel Project Settings
 
@@ -11,7 +11,8 @@ Set the following variables in **Project Settings → Environment Variables** fo
 | `VITE_USE_SUPABASE_AUTH` | `true` | Browser-visible configuration. |
 | `VITE_SUPABASE_URL` | `https://lltzfiewqyhdbfvjqxon.supabase.co` | Browser-visible project URL. |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | The active publishable key in the selected Supabase project. | Browser-visible key designed for client use. |
-| `VITE_PROCESSING_API_URL` | `https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer` | Browser-visible API base URL for the retained managed processing backend. |
+| `VITE_USE_EXTERNAL_PROCESSING_API` | `false` | Keep `false` for the permanent Vercel deployment so tRPC uses the same-origin `/api/trpc` function. Set `true` only when a stable external API is intentionally configured. |
+| `VITE_PROCESSING_API_URL` | A stable HTTPS API origin, only when external API mode is enabled. | Optional browser-visible external API base URL; do not use a temporary `*.manus.computer` sandbox URL. |
 | `VITE_RECAPTCHA_SITE_KEY` | Google reCAPTCHA site key registered for the application domains. | Browser-visible site key. |
 
 > **Never set `SUPABASE_SERVICE_ROLE_KEY` or `RECAPTCHA_SECRET_KEY` in the browser-facing Vercel frontend.** `RECAPTCHA_SECRET_KEY` is server-only and must be configured on the server that runs `server/recaptcha.ts`. The frontend sends the reCAPTCHA token to `/api/auth/verify-recaptcha`, which calls Google’s `siteverify` endpoint before the token is passed to Supabase Auth.

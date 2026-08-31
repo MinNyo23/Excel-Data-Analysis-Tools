@@ -149,7 +149,7 @@ export const appRouter = router({
         // Session termination must not depend on the metadata cleanup outcome.
         if (ctx.user.authProvider !== "supabase") {
           const cookieOptions = getSessionCookieOptions(ctx.req);
-          ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+          (ctx.res as typeof ctx.res & { clearCookie: (name: string, options?: Record<string, unknown>) => void }).clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
         }
       }
       return { success: true, ...cleanup } as const;

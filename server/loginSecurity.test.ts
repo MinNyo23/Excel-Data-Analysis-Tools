@@ -39,6 +39,9 @@ describe("dedicated login security", () => {
     expect(authEntry).not.toContain("window.prompt");
     expect(authHook).not.toContain("manus-runtime-user-info");
     expect(queryBootstrap).toContain("getLoginPathForCurrentLocation");
+    expect(queryBootstrap).toContain('event !== "SIGNED_IN"');
+    expect(queryBootstrap).toContain('event !== "TOKEN_REFRESHED"');
+    expect(queryBootstrap).toContain('queryClient.refetchQueries({ type: "active" })');
     expect(source("client/src/components/AuthGate.tsx")).toContain("takeLoginReturnPath");
   });
 

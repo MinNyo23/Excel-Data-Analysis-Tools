@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { listSecurityAuditEventsForUser, sanitizeSecurityAuditMetadata, secureDatabaseConnectionOptions } from "./db";
 import { GOOGLE_RECAPTCHA_ORIGINS } from "../shared/contentSecurityPolicy";
-import { consumeRateLimit, mutationOriginIsTrusted, securityHeaders, validateUploadedWorkbook, validateUploadedWorkbookBatch } from "./security";
+import { consumeRateLimit, externalApiCors, mutationOriginIsTrusted, securityHeaders, validateUploadedWorkbook, validateUploadedWorkbookBatch } from "./security";
 import { uploadedFile } from "./routers";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { SESSION_MAX_AGE_MS } from "../shared/const";
@@ -66,6 +66,17 @@ describe("application security controls", () => {
     const untrusted = { method: "POST", protocol: "https", headers: { origin: "https://attacker.test", host: "example.test" } } as any;
     expect(mutationOriginIsTrusted(trusted)).toBe(true);
     expect(mutationOriginIsTrusted(untrusted)).toBe(false);
+  });
+
+  it("allows the production frontend to call auth.me with a bearer token", () => {
+    const headers = new Map<string, unknown>();
+    let continued = false;
+    const response = { setHeader: (name: string, value: unknown) => headers.set(name, value), status: (code: number) => ({ end: () => code }) } as any;
+    externalApiCors({ method: "OPTIONS", headers: { origin: "https://excel-master-file-tool.vercel.app" } } as any, response, () => { continued = true; });
+    expect(headers.get("Access-Control-Allow-Origin")).toBe("https://excel-master-file-tool.vercel.app");
+    expect(headers.get("Access-Control-Allow-Headers")).toContain("Authorization");
+    expect(headers.get("Access-Control-Allow-Methods")).toContain("POST");
+    expect(continued).toBe(false);
   });
 
   it("sets defensive browser headers and no-store API responses", () => {

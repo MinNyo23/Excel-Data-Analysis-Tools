@@ -129,6 +129,13 @@ export function mutationOriginIsTrusted(req: Request) {
   try { return new URL(origin).origin === `${proto.trim()}://${host}`; } catch { return false; }
 }
 
+export function noStoreApiResponse(_req: Request, res: Response, next: NextFunction) {
+  res.setHeader("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Vary", "Origin");
+  next();
+}
+
 export function externalApiCors(req: Request, res: Response, next: NextFunction) {
   const origin = req.headers.origin;
   const configuredOrigins = allowedFrontendOrigins();

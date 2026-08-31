@@ -6,6 +6,9 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 60
+    },
+    "api/[...path].ts": {
+      "maxDuration": 60
     }
   },
   "headers": [
@@ -32,7 +35,7 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api(?:/|$)).*)",
       "destination": "/index.html"
     }
   ]

@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import { AuthGate } from "./components/AuthGate";
 import { useLocation } from "wouter";
 import { useAuth } from "./_core/hooks/useAuth";
+import Admin from "./pages/Admin";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -23,6 +24,7 @@ function Router() {
       <Route path={"/tools/:tool"}><AuthGate><Home /></AuthGate></Route>
       <Route path={"/profile"}><Redirect to="/account" /></Route>
       <Route path={"/account"}><AuthGate><AccountManagement /></AuthGate></Route>
+      <Route path={"/admin"}><AuthGate><Admin /></AuthGate></Route>
       <Route path={"/terms"}><AuthGate><TermsConditions /></AuthGate></Route>
       <Route path={"/404"}><AuthGate><NotFound /></AuthGate></Route>
       {/* Final fallback route */}

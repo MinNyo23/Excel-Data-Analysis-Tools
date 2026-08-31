@@ -10,7 +10,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { FileSpreadsheet, FolderKanban, Layers3, ListTree, LogOut, ScanSearch, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
+import { FileSpreadsheet, FolderKanban, Layers3, ListTree, LogOut, ScanSearch, ShieldCheck, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 import AppFooter from "./AppFooter";
@@ -31,7 +31,8 @@ const tools = [
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const isMasterAdmin = user?.email?.trim().toLowerCase() === "minnyo.work@gmail.com";
   async function handleSignOut() {
     try { await logout(); setLocation("/login"); }
     catch { toast.error("Sign out could not be completed. Please try again."); }
@@ -56,6 +57,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </SidebarContent>
         <SidebarFooter className="p-3"><div className="rounded-xl border border-[#dce8dc] bg-white px-3 py-3 text-xs leading-relaxed text-[#66736b] group-data-[collapsible=icon]:hidden">Each tool creates a preview first. Download only after you review the output.</div></SidebarFooter>
         <SidebarFooter className="px-2 pb-4 pt-0"><SidebarMenu>
+          {isMasterAdmin && <SidebarMenuItem><SidebarMenuButton isActive={location === "/admin"} tooltip="Master account" onClick={() => setLocation("/admin")} className="sidebar-navigation-link h-10 text-[#0f6a51] data-[active=true]:bg-[#e4f1e7]"><ShieldCheck size={16}/><span>Master account</span></SidebarMenuButton></SidebarMenuItem>}
           <SidebarMenuItem><SidebarMenuButton isActive={location === "/account" || location === "/profile"} tooltip="My account" onClick={() => setLocation("/account")} className="sidebar-navigation-link h-10 text-[#445149] data-[active=true]:bg-[#e4f1e7] data-[active=true]:text-[#0f6a51]"><UserRoundCog size={16}/><span>My account</span></SidebarMenuButton></SidebarMenuItem>
           <SidebarMenuItem><SidebarMenuButton tooltip="Sign out" onClick={handleSignOut} className="sidebar-navigation-link sidebar-signout-link h-10 text-[#9d4b4b]"><LogOut size={16}/><span>Sign out</span></SidebarMenuButton></SidebarMenuItem>
         </SidebarMenu></SidebarFooter>

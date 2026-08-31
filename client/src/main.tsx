@@ -82,10 +82,14 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+const processingApiUrl = import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API === "true"
+  ? ((import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? "")
+  : "";
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: `${(import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? ""}/api/trpc`,
+      url: `${processingApiUrl}/api/trpc`,
       transformer: superjson,
       async headers() {
         const supabaseSession = supabase ? await supabase.auth.getSession() : { data: { session: null } };
@@ -114,7 +118,7 @@ const trpcClient = trpc.createClient({
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
-          credentials: import.meta.env.VITE_PROCESSING_API_URL ? "omit" : "include",
+          credentials: processingApiUrl ? "omit" : "include",
         });
       },
     }),

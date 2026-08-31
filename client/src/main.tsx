@@ -39,9 +39,13 @@ if (supabase) {
     const userChanged = activeSupabaseUserId !== undefined && activeSupabaseUserId !== nextUserId;
     activeSupabaseUserId = nextUserId;
 
-    if (!userChanged && event !== "SIGNED_OUT") return;
+    if (!userChanged && event !== "SIGNED_OUT" && event !== "SIGNED_IN" && event !== "TOKEN_REFRESHED") return;
     clearTransientWorkspaceState();
-    queryClient.clear();
+    if (userChanged || event === "SIGNED_OUT") queryClient.clear();
+    // The magic-link callback updates Supabase Auth, but the app identity comes
+    // from the tRPC auth.me query. Refetch active queries after the session is
+    // available so Login can transition into the protected workspace.
+    if (session) void queryClient.refetchQueries({ type: "active" });
   });
 }
 

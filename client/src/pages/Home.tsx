@@ -12,14 +12,11 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getFriendlyApiMessage } from "@/lib/apiFeedback";
 import "@/privacy-diagram.css";
-import { JourneyFlowImage } from "@/components/JourneyFlowImage";
-import { JourneyFlowCaptions } from "@/components/JourneyFlowCaptions";
 import { WorkflowGuide, type WorkflowGuideContent } from "@/components/WorkflowGuide";
 import { PairedFileUploadPanel, type PairMapping } from "@/components/PairedFileUploadPanel";
 import { BriefcaseBusiness, Building2, Download, FileSpreadsheet, FileUp, Layers3, Loader2, ListTree, Phone, RotateCcw, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
 const ACCEPTED_TYPES = ".xlsx,.csv";
-const JOURNEY_FLOW_IMAGE_URL = "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer/manus-storage/end-user-journey-flow_7a1b9923.webp";
 const TOOL_CARDS = [
   { slug: "consolidation", title: "Master consolidation", description: "Merge Addition and Deletion sheets from many workbooks.", icon: Layers3 },
   { slug: "deletion-summary", title: "Deletion summary list", description: "Count deletion records by entity and preserve the source data.", icon: ListTree },
@@ -408,8 +405,12 @@ export default function Home() {
       </header>
       {activeWorkflowGuide && <section className="container workflow-guide-shell"><WorkflowGuide {...activeWorkflowGuide} /></section>}
       <section className="hero container">
-        <div className="hero-copy"><Badge className="soft-badge">EXCEL OPERATIONS WORKSPACE</Badge><h2>Choose a workflow<br /><em>from the menu.</em></h2><p>Each tool has its own upload, preview, and download workspace. Select the process you need from the clearly visible navigation menu on the left.</p><details className="privacy-details" open><summary>Your file privacy</summary><p>Your selected CSV or XLSX file is used as temporary data for the workflow you choose. The tool processes it securely in memory, lets you review the result, and then returns the finished file for download. Uploaded workbooks, spreadsheet cells, previews, and generated files are not stored in this application database or file storage.</p><figure className="privacy-diagram privacy-journey-diagram"><figcaption><strong>Your journey from upload to download</strong><span>Follow the seven simple steps: sign in, choose a workflow, select valid CSV or XLSX files, process, review, and download your finished workbook.</span><a href={JOURNEY_FLOW_IMAGE_URL} target="_blank" rel="noreferrer">Open the full end-user journey flow</a></figcaption><div className="privacy-diagram-viewport"><JourneyFlowImage src={JOURNEY_FLOW_IMAGE_URL} alt="End-user journey flow: sign in, choose an Excel workflow, select valid CSV or XLSX files, process the file securely in memory, review the preview and totals, then download the finished XLSX file. The flow explains that workbook data is not saved to the application database." /></div><JourneyFlowCaptions /><p className="privacy-diagram-note">If a file is not accepted, read the message and select a valid CSV or XLSX file. The privacy reminder applies throughout every workflow step.</p></figure></details></div>
+        <div className="hero-copy"><Badge className="soft-badge">EXCEL OPERATIONS WORKSPACE</Badge><h2>Choose a workflow<br /><em>from the menu.</em></h2><p>Each tool has its own upload, preview, and download workspace. Select the process you need from the clearly visible navigation menu on the left.</p><details className="privacy-details" open><summary>Your file privacy</summary><p>Your selected CSV or XLSX file is used as temporary data for the workflow you choose. The tool processes it securely in memory, lets you review the result, and then returns the finished file for download. Uploaded workbooks, spreadsheet cells, previews, and generated files are not stored in this application database or file storage.</p></details></div>
         <div className="hero-meta"><div><strong>01</strong><span>Choose tool</span></div><div><strong>02</strong><span>Upload data</span></div><div><strong>03</strong><span>Review output</span></div></div>
+      </section>
+      <section className="container overview-suggestions" aria-label="Suggested workflows">
+        <div className="overview-suggestions-heading"><Badge className="soft-badge">SUGGESTED NEXT STEPS</Badge><h2>What would you like to <em>work on?</em></h2><p>Start with the workflow that matches your spreadsheet task. You can preview every result before downloading it.</p></div>
+        <div className="tool-card-grid">{TOOL_CARDS.slice(0, 4).map(tool => <Link key={tool.slug} href={`/tools/${tool.slug}`} className="tool-card-link"><article className="tool-menu-card"><span className="tool-menu-icon"><tool.icon size={20} /></span><div><h3>{tool.title}</h3><p>{tool.description}</p></div><span className="tool-menu-arrow">Open →</span></article></Link>)}</div>
       </section>
       <section className="container profile-dashboard" aria-label="Your profile">
         <div className="profile-dashboard-heading"><div><Badge className="soft-badge">YOUR PROFILE</Badge><h2>Keep your details <em>current and protected.</em></h2><p>Your sign-in identity is provided by your login service. The editable profile fields below are encrypted before database storage and are visible only to you.</p></div></div>

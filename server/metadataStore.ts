@@ -1,5 +1,5 @@
-import * as legacy from "./db";
-import * as supabase from "./supabaseIntegration";
+import * as legacy from "./db.js";
+import * as supabase from "./supabaseIntegration.js";
 
 export type MetadataUserId = number | string;
 const external = (userId: MetadataUserId): userId is string => supabase.isSupabaseUserId(userId);

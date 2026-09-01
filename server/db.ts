@@ -1,8 +1,8 @@
 import { and, desc, eq, gte, lt, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertProcessHistory, InsertUser, processHistory, securityAuditEvents, userProcessSettings, userProfiles, users } from "../drizzle/schema";
-import { decryptProfileValue, encryptProfileValue } from "./profileEncryption";
-import { ENV } from './_core/env';
+import { InsertProcessHistory, InsertUser, processHistory, securityAuditEvents, userProcessSettings, userProfiles, users } from "../drizzle/schema.js";
+import { decryptProfileValue, encryptProfileValue } from "./profileEncryption.js";
+import { ENV } from './_core/env.js';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 

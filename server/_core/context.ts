@@ -1,6 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
-import { sdk } from "./sdk";
-import type { ApplicationUser } from "../supabaseIntegration";
+import { sdk } from "./sdk.js";
+import type { ApplicationUser } from "../supabaseIntegration.js";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];

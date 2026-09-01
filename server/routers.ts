@@ -1,23 +1,23 @@
 import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
-import { systemRouter } from "./_core/systemRouter";
-import { protectedProcedure, publicProcedure, router, sensitiveProcedure, uploadProcedure } from "./_core/trpc";
+import { getSessionCookieOptions } from "./_core/cookies.js";
+import { systemRouter } from "./_core/systemRouter.js";
+import { protectedProcedure, publicProcedure, router, sensitiveProcedure, uploadProcedure } from "./_core/trpc.js";
 import { z } from "zod";
-import { processDeletionSummary } from "./deletionSummaryProcessor";
-import { processDeletionDuplicates } from "./deletionDuplicatesProcessor";
-import { processDeletionWithSummary } from "./deletionWithSummaryProcessor";
-import { processAdditionExitMatch } from "./additionExitMatchProcessor";
-import { processDeletionOnboardMatch } from "./deletionOnboardMatchProcessor";
-import { processReadyUpload } from "./readyUploadProcessor";
-import { processFacilityConversion } from "./facilityConversionProcessor";
-import { processExcelFiles } from "./excelProcessor";
-import { inspectWorkbookColumns } from "./workbookColumnInspector";
-import { applyProcessHistoryRetention, clearProcessHistory, createProcessHistory, createSecurityAuditEvent, deleteUserProfile, getProcessHistoryRetention, getUserProfile, listProcessHistory, listProcessHistoryForExport, listSecurityAuditEventsForUser, RETENTION_DAYS_OPTIONS, saveProcessHistoryRetention, saveUserProfile, type ProcessHistoryDateRange, type RetentionDays } from "./db";
-import { MAX_UPLOAD_FILES, validateUploadedWorkbook, validateUploadedWorkbookBatch } from "./security";
-import { normalizeUploadedFiles } from "./uploadNormalization";
-import { metadataStore, type MetadataUserId } from "./metadataStore";
-import { sanitizeGeneratedWorkbookOutput } from "./workbookOutputSecurity";
-import { listManagedUsers, moderateUser } from "./admin";
+import { processDeletionSummary } from "./deletionSummaryProcessor.js";
+import { processDeletionDuplicates } from "./deletionDuplicatesProcessor.js";
+import { processDeletionWithSummary } from "./deletionWithSummaryProcessor.js";
+import { processAdditionExitMatch } from "./additionExitMatchProcessor.js";
+import { processDeletionOnboardMatch } from "./deletionOnboardMatchProcessor.js";
+import { processReadyUpload } from "./readyUploadProcessor.js";
+import { processFacilityConversion } from "./facilityConversionProcessor.js";
+import { processExcelFiles } from "./excelProcessor.js";
+import { inspectWorkbookColumns } from "./workbookColumnInspector.js";
+import { applyProcessHistoryRetention, clearProcessHistory, createProcessHistory, createSecurityAuditEvent, deleteUserProfile, getProcessHistoryRetention, getUserProfile, listProcessHistory, listProcessHistoryForExport, listSecurityAuditEventsForUser, RETENTION_DAYS_OPTIONS, saveProcessHistoryRetention, saveUserProfile, type ProcessHistoryDateRange, type RetentionDays } from "./db.js";
+import { MAX_UPLOAD_FILES, validateUploadedWorkbook, validateUploadedWorkbookBatch } from "./security.js";
+import { normalizeUploadedFiles } from "./uploadNormalization.js";
+import { metadataStore, type MetadataUserId } from "./metadataStore.js";
+import { sanitizeGeneratedWorkbookOutput } from "./workbookOutputSecurity.js";
+import { listManagedUsers, moderateUser } from "./admin.js";
 
 
 export const uploadedFile = z.object({

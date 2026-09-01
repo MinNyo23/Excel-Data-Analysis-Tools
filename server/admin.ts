@@ -18,10 +18,10 @@ export function requireMasterAdmin(user: { email?: string | null } | null | unde
 }
 
 export async function listManagedUsers(actor: { email?: string | null } | null | undefined) {
-  const client = requireMasterAdmin(actor);
+  const client: any = requireMasterAdmin(actor);
   const { data: users, error } = await client.auth.admin.listUsers({ page: 1, perPage: 1000 });
   if (error) throw new Error("Could not load users.");
-  const ids = (users.users ?? []).map(user => user.id);
+  const ids = (users.users ?? []).map((user: any) => user.id);
   const { data: history, error: historyError } = ids.length
     ? await client.from("process_history").select("user_id,input_file_names,total_records,completed_at").in("user_id", ids)
     : { data: [], error: null };
@@ -35,11 +35,11 @@ export async function listManagedUsers(actor: { email?: string | null } | null |
     if (!current.lastActivity || new Date(row.completed_at).getTime() > new Date(current.lastActivity).getTime()) current.lastActivity = row.completed_at;
     usage.set(row.user_id, current);
   }
-  return (users.users ?? []).map(user => ({ id: user.id, email: user.email ?? "", createdAt: user.created_at, lastSignInAt: user.last_sign_in_at, bannedUntil: user.banned_until ?? null, emailConfirmed: Boolean(user.email_confirmed_at), ...(usage.get(user.id) ?? { workflows: 0, files: 0, records: 0, lastActivity: null }) }));
+  return (users.users ?? []).map((user: any) => ({ id: user.id, email: user.email ?? "", createdAt: user.created_at, lastSignInAt: user.last_sign_in_at, bannedUntil: user.banned_until ?? null, emailConfirmed: Boolean(user.email_confirmed_at), ...(usage.get(user.id) ?? { workflows: 0, files: 0, records: 0, lastActivity: null }) }));
 }
 
 export async function moderateUser(actor: { email?: string | null } | null | undefined, userId: string, action: "ban" | "unban" | "delete") {
-  const client = requireMasterAdmin(actor);
+  const client: any = requireMasterAdmin(actor);
   if (action === "delete") {
     const { error } = await client.auth.admin.deleteUser(userId);
     if (error) throw new Error("Could not delete user.");

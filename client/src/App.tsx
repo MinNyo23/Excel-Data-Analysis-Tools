@@ -10,9 +10,11 @@ import Home from "./pages/Home";
 import TermsConditions from "./pages/TermsConditions";
 import RouteTransition from "./components/RouteTransition";
 import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
 import { AuthGate } from "./components/AuthGate";
 import { useLocation } from "wouter";
 import { useAuth } from "./_core/hooks/useAuth";
+import Admin from "./pages/Admin";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -20,9 +22,11 @@ function Router() {
     <Switch>
       <Route path={"/"}><AuthGate><Home /></AuthGate></Route>
       <Route path={"/login"} component={Login} />
+      <Route path={"/auth/callback"} component={AuthCallback} />
       <Route path={"/tools/:tool"}><AuthGate><Home /></AuthGate></Route>
       <Route path={"/profile"}><Redirect to="/account" /></Route>
       <Route path={"/account"}><AuthGate><AccountManagement /></AuthGate></Route>
+      <Route path={"/admin"}><AuthGate><Admin /></AuthGate></Route>
       <Route path={"/terms"}><AuthGate><TermsConditions /></AuthGate></Route>
       <Route path={"/404"}><AuthGate><NotFound /></AuthGate></Route>
       {/* Final fallback route */}
@@ -40,7 +44,7 @@ function AppContent() {
   const [location] = useLocation();
   const { user, isAuthenticated, loading } = useAuth();
   const routedContent = <RouteTransition><Router /></RouteTransition>;
-  if (location.startsWith("/login") || loading || !isAuthenticated) return routedContent;
+  if (location.startsWith("/login") || location.startsWith("/auth/callback") || loading || !isAuthenticated) return routedContent;
   return <DashboardLayout key={user?.id ?? "authenticated-workspace"}>{routedContent}</DashboardLayout>;
 }
 

@@ -29,16 +29,24 @@ describe("dedicated login security", () => {
     expect(login).not.toContain('href="/terms"');
     expect(login).toContain("Terms &amp; Conditions are available after sign-in.");
     expect(app).toContain('<Route path={"/login"} component={Login} />');
+    expect(app).toContain('<Route path={"/auth/callback"} component={AuthCallback} />');
     expect(app).toContain("<AuthGate><Home /></AuthGate>");
     expect(app).toContain('<Route path={"/"}><AuthGate><Home /></AuthGate></Route>');
     expect(app).toContain('<Route path={"/terms"}><AuthGate><TermsConditions /></AuthGate></Route>');
-    expect(app).toContain('if (location.startsWith("/login") || loading || !isAuthenticated) return routedContent;');
+    expect(app).toContain('if (location.startsWith("/login") || location.startsWith("/auth/callback") || loading || !isAuthenticated) return routedContent;');
     expect(source("client/src/components/AuthGate.tsx")).toContain("<Redirect to={getLoginPathForCurrentLocation()} />");
     expect(authEntry).toContain("signInWithOtp");
-    expect(authEntry).toContain("emailRedirectTo: window.location.origin");
+    expect(authEntry).toContain("emailRedirectTo: `${window.location.origin}/auth/callback`");
     expect(authEntry).not.toContain("window.prompt");
     expect(authHook).not.toContain("manus-runtime-user-info");
     expect(queryBootstrap).toContain("getLoginPathForCurrentLocation");
+    expect(queryBootstrap).toContain('event !== "SIGNED_IN"');
+    expect(queryBootstrap).toContain('event !== "TOKEN_REFRESHED"');
+    expect(queryBootstrap).toContain('queryClient.refetchQueries({ type: "active" })');
+    expect(source("client/src/pages/AuthCallback.tsx")).toContain('setLocation("/")');
+    expect(source("client/src/pages/AuthCallback.tsx")).toContain("detectSessionInUrl");
+    expect(source("client/src/pages/AuthCallback.tsx")).toContain("supabase.auth.getSession()");
+    expect(source("client/src/pages/AuthCallback.tsx")).toContain("!sessionData.session");
     expect(source("client/src/components/AuthGate.tsx")).toContain("takeLoginReturnPath");
   });
 

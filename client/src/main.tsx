@@ -40,9 +40,13 @@ if (supabase) {
     const userChanged = activeSupabaseUserId !== undefined && activeSupabaseUserId !== nextUserId;
     activeSupabaseUserId = nextUserId;
 
-    if (!userChanged && event !== "SIGNED_OUT") return;
+    if (!userChanged && event !== "SIGNED_OUT" && event !== "SIGNED_IN" && event !== "TOKEN_REFRESHED") return;
     clearTransientWorkspaceState();
-    queryClient.clear();
+    if (userChanged || event === "SIGNED_OUT") queryClient.clear();
+    // The magic-link callback updates Supabase Auth, but the app identity comes
+    // from the tRPC auth.me query. Refetch active queries after the session is
+    // available so Login can transition into the protected workspace.
+    if (session) void queryClient.refetchQueries({ type: "active" });
   });
 }
 
@@ -79,10 +83,14 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+const processingApiUrl = import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API === "true"
+  ? ((import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? "")
+  : "";
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: `${PROCESSING_API_BASE_URL}/api/trpc`,
+      url: `${processingApiUrl}/api/trpc`,
       transformer: superjson,
       async headers() {
         const supabaseSession = supabase ? await supabase.auth.getSession() : { data: { session: null } };
@@ -111,7 +119,7 @@ const trpcClient = trpc.createClient({
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
-          credentials: "omit",
+          credentials: processingApiUrl ? "omit" : "include",
         });
       },
     }),

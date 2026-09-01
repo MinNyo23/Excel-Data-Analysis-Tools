@@ -17,6 +17,8 @@ import { MAX_UPLOAD_FILES, validateUploadedWorkbook, validateUploadedWorkbookBat
 import { normalizeUploadedFiles } from "./uploadNormalization";
 import { metadataStore, type MetadataUserId } from "./metadataStore";
 import { sanitizeGeneratedWorkbookOutput } from "./workbookOutputSecurity";
+import { listManagedUsers, moderateUser } from "./admin";
+
 
 export const uploadedFile = z.object({
   name: z.string().min(1).max(255),
@@ -133,6 +135,10 @@ export async function clearProcessingDataOnLogout(
 
 export const appRouter = router({
   system: systemRouter,
+  admin: router({
+    users: protectedProcedure.query(({ ctx }) => listManagedUsers(ctx.user)),
+    moderate: protectedProcedure.input(z.object({ userId: z.string().min(1).max(64), action: z.enum(["ban", "unban", "delete"]) })).mutation(({ ctx, input }) => moderateUser(ctx.user, input.userId, input.action)),
+  }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: protectedProcedure.mutation(async ({ ctx }) => {
@@ -143,7 +149,7 @@ export const appRouter = router({
         // Session termination must not depend on the metadata cleanup outcome.
         if (ctx.user.authProvider !== "supabase") {
           const cookieOptions = getSessionCookieOptions(ctx.req);
-          ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+          (ctx.res as typeof ctx.res & { clearCookie: (name: string, options?: Record<string, unknown>) => void }).clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
         }
       }
       return { success: true, ...cleanup } as const;

@@ -13,6 +13,20 @@ const MAX_ZIP_COMPRESSION_RATIO = 200;
 
 type UploadedFileLike = { name: string; data: string };
 
+const DEFAULT_FRONTEND_ORIGINS = ["https://excel-master-file-tool.vercel.app"];
+const FRONTEND_ORIGIN_ENV_KEYS = ["ALLOWED_FRONTEND_ORIGINS", "FRONTEND_URL", "PUBLIC_APP_URL", "VERCEL_PROJECT_PRODUCTION_URL"] as const;
+
+function allowedFrontendOrigins() {
+  const origins = new Set(DEFAULT_FRONTEND_ORIGINS);
+  for (const key of FRONTEND_ORIGIN_ENV_KEYS) {
+    for (const value of (process.env[key] ?? "").split(",")) {
+      const origin = value.trim().replace(/\/$/, "");
+      if (origin) origins.add(origin);
+    }
+  }
+  return origins;
+}
+
 function isBase64(value: string) {
   return value.length > 0 && value.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(value);
 }
@@ -97,28 +111,35 @@ export function consumeRateLimit(key: string, limit: number, windowMs: number, n
   return { allowed: entry.count <= limit, remaining: Math.max(0, limit - entry.count), retryAfterMs: Math.max(0, entry.expiresAt - now) };
 }
 
-export function requestIdentity(req: Request) {
+export function requestIdentity(req: any) {
   const forwarded = req.headers["x-forwarded-for"];
   const address = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0]?.trim() || req.ip || "unknown";
   return createHash("sha256").update(address).digest("hex").slice(0, 24);
 }
 
-export function mutationOriginIsTrusted(req: Request) {
+export function mutationOriginIsTrusted(req: any) {
   if (req.method !== "POST") return true;
   const origin = req.headers.origin;
   if (!origin) return true;
-  const configuredOrigins = (process.env.ALLOWED_FRONTEND_ORIGINS ?? "").split(",").map(value => value.trim()).filter(Boolean);
-  if (configuredOrigins.includes(origin)) return true;
+  const configuredOrigins = allowedFrontendOrigins();
+  if (configuredOrigins.has(origin)) return true;
   const host = (req.headers["x-forwarded-host"] || req.headers.host || "") as string;
   const protoValue = req.headers["x-forwarded-proto"] || req.protocol || "https";
   const proto = Array.isArray(protoValue) ? protoValue[0] : protoValue.split(",")[0];
   try { return new URL(origin).origin === `${proto.trim()}://${host}`; } catch { return false; }
 }
 
-export function externalApiCors(req: Request, res: Response, next: NextFunction) {
+export function noStoreApiResponse(_req: any, res: any, next: any) {
+  res.setHeader("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Vary", "Origin");
+  next();
+}
+
+export function externalApiCors(req: any, res: any, next: any) {
   const origin = req.headers.origin;
-  const configuredOrigins = (process.env.ALLOWED_FRONTEND_ORIGINS ?? "").split(",").map(value => value.trim()).filter(Boolean);
-  if (origin && configuredOrigins.includes(origin)) {
+  const configuredOrigins = allowedFrontendOrigins();
+  if (origin && configuredOrigins.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
@@ -128,7 +149,7 @@ export function externalApiCors(req: Request, res: Response, next: NextFunction)
   return next();
 }
 
-export function securityHeaders(req: Request, res: Response, next: NextFunction) {
+export function securityHeaders(req: any, res: any, next: any) {
   const isSecure = req.protocol === "https" || String(req.headers["x-forwarded-proto"] || "").split(",").some(value => value.trim() === "https");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-DNS-Prefetch-Control", "off");
@@ -147,7 +168,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   next();
 }
 
-export function apiRequestGuards(req: Request, res: Response, next: NextFunction) {
+export function apiRequestGuards(req: any, res: any, next: any) {
   const contentLength = Number(req.headers["content-length"] ?? 0);
   if (Number.isFinite(contentLength) && contentLength > 30 * 1024 * 1024) return res.status(413).json({ error: "Request body is too large." });
   if (!mutationOriginIsTrusted(req)) return res.status(403).json({ error: "Untrusted request origin." });

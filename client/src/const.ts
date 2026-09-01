@@ -14,7 +14,7 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 // call would desync it from an in-flight login and the callback would reject it
 // with "invalid oauth state". It returns void by design, so there is no URL to
 // stash across renders.
-export const startLogin = async (email?: string, captchaToken?: string) => {
+export const startLogin = async (email?: string, captchaToken?: string, returnPath = "/") => {
   if (usesSupabaseAuth && supabase) {
     if (!email) throw new Error("An email address is required for passwordless sign-in.");
     if (!captchaToken) throw new Error("CAPTCHA verification is required.");
@@ -23,9 +23,18 @@ export const startLogin = async (email?: string, captchaToken?: string) => {
       headers: { "Content-Type": "application/json" },
       credentials: "omit",
       body: JSON.stringify({ token: captchaToken }),
+    // Let Supabase perform its configured CAPTCHA verification. Google tokens
+    // are single-use, so verifying them in a separate endpoint first causes
+    // Supabase to reject the same token with invalid-input-response.
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        // Use a dedicated callback route so the app can wait for Supabase to
+        // finish the email-link session handoff before navigating to home.
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        captchaToken,
+      },
     });
-    if (!verificationResponse.ok) throw new Error("CAPTCHA verification failed. Please complete the check again.");
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin, captchaToken } });
     if (error) {
       const message = error.message.toLowerCase();
       if (message.includes("captcha")) throw new Error("CAPTCHA verification failed. Please complete the check again.");

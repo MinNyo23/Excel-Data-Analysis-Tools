@@ -167,7 +167,7 @@ export default defineConfig({
     "import.meta.env.VITE_USE_SUPABASE_AUTH": JSON.stringify(process.env.VITE_USE_SUPABASE_AUTH),
     "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(process.env.VITE_SUPABASE_URL),
     "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(process.env.VITE_SUPABASE_PUBLISHABLE_KEY),
-    "import.meta.env.VITE_TURNSTILE_SITE_KEY": JSON.stringify(process.env.VITE_TURNSTILE_SITE_KEY),
+    "import.meta.env.VITE_RECAPTCHA_SITE_KEY": JSON.stringify(process.env.VITE_RECAPTCHA_SITE_KEY || ""),
   },
   resolve: {
     alias: {
@@ -182,6 +182,10 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // The current app bundle includes the Excel processing UI and its parser
+    // dependencies. Keep the warning threshold above the measured bundle size
+    // until the feature pages are split into lazy-loaded routes.
+    chunkSizeWarningLimit: 1200,
   },
   server: {
     // The managed preview proxy does not provide Vite's WebSocket upgrade

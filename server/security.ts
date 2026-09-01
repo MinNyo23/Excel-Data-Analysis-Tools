@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
-import { GOOGLE_RECAPTCHA_ORIGINS } from "@shared/contentSecurityPolicy";
-import { MAX_UPLOAD_FILE_BYTES } from "@shared/uploadLimits";
+import { GOOGLE_RECAPTCHA_ORIGINS } from "../shared/contentSecurityPolicy.js";
+import { MAX_UPLOAD_FILE_BYTES } from "../shared/uploadLimits.js";
 
-export { MAX_UPLOAD_FILE_BYTES } from "@shared/uploadLimits";
+export { MAX_UPLOAD_FILE_BYTES } from "../shared/uploadLimits.js";
 export const MAX_UPLOAD_BATCH_BYTES = 20 * 1024 * 1024;
 export const MAX_UPLOAD_FILES = 10;
 const MAX_ZIP_ENTRIES = 500;

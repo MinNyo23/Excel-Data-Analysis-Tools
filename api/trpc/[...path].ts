@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { metadataStore } from "../../server/metadataStore";
-import { supabaseListProcessHistory } from "../../server/supabaseIntegration";
+import { metadataStore } from "../../server/metadataStore.js";
+import { supabaseListProcessHistory } from "../../server/supabaseIntegration.js";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL ?? "";
 const supabasePublishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
@@ -93,6 +93,6 @@ export default async function handler(req: any, res: any) {
     return handleCoreProcedures(req, res, procedures);
   }
 
-  const { default: app } = await import("../index");
+  const { default: app } = await import("../index.js");
   return app(req, res);
 }

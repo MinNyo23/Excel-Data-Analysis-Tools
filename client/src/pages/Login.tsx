@@ -76,7 +76,7 @@ export default function Login() {
         if (authError) throw authError;
         setOtpSent(true);
         setCooldown(RESEND_COOLDOWN_SECONDS);
-        setMessage(`We sent a six-digit code to ${normalizedEmail}. The code expires soon.`);
+        setMessage(`We sent an eight-digit code to ${normalizedEmail}. The code expires soon.`);
         resetCaptcha();
       } else {
         await startLogin(normalizedEmail, captchaToken ?? undefined, returnPath);
@@ -93,8 +93,8 @@ export default function Login() {
     event?.preventDefault();
     setError(null);
     const normalizedEmail = email.trim().toLowerCase();
-    if (!/^\d{6}$/.test(otp)) {
-      setError("Enter the six-digit code from your email.");
+    if (!/^\d{8}$/.test(otp)) {
+      setError("Enter the eight-digit code from your email.");
       return;
     }
     if (!supabase) return;
@@ -122,17 +122,17 @@ export default function Login() {
         <div className="login-card-icon"><ShieldCheck size={23}/></div>
         <p className="login-eyebrow">WELCOME BACK</p>
         <h2>{otpSent ? "Enter your code" : "Sign in securely"}</h2>
-        <p className="login-description">{otpSent ? "Enter the six-digit one-time password sent to your email. It can only be used once." : "We will send a six-digit one-time password to your work email. No password is collected by this application."}</p>
+        <p className="login-description">{otpSent ? "Enter the eight-digit one-time password sent to your email. It can only be used once." : "We will send an eight-digit one-time password to your work email. No password is collected by this application."}</p>
         {!otpSent ? <form onSubmit={requestOtp} noValidate>
           <label className="login-field"><span>Work email address</span><div><Mail size={17}/><Input type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={event => setEmail(event.target.value)} placeholder="you@company.com" disabled={isBusy || cooldown > 0}/></div></label>
           {captchaRequired && <div className="login-captcha" aria-label="Spam protection"><ReCAPTCHA ref={captchaRef} sitekey={RECAPTCHA_SITE_KEY} onChange={token => setCaptchaToken(token)} onExpired={() => setCaptchaToken(null)} onErrored={() => { setCaptchaToken(null); setError("CAPTCHA could not be verified. Check your Google reCAPTCHA key and domain."); }} /></div>}
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}
           <Button type="submit" className="login-submit" disabled={isBusy || cooldown > 0 || (captchaRequired && !captchaToken)}>{isBusy ? <><Loader2 className="animate-spin" size={17}/> Sending code…</> : cooldown > 0 ? `Code sent · wait ${cooldown}s` : <><Mail size={17}/> Email me a one-time password</>}</Button>
         </form> : <form onSubmit={verifyOtp} noValidate>
-          <label className="login-field"><span>One-time password</span><InputOTP maxLength={6} value={otp} onChange={setOtp} autoFocus disabled={isBusy} aria-label="Six-digit one-time password"><InputOTPGroup><InputOTPSlot index={0}/><InputOTPSlot index={1}/><InputOTPSlot index={2}/><InputOTPSlot index={3}/><InputOTPSlot index={4}/><InputOTPSlot index={5}/></InputOTPGroup></InputOTP></label>
+          <label className="login-field"><span>One-time password</span><InputOTP maxLength={8} value={otp} onChange={setOtp} autoFocus disabled={isBusy} aria-label="Eight-digit one-time password"><InputOTPGroup><InputOTPSlot index={0}/><InputOTPSlot index={1}/><InputOTPSlot index={2}/><InputOTPSlot index={3}/><InputOTPSlot index={4}/><InputOTPSlot index={5}/><InputOTPSlot index={6}/><InputOTPSlot index={7}/></InputOTPGroup></InputOTP></label>
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}
           {message && <p className="login-feedback login-success" role="status">{message}</p>}
-          <Button type="submit" className="login-submit" disabled={isBusy || otp.length !== 6}>{isBusy ? <><Loader2 className="animate-spin" size={17}/> Verifying…</> : "Verify and enter workspace"}</Button>
+          <Button type="submit" className="login-submit" disabled={isBusy || otp.length !== 8}>{isBusy ? <><Loader2 className="animate-spin" size={17}/> Verifying…</> : "Verify and enter workspace"}</Button>
           <Button type="button" variant="outline" className="login-resend" onClick={() => { setOtpSent(false); setOtp(""); setMessage(null); setError(null); }} disabled={isBusy}>Use a different email</Button>
           <Button type="button" variant="outline" className="login-resend" onClick={() => void requestOtp()} disabled={isBusy || cooldown > 0}>{cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}</Button>
         </form>}

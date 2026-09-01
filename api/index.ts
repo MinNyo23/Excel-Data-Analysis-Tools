@@ -4,9 +4,9 @@ dotenv.config();
 
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { appRouter } from "../server/routers.js";
-import { createContext } from "../server/_core/context.js";
-import { apiRequestGuards, externalApiCors, noStoreApiResponse, securityHeaders } from "../server/security.js";
+import { appRouter } from "../server/routers";
+import { createContext } from "../server/_core/context";
+import { apiRequestGuards, externalApiCors, noStoreApiResponse, securityHeaders } from "../server/security";
 
 const app = express();
 app.set("trust proxy", 1);

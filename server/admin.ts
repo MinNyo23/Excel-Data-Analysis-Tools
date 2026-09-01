@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { listAllProcessHistory, listAllUsers } from "./db.js";
+import { listAllProcessHistory, listAllUsers } from "./db";
 
 export const MASTER_ADMIN_EMAIL = "minnyo.work@gmail.com";
 

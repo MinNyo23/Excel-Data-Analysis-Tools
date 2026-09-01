@@ -1,9 +1,9 @@
 import { COOKIE_NAME, OAUTH_STATE_COOKIE, SESSION_MAX_AGE_MS, decodeOAuthState } from "@shared/const";
 import { parse as parseCookieHeader } from "cookie";
 import type { Express, Request, Response } from "express";
-import * as db from "../db.js";
-import { getSessionCookieOptions } from "./cookies.js";
-import { sdk } from "./sdk.js";
+import * as db from "../db";
+import { getSessionCookieOptions } from "./cookies";
+import { sdk } from "./sdk";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];

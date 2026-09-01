@@ -110,54 +110,138 @@ export async function supabaseListAllProcessHistory() {
 }
 
 export type SupabaseAdminAction = "ban" | "unban" | "delete";
+type AdminActionHistoryStatus = "completed" | "failed";
+type AdminActionHistoryRecord = {
+  actorId: string;
+  actorEmail: string;
+  targetUserId: string;
+  targetEmail: string;
+  action: SupabaseAdminAction;
+};
+type AdminActionHistoryStorage =
+  | { kind: "structured"; id: string | number }
+  | { kind: "security-audit"; id: string | number };
+
+function isMissingRelationError(error: { code?: string; message?: string } | null | undefined) {
+  return Boolean(error && (error.code === "PGRST205" || /could not find the table/i.test(error.message ?? "")));
+}
+
+function adminActionMetadata(record: AdminActionHistoryRecord, status: AdminActionHistoryStatus) {
+  return safeAuditMetadata({
+    action: record.action,
+    targetId: record.targetUserId,
+    target: record.targetEmail,
+    status,
+  });
+}
+
+async function insertAdminActionHistory(admin: ReturnType<typeof requireAdmin>, record: AdminActionHistoryRecord, status: AdminActionHistoryStatus): Promise<AdminActionHistoryStorage> {
+  const { data: historyRow, error: historyError } = await admin
+    .from("admin_user_action_history")
+    .insert({ actor_id: record.actorId, actor_email: record.actorEmail, target_user_id: record.targetUserId, target_email: record.targetEmail, action: record.action, status })
+    .select("id")
+    .single();
+  if (!historyError && historyRow) return { kind: "structured", id: historyRow.id };
+
+  // The structured table is deployed by an optional migration. Fall back not
+  // only when it is absent, but also when an older schema rejects a target-user
+  // reference; the Auth action must not be reported as failed after completion.
+  if (!isMissingRelationError(historyError)) {
+    console.warn("[Supabase] Structured admin history write failed; using security audit history.");
+  }
+
+  const { data: auditRow, error: auditError } = await admin
+    .from("security_audit_events")
+    .insert({ user_id: record.actorId, event_type: "admin_action", metadata: adminActionMetadata(record, status) })
+    .select("id")
+    .single();
+  if (auditError || !auditRow) throw new Error("Admin action history could not be recorded.");
+  return { kind: "security-audit", id: auditRow.id };
+}
 
 export async function supabaseModerateUser(actor: { id: string; email?: string | null }, targetUserId: string, action: SupabaseAdminAction) {
   if (actor.id === targetUserId) throw new Error("The Master Account cannot be modified.");
-  const { data: targetData, error: targetError } = await requireAdmin().auth.admin.getUserById(targetUserId);
+  const admin = requireAdmin();
+  const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
   if (targetError || !targetData.user) throw new Error("Supabase user not found.");
 
-  const targetEmail = targetData.user.email ?? "";
-  const { data: historyRow, error: historyError } = await requireAdmin()
-    .from("admin_user_action_history")
-    .insert({ actor_id: actor.id, actor_email: actor.email ?? "", target_user_id: targetUserId, target_email: targetEmail, action, status: "pending" })
-    .select("id")
-    .single();
-  if (historyError || !historyRow) throw new Error("Admin action history could not be recorded.");
-
+  const record: AdminActionHistoryRecord = {
+    actorId: actor.id,
+    actorEmail: actor.email ?? "",
+    targetUserId,
+    targetEmail: targetData.user.email ?? "",
+    action,
+  };
+  let actionError: unknown = null;
   try {
     const result = action === "delete"
-      ? await requireAdmin().auth.admin.deleteUser(targetUserId)
-      : await requireAdmin().auth.admin.updateUserById(targetUserId, { ban_duration: action === "ban" ? "876000h" : "none" });
+      ? await admin.auth.admin.deleteUser(targetUserId)
+      : await admin.auth.admin.updateUserById(targetUserId, { ban_duration: action === "ban" ? "876000h" : "none" });
     if (result.error) throw new Error("Supabase user action failed.");
-
-    const { error: historyUpdateError } = await requireAdmin()
-      .from("admin_user_action_history")
-      .update({ status: "completed" })
-      .eq("id", historyRow.id);
-    if (historyUpdateError) console.warn("[Supabase] User action completed but history status could not be updated.");
-    return { action, userId: targetUserId } as const;
   } catch (error) {
-    await requireAdmin().from("admin_user_action_history").update({ status: "failed" }).eq("id", historyRow.id);
-    throw error;
+    actionError = error;
   }
+
+  try {
+    await insertAdminActionHistory(admin, record, actionError ? "failed" : "completed");
+  } catch (historyError) {
+    console.warn("[Supabase] User action completed or failed but no history record could be written.", historyError);
+  }
+  if (actionError) throw actionError;
+  return { action, userId: targetUserId } as const;
 }
 
-export async function supabaseListUserActionHistory() {
-  const { data, error } = await requireAdmin()
-    .from("admin_user_action_history")
-    .select("id,actor_email,target_user_id,target_email,action,status,created_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
-  if (error) throw new Error("Admin action history list failed.");
-  return (data ?? []).map((row: any) => ({
+function mapStructuredActionHistory(rows: any[]) {
+  return rows.map((row: any) => ({
     id: String(row.id),
     actorEmail: row.actor_email,
     targetUserId: row.target_user_id,
     targetEmail: row.target_email,
     action: row.action as SupabaseAdminAction,
-    status: row.status as "pending" | "completed" | "failed",
+    status: row.status as AdminActionHistoryStatus,
     createdAt: new Date(row.created_at),
   }));
+}
+
+function mapAuditActionHistory(rows: any[]) {
+  return rows.flatMap((row: any) => {
+    const metadata = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+    const action = metadata.action as SupabaseAdminAction;
+    if (!["ban", "unban", "delete"].includes(action)) return [];
+    return [{
+      id: String(row.id),
+      actorEmail: MASTER_ADMIN_EMAIL,
+      targetUserId: String(metadata.targetId ?? ""),
+      targetEmail: String(metadata.target ?? ""),
+      action,
+      status: metadata.status === "failed" ? "failed" : "completed",
+      createdAt: new Date(row.created_at),
+    }];
+  });
+}
+
+export async function supabaseListUserActionHistory(actorId: string) {
+  const admin = requireAdmin();
+  const { data, error } = await admin
+    .from("admin_user_action_history")
+    .select("id,actor_email,target_user_id,target_email,action,status,created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error && !isMissingRelationError(error)) throw new Error("Admin action history list failed.");
+
+  const { data: auditRows, error: auditError } = await admin
+    .from("security_audit_events")
+    .select("id,user_id,event_type,metadata,created_at")
+    .eq("user_id", actorId)
+    .eq("event_type", "admin_action")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (auditError) throw new Error("Admin action history list failed.");
+
+  return [
+    ...mapStructuredActionHistory(data ?? []),
+    ...mapAuditActionHistory(auditRows ?? []),
+  ].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
 }
 
 function rangeQuery(query: any, range: ProcessHistoryDateRange) {

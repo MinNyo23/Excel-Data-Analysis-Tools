@@ -17,7 +17,7 @@ import { MAX_UPLOAD_FILES, validateUploadedWorkbook, validateUploadedWorkbookBat
 import { normalizeUploadedFiles } from "./uploadNormalization.js";
 import { metadataStore, type MetadataUserId } from "./metadataStore.js";
 import { sanitizeGeneratedWorkbookOutput } from "./workbookOutputSecurity.js";
-import { listManagedUsers, moderateUser } from "./admin.js";
+import { listManagedUsers, listUserActionHistory, moderateUser } from "./admin.js";
 
 
 export const uploadedFile = z.object({
@@ -137,6 +137,7 @@ export const appRouter = router({
   system: systemRouter,
   admin: router({
     users: protectedProcedure.query(({ ctx }) => listManagedUsers(ctx.user)),
+    actionHistory: protectedProcedure.query(({ ctx }) => listUserActionHistory(ctx.user)),
     moderate: protectedProcedure.input(z.object({ userId: z.string().min(1).max(64), action: z.enum(["ban", "unban", "delete"]) })).mutation(({ ctx, input }) => moderateUser(ctx.user, input.userId, input.action)),
   }),
   auth: router({

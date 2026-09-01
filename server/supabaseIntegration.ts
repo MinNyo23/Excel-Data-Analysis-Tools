@@ -80,6 +80,57 @@ export async function supabaseListAllProcessHistory() {
   }));
 }
 
+export type SupabaseAdminAction = "ban" | "unban" | "delete";
+
+export async function supabaseModerateUser(actor: { id: string; email?: string | null }, targetUserId: string, action: SupabaseAdminAction) {
+  if (actor.id === targetUserId) throw new Error("The Master Account cannot be modified.");
+  const { data: targetData, error: targetError } = await requireAdmin().auth.admin.getUserById(targetUserId);
+  if (targetError || !targetData.user) throw new Error("Supabase user not found.");
+
+  const targetEmail = targetData.user.email ?? "";
+  const { data: historyRow, error: historyError } = await requireAdmin()
+    .from("admin_user_action_history")
+    .insert({ actor_id: actor.id, actor_email: actor.email ?? "", target_user_id: targetUserId, target_email: targetEmail, action, status: "pending" })
+    .select("id")
+    .single();
+  if (historyError || !historyRow) throw new Error("Admin action history could not be recorded.");
+
+  try {
+    const result = action === "delete"
+      ? await requireAdmin().auth.admin.deleteUser(targetUserId)
+      : await requireAdmin().auth.admin.updateUserById(targetUserId, { ban_duration: action === "ban" ? "876000h" : "none" });
+    if (result.error) throw new Error("Supabase user action failed.");
+
+    const { error: historyUpdateError } = await requireAdmin()
+      .from("admin_user_action_history")
+      .update({ status: "completed" })
+      .eq("id", historyRow.id);
+    if (historyUpdateError) console.warn("[Supabase] User action completed but history status could not be updated.");
+    return { action, userId: targetUserId } as const;
+  } catch (error) {
+    await requireAdmin().from("admin_user_action_history").update({ status: "failed" }).eq("id", historyRow.id);
+    throw error;
+  }
+}
+
+export async function supabaseListUserActionHistory() {
+  const { data, error } = await requireAdmin()
+    .from("admin_user_action_history")
+    .select("id,actor_email,target_user_id,target_email,action,status,created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw new Error("Admin action history list failed.");
+  return (data ?? []).map((row: any) => ({
+    id: String(row.id),
+    actorEmail: row.actor_email,
+    targetUserId: row.target_user_id,
+    targetEmail: row.target_email,
+    action: row.action as SupabaseAdminAction,
+    status: row.status as "pending" | "completed" | "failed",
+    createdAt: new Date(row.created_at),
+  }));
+}
+
 function rangeQuery(query: any, range: ProcessHistoryDateRange) {
   if (range.startDate) query = query.gte("completed_at", range.startDate.toISOString());
   if (range.endDate) query = query.lte("completed_at", range.endDate.toISOString());

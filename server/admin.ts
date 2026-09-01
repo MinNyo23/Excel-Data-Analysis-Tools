@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { listAllProcessHistory, listAllUsers } from "./db.js";
-import { supabaseListAllProcessHistory, supabaseListAllUsers } from "./supabaseIntegration.js";
+import { supabaseListAllProcessHistory, supabaseListAllUsers, supabaseListUserActionHistory, supabaseModerateUser, type SupabaseAdminAction } from "./supabaseIntegration.js";
 
 export const MASTER_ADMIN_EMAIL = "minnyo.work@gmail.com";
 
@@ -28,10 +28,16 @@ export async function listManagedUsers(actor: { email?: string | null; authProvi
     if (!current.lastActivity || new Date(row.completedAt).getTime() > new Date(current.lastActivity).getTime()) current.lastActivity = new Date(row.completedAt).toISOString();
     usage.set(String(row.userId), current);
   }
-  return userRows.map((user: any) => ({ id: String(user.id), email: user.email ?? "", createdAt: user.createdAt, lastSignInAt: user.lastSignedIn, bannedUntil: null, emailConfirmed: true, ...(usage.get(String(user.id)) ?? { workflows: 0, files: 0, records: 0, lastActivity: null }) }));
+  return userRows.map((user: any) => ({ id: String(user.id), email: user.email ?? "", createdAt: user.createdAt, lastSignInAt: user.lastSignedIn, bannedUntil: user.bannedUntil ?? null, emailConfirmed: user.emailConfirmed ?? true, ...(usage.get(String(user.id)) ?? { workflows: 0, files: 0, records: 0, lastActivity: null }) }));
 }
 
-export async function moderateUser(actor: { email?: string | null } | null | undefined, userId: string, action: "ban" | "unban" | "delete") {
+export async function moderateUser(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined, userId: string, action: SupabaseAdminAction) {
   requireMasterAdmin(actor);
+  if (actor?.authProvider === "supabase") return supabaseModerateUser({ id: String(actor.id), email: actor.email }, userId, action);
   throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Admin action '${action}' requires the authentication provider's admin API and is not available for this database-backed account.` });
+}
+
+export async function listUserActionHistory(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
+  requireMasterAdmin(actor);
+  return actor?.authProvider === "supabase" ? supabaseListUserActionHistory() : [];
 }

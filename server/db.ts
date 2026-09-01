@@ -102,6 +102,18 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 }
 
+export async function listAllUsers() {
+  const db = await getDb();
+  if (!db) throw new Error("User database is unavailable");
+  return db.select().from(users).orderBy(desc(users.createdAt));
+}
+
+export async function listAllProcessHistory() {
+  const db = await getDb();
+  if (!db) throw new Error("Process history database is unavailable");
+  return db.select().from(processHistory).orderBy(desc(processHistory.completedAt));
+}
+
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {

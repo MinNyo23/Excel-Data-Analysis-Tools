@@ -15,7 +15,6 @@ import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 import AppFooter from "./AppFooter";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { toast } from "sonner";
 
 const tools = [
   { icon: FolderKanban, label: "Tool overview", path: "/" },
@@ -34,8 +33,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const isMasterAdmin = user?.email?.trim().toLowerCase() === "minnyo.work@gmail.com";
   async function handleSignOut() {
-    try { await logout(); setLocation("/login"); }
-    catch { toast.error("Sign out could not be completed. Please try again."); }
+    try {
+      await logout();
+    } catch {
+      // The local session is cleared by useAuth even when server cleanup fails.
+      // Always leave the protected workspace without showing an error popup.
+    } finally {
+      window.location.replace("/login");
+    }
   }
   return (
     <SidebarProvider>

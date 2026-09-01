@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { listAllProcessHistory, listAllUsers } from "./db.js";
+import { supabaseListAllProcessHistory, supabaseListAllUsers } from "./supabaseIntegration.js";
 
 export const MASTER_ADMIN_EMAIL = "minnyo.work@gmail.com";
 
@@ -12,9 +13,12 @@ export function requireMasterAdmin(user: { email?: string | null } | null | unde
   return true;
 }
 
-export async function listManagedUsers(actor: { email?: string | null } | null | undefined) {
+export async function listManagedUsers(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
   requireMasterAdmin(actor);
-  const [userRows, history] = await Promise.all([listAllUsers(), listAllProcessHistory()]);
+  const isSupabaseAccount = actor?.authProvider === "supabase";
+  const [userRows, history] = isSupabaseAccount
+    ? await Promise.all([supabaseListAllUsers(), supabaseListAllProcessHistory()])
+    : await Promise.all([listAllUsers(), listAllProcessHistory()]);
   const usage = new Map<string, { workflows: number; files: number; records: number; lastActivity: string | null }>();
   for (const row of history ?? []) {
     const current = usage.get(String(row.userId)) ?? { workflows: 0, files: 0, records: 0, lastActivity: null };

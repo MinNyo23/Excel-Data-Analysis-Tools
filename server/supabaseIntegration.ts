@@ -47,6 +47,39 @@ function requireAdmin() {
   return supabaseAdmin;
 }
 
+export async function supabaseListAllUsers() {
+  const { data, error } = await requireAdmin().auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (error) throw new Error("Supabase user list failed.");
+  return (data.users ?? []).map(user => ({
+    id: user.id,
+    email: user.email ?? "",
+    createdAt: user.created_at ?? null,
+    lastSignedIn: user.last_sign_in_at ?? null,
+    emailConfirmed: Boolean(user.email_confirmed_at),
+    bannedUntil: user.banned_until ?? null,
+  }));
+}
+
+export async function supabaseListAllProcessHistory() {
+  const { data, error } = await requireAdmin()
+    .from("process_history")
+    .select("id,user_id,tool_key,tool_name,status,input_file_names,output_filename,total_records,completed_at")
+    .order("completed_at", { ascending: false })
+    .limit(10000);
+  if (error) throw new Error("Supabase process-history list failed.");
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    toolKey: row.tool_key,
+    toolName: row.tool_name,
+    status: row.status,
+    inputFileNames: row.input_file_names,
+    outputFilename: row.output_filename,
+    totalRecords: row.total_records,
+    completedAt: new Date(row.completed_at),
+  }));
+}
+
 function rangeQuery(query: any, range: ProcessHistoryDateRange) {
   if (range.startDate) query = query.gte("completed_at", range.startDate.toISOString());
   if (range.endDate) query = query.lte("completed_at", range.endDate.toISOString());

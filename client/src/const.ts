@@ -1,6 +1,5 @@
 import { OAUTH_STATE_COOKIE, encodeOAuthState } from "@shared/const";
 import { supabase, usesSupabaseAuth } from "./lib/supabase";
-import { PROCESSING_API_BASE_URL } from "./lib/processingApi";
 
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
@@ -18,11 +17,6 @@ export const startLogin = async (email?: string, captchaToken?: string, returnPa
   if (usesSupabaseAuth && supabase) {
     if (!email) throw new Error("An email address is required for passwordless sign-in.");
     if (!captchaToken) throw new Error("CAPTCHA verification is required.");
-    const verificationResponse = await fetch(`${PROCESSING_API_BASE_URL}/api/auth/verify-recaptcha`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "omit",
-      body: JSON.stringify({ token: captchaToken }),
     // Let Supabase perform its configured CAPTCHA verification. Google tokens
     // are single-use, so verifying them in a separate endpoint first causes
     // Supabase to reject the same token with invalid-input-response.

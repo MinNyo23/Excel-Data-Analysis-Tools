@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { supabase } from "./lib/supabase";
+import { PROCESSING_API_BASE_URL } from "./lib/processingApi";
 import { getLoginPathForCurrentLocation } from "./lib/loginNavigation";
 import { getFriendlyApiMessage, isPassiveCurrentUserQuery, isUnauthenticatedApiError, reportRateLimitIfPresent } from "./lib/apiFeedback";
 import { RateLimitFeedback, RateLimitFeedbackProvider } from "./components/RateLimitFeedback";
@@ -81,7 +82,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: `${(import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? ""}/api/trpc`,
+      url: `${PROCESSING_API_BASE_URL}/api/trpc`,
       transformer: superjson,
       async headers() {
         const supabaseSession = supabase ? await supabase.auth.getSession() : { data: { session: null } };
@@ -110,7 +111,7 @@ const trpcClient = trpc.createClient({
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
-          credentials: import.meta.env.VITE_PROCESSING_API_URL ? "omit" : "include",
+          credentials: "omit",
         });
       },
     }),

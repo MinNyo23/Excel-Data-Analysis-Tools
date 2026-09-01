@@ -5,6 +5,8 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
+import { supabase } from "./lib/supabase";
+import { PROCESSING_API_BASE_URL } from "./lib/processingApi";
 import { getLoginPathForCurrentLocation } from "./lib/loginNavigation";
 import { getFriendlyApiMessage, isPassiveCurrentUserQuery, isUnauthenticatedApiError, reportRateLimitIfPresent } from "./lib/apiFeedback";
 import { RateLimitFeedback, RateLimitFeedbackProvider } from "./components/RateLimitFeedback";
@@ -12,6 +14,41 @@ import { toast } from "sonner";
 import "./index.css";
 
 const queryClient = new QueryClient();
+
+// A Supabase session can change without a full-page reload (for example when
+// one person signs out and another signs in in the same browser tab). Never
+// let user-scoped query results or transient workspace state cross that boundary.
+let activeSupabaseUserId: string | null | undefined;
+const clearTransientWorkspaceState = () => {
+  try {
+    for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = sessionStorage.key(index);
+      if (key && key !== "manus-cookie") sessionStorage.removeItem(key);
+    }
+  } catch {
+    // Browser storage may be unavailable in private or embedded contexts.
+  }
+};
+
+if (supabase) {
+  void supabase.auth.getSession().then(({ data }) => {
+    activeSupabaseUserId = data.session?.user.id ?? null;
+  });
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    const nextUserId = session?.user.id ?? null;
+    const userChanged = activeSupabaseUserId !== undefined && activeSupabaseUserId !== nextUserId;
+    activeSupabaseUserId = nextUserId;
+
+    if (!userChanged && event !== "SIGNED_OUT" && event !== "SIGNED_IN" && event !== "TOKEN_REFRESHED") return;
+    clearTransientWorkspaceState();
+    if (userChanged || event === "SIGNED_OUT") queryClient.clear();
+    // The magic-link callback updates Supabase Auth, but the app identity comes
+    // from the tRPC auth.me query. Refetch active queries after the session is
+    // available so Login can transition into the protected workspace.
+    if (session) void queryClient.refetchQueries({ type: "active" });
+  });
+}
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
@@ -46,8 +83,9 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-// Use the same Vercel deployment for authentication and API requests.
-const processingApiUrl = "";
+const processingApiUrl = import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API === "true"
+  ? ((import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? "")
+  : "";
 
 const trpcClient = trpc.createClient({
   links: [
@@ -55,6 +93,10 @@ const trpcClient = trpc.createClient({
       url: `${processingApiUrl}/api/trpc`,
       transformer: superjson,
       async headers() {
+        const supabaseSession = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+        if (supabaseSession.data.session?.access_token) {
+          return { Authorization: `Bearer ${supabaseSession.data.session.access_token}` };
+        }
         // Preview auto-login fallback: when the browser blocks iframe cookies
         // (Safari ITP / private browsing / WebView), the runtime mirrors the
         // session into sessionStorage so we can forward it as a Bearer token.

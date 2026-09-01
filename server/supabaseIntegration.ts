@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Request } from "express";
-import { decryptProfileValue, encryptProfileValue } from "./profileEncryption.js";
-import type { EditableUserProfile, ProcessHistoryDateRange, RetentionDays, SecurityAuditMetadata } from "./db.js";
+import { decryptProfileValue, encryptProfileValue } from "./profileEncryption";
+import type { EditableUserProfile, ProcessHistoryDateRange, RetentionDays, SecurityAuditMetadata } from "./db";
 
 export type ApplicationUser = {
   id: number | string;

@@ -1,3 +1,4 @@
+import { supabase, usesSupabaseAuth } from "@/lib/supabase";
 import { trpc } from "@/lib/trpc";
 import { useQueryClient } from "@tanstack/react-query";
 import { TRPCClientError } from "@trpc/client";
@@ -44,6 +45,7 @@ export function useAuth(options?: UseAuthOptions) {
         pendingError = error;
       }
     } finally {
+      try { if (usesSupabaseAuth && supabase) await supabase.auth.signOut(); } catch (error) { pendingError ??= error; }
       // Clear application-created session and cached request data. Workbook
       // bytes and output rows are transient React state and are discarded when
       // the protected workspace unmounts after navigation to /login.
@@ -51,7 +53,7 @@ export function useAuth(options?: UseAuthOptions) {
         sessionStorage.clear();
         for (let index = localStorage.length - 1; index >= 0; index -= 1) {
           const key = localStorage.key(index);
-          if (key?.startsWith("excel-master-file-")) localStorage.removeItem(key);
+          if (key?.startsWith("excel-master-file-") || key?.startsWith("sb-")) localStorage.removeItem(key);
         }
       } catch {}
       queryClient.clear();

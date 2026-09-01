@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { AtSign, Ban, History, Search, ShieldCheck, Trash2, UserCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ type AdminActionHistory = {
 export default function Admin() {
   const [search, setSearch] = useState("");
   const [emailDomain, setEmailDomain] = useState("gmail.com");
+  const [pendingAction, setPendingAction] = useState<{ userId: string; action: "ban" | "unban" | "delete"; email: string } | null>(null);
   const usersQuery = trpc.admin.users.useQuery();
   const emailPolicyQuery = trpc.admin.emailPolicy.useQuery();
   const actionHistoryQuery = trpc.admin.actionHistory.useQuery();
@@ -78,14 +80,10 @@ export default function Admin() {
     }
   }
 
-  async function act(userId: string, action: "ban" | "unban" | "delete", email: string) {
-    const confirmation = action === "delete"
-      ? `Permanently delete ${email}? This cannot be undone.`
-      : action === "ban"
-        ? `Ban ${email}? They will not be able to sign in until unbanned.`
-        : `Unban ${email}? They will be able to sign in again.`;
-    if (!window.confirm(confirmation)) return;
-
+  async function confirmAction() {
+    if (!pendingAction) return;
+    const { userId, action } = pendingAction;
+    setPendingAction(null);
     try {
       await moderate.mutateAsync({ userId, action });
       toast.success(action === "delete" ? "User deleted." : action === "ban" ? "User banned." : "User unbanned.");
@@ -93,6 +91,18 @@ export default function Admin() {
       toast.error("Admin action could not be completed.");
     }
   }
+
+  function requestAction(userId: string, action: "ban" | "unban" | "delete", email: string) {
+    setPendingAction({ userId, action, email });
+  }
+
+  const pendingActionCopy = pendingAction?.action === "delete"
+    ? { title: "Delete this user?", description: `Permanently delete ${pendingAction.email}? This cannot be undone.`, confirm: "Delete user" }
+    : pendingAction?.action === "ban"
+      ? { title: "Ban this user?", description: `Ban ${pendingAction.email}? They will not be able to sign in until unbanned.`, confirm: "Ban user" }
+      : pendingAction
+        ? { title: "Unban this user?", description: `Unban ${pendingAction.email}? They will be able to sign in again.`, confirm: "Unban user" }
+        : null;
 
   return (
     <div className="admin-page">
@@ -135,8 +145,8 @@ export default function Admin() {
                 <td>{user.workflows}</td><td>{user.files}</td><td>{user.records.toLocaleString()}</td>
                 <td>{user.lastActivity ? new Date(user.lastActivity).toLocaleDateString() : "—"}</td>
                 <td className="admin-actions">
-                  {user.bannedUntil ? <Button variant="outline" size="sm" onClick={() => act(user.id, "unban", user.email)}><UserCheck size={14} /> Unban</Button> : <Button variant="outline" size="sm" onClick={() => act(user.id, "ban", user.email)}><Ban size={14} /> Ban</Button>}
-                  <Button variant="outline" size="sm" className="admin-delete" onClick={() => act(user.id, "delete", user.email)}><Trash2 size={14} /> Delete</Button>
+                  {user.bannedUntil ? <Button variant="outline" size="sm" onClick={() => requestAction(user.id, "unban", user.email)}><UserCheck size={14} /> Unban</Button> : <Button variant="outline" size="sm" onClick={() => requestAction(user.id, "ban", user.email)}><Ban size={14} /> Ban</Button>}
+                  <Button variant="outline" size="sm" className="admin-delete" onClick={() => requestAction(user.id, "delete", user.email)}><Trash2 size={14} /> Delete</Button>
                 </td>
               </tr>
             ))}</tbody>
@@ -167,6 +177,24 @@ export default function Admin() {
           )}
         </div>
       </section>
+
+      <AlertDialog open={Boolean(pendingAction)} onOpenChange={open => { if (!open) setPendingAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingActionCopy?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{pendingActionCopy?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={pendingAction?.action === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-[#0f6a51] text-white hover:bg-[#174b3e]"}
+              onClick={() => { void confirmAction(); }}
+            >
+              {pendingActionCopy?.confirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

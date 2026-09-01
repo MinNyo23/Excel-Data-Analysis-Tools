@@ -8,13 +8,13 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
-import { registerStorageProxy } from "./storageProxy";
-import { registerRecaptchaRoutes } from "../recaptcha";
-import { appRouter } from "../routers";
-import { createContext } from "./context";
-import { apiRequestGuards, externalApiCors, securityHeaders } from "../security";
-import { serveStatic, setupVite } from "./vite";
+import { registerOAuthRoutes } from "./oauth.js";
+import { registerStorageProxy } from "./storageProxy.js";
+import { registerRecaptchaRoutes } from "../recaptcha.js";
+import { appRouter } from "../routers.js";
+import { createContext } from "./context.js";
+import { apiRequestGuards, externalApiCors, securityHeaders } from "../security.js";
+import { serveStatic, setupVite } from "./vite.js";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {

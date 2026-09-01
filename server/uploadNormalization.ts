@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import type { ExcelInputFile } from "./excelProcessor";
+import type { ExcelInputFile } from "./excelProcessor.js";
 
 type NormalizedPayload = { files: ExcelInputFile[] };
 

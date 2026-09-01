@@ -137,7 +137,7 @@ export const appRouter = router({
   system: systemRouter,
   admin: router({
     users: protectedProcedure.query(({ ctx }) => listManagedUsers(ctx.user)),
-    moderate: protectedProcedure.input(z.object({ userId: z.string().uuid(), action: z.enum(["ban", "unban", "delete"]) })).mutation(({ ctx, input }) => moderateUser(ctx.user, input.userId, input.action)),
+    moderate: protectedProcedure.input(z.object({ userId: z.string().min(1).max(64), action: z.enum(["ban", "unban", "delete"]) })).mutation(({ ctx, input }) => moderateUser(ctx.user, input.userId, input.action)),
   }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

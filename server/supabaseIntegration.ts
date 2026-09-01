@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Request } from "express";
+import { DEFAULT_ALLOWED_EMAIL_DOMAIN, isEmailAllowedForDomain, isValidAllowedEmailDomain, MASTER_ADMIN_EMAIL, normalizeAllowedEmailDomain } from "../shared/authPolicy.js";
 import { decryptProfileValue, encryptProfileValue } from "./profileEncryption.js";
 import type { EditableUserProfile, ProcessHistoryDateRange, RetentionDays, SecurityAuditMetadata } from "./db.js";
 
@@ -28,6 +29,8 @@ export async function authenticateSupabaseRequest(req: Request): Promise<Applica
   if (!token || !supabaseAdmin) return null;
   const { data, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !data.user) return null;
+  const allowedDomain = await supabaseGetAllowedEmailDomain();
+  if (!isEmailAllowedForDomain(data.user.email, allowedDomain)) return null;
   const metadata = data.user.user_metadata ?? {};
   // User metadata is editable by the user in Supabase Auth. Roles must instead
   // come from the protected application-account record created by the database trigger.
@@ -45,6 +48,32 @@ export async function authenticateSupabaseRequest(req: Request): Promise<Applica
 function requireAdmin() {
   if (!supabaseAdmin) throw new Error("Supabase server integration is not configured.");
   return supabaseAdmin;
+}
+
+export async function supabaseGetAllowedEmailDomain() {
+  if (!supabaseAdmin) return DEFAULT_ALLOWED_EMAIL_DOMAIN;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("admin_auth_settings")
+      .select("allowed_email_domain")
+      .eq("setting_key", "email_domain")
+      .maybeSingle();
+    if (error) return DEFAULT_ALLOWED_EMAIL_DOMAIN;
+    return normalizeAllowedEmailDomain(data?.allowed_email_domain);
+  } catch {
+    return DEFAULT_ALLOWED_EMAIL_DOMAIN;
+  }
+}
+
+export async function supabaseSaveAllowedEmailDomain(actorId: string, domain: string) {
+  if (!isValidAllowedEmailDomain(domain)) throw new Error("Enter a valid email domain, such as gmail.com.");
+  const normalized = normalizeAllowedEmailDomain(domain);
+  if (!isEmailAllowedForDomain(MASTER_ADMIN_EMAIL, normalized)) throw new Error("The allowed domain must keep the Master Account eligible to sign in.");
+  const { error } = await requireAdmin()
+    .from("admin_auth_settings")
+    .upsert({ setting_key: "email_domain", allowed_email_domain: normalized, updated_by: actorId, updated_at: new Date().toISOString() });
+  if (error) throw new Error("Email-domain policy could not be saved.");
+  return normalized;
 }
 
 export async function supabaseListAllUsers() {

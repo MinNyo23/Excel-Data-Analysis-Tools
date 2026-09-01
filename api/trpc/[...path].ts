@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
+import { isEmailAllowedForDomain } from "../../shared/authPolicy.js";
 import { metadataStore } from "../../server/metadataStore.js";
-import { supabaseListProcessHistory } from "../../server/supabaseIntegration.js";
+import { supabaseGetAllowedEmailDomain, supabaseListProcessHistory } from "../../server/supabaseIntegration.js";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL ?? "";
 const supabasePublishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
@@ -45,6 +46,8 @@ async function getUser(req: any) {
   if (!token || !supabase) return null;
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data?.user) return null;
+  const allowedDomain = await supabaseGetAllowedEmailDomain();
+  if (!isEmailAllowedForDomain(data.user.email, allowedDomain)) return null;
   const metadata = data.user.user_metadata ?? {};
   return {
     id: data.user.id,
@@ -57,6 +60,7 @@ async function getUser(req: any) {
 }
 
 async function resolveProcedure(name: string, user: Awaited<ReturnType<typeof getUser>>) {
+  if (name === "auth.emailPolicy") return supabaseGetAllowedEmailDomain();
   if (name === "auth.me") return user;
   if (!user) return trpcError("Unauthorized", "UNAUTHORIZED");
   if (name === "profile.me") {
@@ -89,7 +93,7 @@ export default async function handler(req: any, res: any) {
   const path = String(req?.url ?? "").split("?", 1)[0];
   const procedurePath = path.split("/api/trpc/")[1] ?? "";
   const procedures = procedurePath.split(",").filter(Boolean);
-  if (procedures.length > 0 && procedures.every(name => ["auth.me", "profile.me", "processHistory.list"].includes(name))) {
+  if (procedures.length > 0 && procedures.every(name => ["auth.emailPolicy", "auth.me", "profile.me", "processHistory.list"].includes(name))) {
     return handleCoreProcedures(req, res, procedures);
   }
 

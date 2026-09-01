@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
-import { Ban, History, Search, ShieldCheck, Trash2, UserCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { AtSign, Ban, History, Search, ShieldCheck, Trash2, UserCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { isValidAllowedEmailDomain } from "@shared/authPolicy";
 
 type AdminUser = {
   id: string;
@@ -28,7 +30,9 @@ type AdminActionHistory = {
 
 export default function Admin() {
   const [search, setSearch] = useState("");
+  const [emailDomain, setEmailDomain] = useState("gmail.com");
   const usersQuery = trpc.admin.users.useQuery();
+  const emailPolicyQuery = trpc.admin.emailPolicy.useQuery();
   const actionHistoryQuery = trpc.admin.actionHistory.useQuery();
   const moderate = trpc.admin.moderate.useMutation({
     onSuccess: () => {
@@ -36,6 +40,16 @@ export default function Admin() {
       void actionHistoryQuery.refetch();
     },
   });
+  const updateEmailPolicy = trpc.admin.updateEmailPolicy.useMutation({
+    onSuccess: domain => {
+      setEmailDomain(domain);
+      toast.success(`Sign-in restricted to @${domain} addresses.`);
+      void emailPolicyQuery.refetch();
+    },
+  });
+  useEffect(() => {
+    if (emailPolicyQuery.data) setEmailDomain(emailPolicyQuery.data);
+  }, [emailPolicyQuery.data]);
   const users = useMemo(
     () => (usersQuery.data as AdminUser[] | undefined ?? []).filter((user: AdminUser) => user.email.toLowerCase().includes(search.toLowerCase())),
     [usersQuery.data, search],
@@ -49,6 +63,20 @@ export default function Admin() {
     }),
     { workflows: 0, files: 0, records: 0 },
   );
+
+  async function saveEmailPolicy(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const domain = emailDomain.trim().toLowerCase().replace(/^@+/, "");
+    if (!isValidAllowedEmailDomain(domain)) {
+      toast.error("Enter a valid domain, such as gmail.com.");
+      return;
+    }
+    try {
+      await updateEmailPolicy.mutateAsync({ domain });
+    } catch {
+      toast.error("Email-domain policy could not be saved. Apply the Supabase policy migration first.");
+    }
+  }
 
   async function act(userId: string, action: "ban" | "unban" | "delete", email: string) {
     const confirmation = action === "delete"
@@ -76,6 +104,18 @@ export default function Admin() {
         </div>
         <div className="admin-search"><Search size={16} /><Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search email" aria-label="Search users by email" /></div>
       </div>
+
+      <section className="admin-policy-card" aria-labelledby="admin-policy-title">
+        <div className="admin-policy-copy">
+          <span className="soft-badge"><AtSign size={14} /> SIGN-IN POLICY</span>
+          <h2 id="admin-policy-title">Allowed email domain</h2>
+          <p>Only email addresses ending in this domain can request or complete an OTP. The Master Account remains eligible so this setting can always be changed.</p>
+        </div>
+        <form className="admin-policy-form" onSubmit={saveEmailPolicy}>
+          <label><span>Email domain</span><div className="admin-domain-input"><b>@</b><Input value={emailDomain} onChange={event => setEmailDomain(event.target.value)} placeholder="gmail.com" aria-label="Allowed email domain" disabled={emailPolicyQuery.isLoading || updateEmailPolicy.isPending} /></div></label>
+          <Button type="submit" disabled={emailPolicyQuery.isLoading || updateEmailPolicy.isPending}>{updateEmailPolicy.isPending ? "Saving…" : "Save email rule"}</Button>
+        </form>
+      </section>
 
       <div className="admin-stats">
         <div><strong>{users.length}</strong><span>Users</span></div>

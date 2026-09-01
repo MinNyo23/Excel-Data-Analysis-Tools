@@ -38,9 +38,9 @@ export async function moderateUser(actor: { id: number | string; email?: string 
   throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Admin action '${action}' requires the authentication provider's admin API and is not available for this database-backed account.` });
 }
 
-export async function listUserActionHistory(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
+export async function listUserActionHistory(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
   requireMasterAdmin(actor);
-  return actor?.authProvider === "supabase" ? supabaseListUserActionHistory() : [];
+  return actor?.authProvider === "supabase" ? supabaseListUserActionHistory(String(actor.id)) : [];
 }
 
 export async function getAllowedEmailDomain(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {

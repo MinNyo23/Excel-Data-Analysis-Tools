@@ -151,7 +151,7 @@ export default function Admin() {
           <p>Ban, unban, and delete actions remain listed here, including users removed from Supabase Auth.</p>
         </div>
         <div className="admin-table-wrap">
-          {actionHistoryQuery.isLoading ? <p className="admin-empty">Loading action history…</p> : actionHistoryQuery.error ? <p className="admin-empty">Could not load action history. Apply the Supabase admin-history migration and try again.</p> : history.length === 0 ? <p className="admin-empty">No administrative actions have been recorded.</p> : (
+          {actionHistoryQuery.isLoading ? <p className="admin-empty">Loading action history…</p> : actionHistoryQuery.error ? <p className="admin-empty">Could not load action history. Please verify the Supabase configuration and try again.</p> : history.length === 0 ? <p className="admin-empty">No administrative actions have been recorded.</p> : (
             <table className="admin-table admin-history-table">
               <thead><tr><th>User</th><th>Action</th><th>Status</th><th>Performed by</th><th>Date</th></tr></thead>
               <tbody>{history.map(item => (

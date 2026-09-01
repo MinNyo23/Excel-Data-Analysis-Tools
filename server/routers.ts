@@ -142,9 +142,13 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: protectedProcedure.mutation(async ({ ctx }) => {
-      let cleanup: { clearedProcessHistory: number };
+      let cleanup = { clearedProcessHistory: 0 };
       try {
         cleanup = await clearProcessingDataOnLogout(ctx.user.id);
+      } catch (error) {
+        // Logout must remain successful even if history cleanup is unavailable.
+        // The session cookie is cleared below so the user can always leave the workspace.
+        console.warn("[Auth] Logout cleanup was not completed.", error instanceof Error ? error.message : "unknown error");
       } finally {
         // Session termination must not depend on the metadata cleanup outcome.
         if (ctx.user.authProvider !== "supabase") {

@@ -1,8 +1,9 @@
 import { TRPCError } from "@trpc/server";
+import { MASTER_ADMIN_EMAIL } from "../shared/authPolicy.js";
 import { listAllProcessHistory, listAllUsers } from "./db.js";
-import { supabaseListAllProcessHistory, supabaseListAllUsers, supabaseListUserActionHistory, supabaseModerateUser, type SupabaseAdminAction } from "./supabaseIntegration.js";
+import { supabaseGetAllowedEmailDomain, supabaseListAllProcessHistory, supabaseListAllUsers, supabaseListUserActionHistory, supabaseModerateUser, supabaseSaveAllowedEmailDomain, type SupabaseAdminAction } from "./supabaseIntegration.js";
 
-export const MASTER_ADMIN_EMAIL = "minnyo.work@gmail.com";
+export { MASTER_ADMIN_EMAIL };
 
 export function isMasterAdmin(user: { email?: string | null } | null | undefined) {
   return user?.email?.trim().toLowerCase() === MASTER_ADMIN_EMAIL;
@@ -40,4 +41,15 @@ export async function moderateUser(actor: { id: number | string; email?: string 
 export async function listUserActionHistory(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
   requireMasterAdmin(actor);
   return actor?.authProvider === "supabase" ? supabaseListUserActionHistory() : [];
+}
+
+export async function getAllowedEmailDomain(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
+  requireMasterAdmin(actor);
+  return supabaseGetAllowedEmailDomain();
+}
+
+export async function updateAllowedEmailDomain(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined, domain: string) {
+  requireMasterAdmin(actor);
+  if (actor?.authProvider !== "supabase") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email-domain settings require Supabase authentication." });
+  return supabaseSaveAllowedEmailDomain(String(actor.id), domain);
 }

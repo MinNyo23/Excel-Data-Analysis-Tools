@@ -1,6 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { sdk } from "./sdk";
-import { authenticateSupabaseRequest, type ApplicationUser } from "../supabaseIntegration";
+import type { ApplicationUser } from "../supabaseIntegration";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -14,12 +14,9 @@ export async function createContext(
   let user: ApplicationUser | null = null;
 
   try {
-    user = await authenticateSupabaseRequest(opts.req);
-    if (!user) {
-      const legacyUser = await sdk.authenticateRequest(opts.req);
-      user = legacyUser ? { ...legacyUser, authProvider: "manus" } : null;
-    }
-  } catch (error) {
+    const legacyUser = await sdk.authenticateRequest(opts.req);
+    user = legacyUser ? { ...legacyUser, authProvider: "manus" } : null;
+  } catch {
     // Authentication is optional for public procedures.
     user = null;
   }

@@ -10,7 +10,6 @@ import Home from "./pages/Home";
 import TermsConditions from "./pages/TermsConditions";
 import RouteTransition from "./components/RouteTransition";
 import Login from "./pages/Login";
-import AuthCallback from "./pages/AuthCallback";
 import { AuthGate } from "./components/AuthGate";
 import { useLocation } from "wouter";
 import { useAuth } from "./_core/hooks/useAuth";
@@ -22,7 +21,6 @@ function Router() {
     <Switch>
       <Route path={"/"}><AuthGate><Home /></AuthGate></Route>
       <Route path={"/login"} component={Login} />
-      <Route path={"/auth/callback"} component={AuthCallback} />
       <Route path={"/tools/:tool"}><AuthGate><Home /></AuthGate></Route>
       <Route path={"/profile"}><Redirect to="/account" /></Route>
       <Route path={"/account"}><AuthGate><AccountManagement /></AuthGate></Route>
@@ -44,7 +42,7 @@ function AppContent() {
   const [location] = useLocation();
   const { user, isAuthenticated, loading } = useAuth();
   const routedContent = <RouteTransition><Router /></RouteTransition>;
-  if (location.startsWith("/login") || location.startsWith("/auth/callback") || loading || !isAuthenticated) return routedContent;
+  if (location.startsWith("/login") || loading || !isAuthenticated) return routedContent;
   return <DashboardLayout key={user?.id ?? "authenticated-workspace"}>{routedContent}</DashboardLayout>;
 }
 

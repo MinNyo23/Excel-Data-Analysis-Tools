@@ -6,6 +6,7 @@ import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
+import { registerOAuthRoutes } from "../server/_core/oauth";
 import { apiRequestGuards, externalApiCors, noStoreApiResponse, securityHeaders } from "../server/security";
 
 const app = express();
@@ -17,6 +18,7 @@ app.use("/api", externalApiCors);
 app.use("/api", apiRequestGuards);
 app.use(express.json({ limit: "4mb" }));
 app.use(express.urlencoded({ limit: "4mb", extended: true }));
+registerOAuthRoutes(app);
 app.use(
   "/api/trpc",
   createExpressMiddleware({

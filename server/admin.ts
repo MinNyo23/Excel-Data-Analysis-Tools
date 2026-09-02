@@ -51,5 +51,16 @@ export async function getAllowedEmailDomain(actor: { email?: string | null; auth
 export async function updateAllowedEmailDomain(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined, domain: string) {
   requireMasterAdmin(actor);
   if (actor?.authProvider !== "supabase") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email-domain settings require Supabase authentication." });
-  return supabaseSaveAllowedEmailDomain(String(actor.id), domain);
+  try {
+    return await supabaseSaveAllowedEmailDomain(String(actor.id), domain);
+  } catch (error) {
+    // Keep this actionable instead of allowing a provider/schema failure to be
+    // flattened into an opaque FUNCTION_INVOCATION_FAILED response.
+    console.error("[Admin] Email-domain policy update failed", error instanceof Error ? error.message : "unknown error");
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "The email policy table is not ready. Apply the admin email policy migration, then try again.",
+      cause: error,
+    });
+  }
 }

@@ -397,6 +397,42 @@ export default function Home() {
   function resetAdditionExitMatch() { setOriginalMatchFile(null); setExitMatchFile(null); setMatchResult(null); setAdditionExitOriginalColumns([]); setAdditionExitSecondColumns([]); setAdditionExitMapping(EMPTY_PAIR_MAPPING); }
   function resetOnboardMatch() { setOnboardFile(null); setDeletionCheckFile(null); setOnboardResult(null); setOnboardOriginalColumns([]); setOnboardSecondColumns([]); setOnboardMapping(EMPTY_PAIR_MAPPING); }
 
+  const isAnyWorkflowProcessing = processMutation.isPending || deletionMutation.isPending || duplicateMutation.isPending || entitySummaryMutation.isPending || matchMutation.isPending || onboardMutation.isPending || readyUploadMutation.isPending || facilityMutation.isPending || workbookColumnsMutation.isPending;
+  const hasWorkingData = selectedFiles.length > 0 || Boolean(result || deletionSummary || deletionFile || duplicateFile || duplicateResult || entitySummaryFile || entitySummaryResult || originalMatchFile || exitMatchFile || matchResult || onboardFile || deletionCheckFile || onboardResult || readyUploadFile || readyUploadResult || facilityFile || facilityResult);
+
+  useEffect(() => {
+    if (!hasWorkingData || isAnyWorkflowProcessing) return;
+    const cleanupTimer = window.setTimeout(() => {
+      setSelectedFiles([]);
+      setResult(null);
+      setDeletionSummary(null);
+      setDeletionFile(null);
+      setDuplicateFile(null);
+      setDuplicateResult(null);
+      setEntitySummaryFile(null);
+      setEntitySummaryResult(null);
+      setOriginalMatchFile(null);
+      setExitMatchFile(null);
+      setMatchResult(null);
+      setAdditionExitOriginalColumns([]);
+      setAdditionExitSecondColumns([]);
+      setAdditionExitMapping(EMPTY_PAIR_MAPPING);
+      setOnboardFile(null);
+      setDeletionCheckFile(null);
+      setOnboardResult(null);
+      setOnboardOriginalColumns([]);
+      setOnboardSecondColumns([]);
+      setOnboardMapping(EMPTY_PAIR_MAPPING);
+      setReadyUploadFile(null);
+      setReadyUploadResult(null);
+      setFacilityFile(null);
+      setFacilityResult(null);
+      [inputRef, deletionInputRef, duplicateInputRef, entitySummaryInputRef, readyUploadInputRef, facilityInputRef].forEach(ref => { if (ref.current) ref.current.value = ""; });
+      toast.info("Temporary workbook data was cleared after one minute of inactivity.");
+    }, 60_000);
+    return () => window.clearTimeout(cleanupTimer);
+  }, [hasWorkingData, isAnyWorkflowProcessing, selectedFiles, result, deletionSummary, deletionFile, duplicateFile, duplicateResult, entitySummaryFile, entitySummaryResult, originalMatchFile, exitMatchFile, matchResult, onboardFile, deletionCheckFile, onboardResult, readyUploadFile, readyUploadResult, facilityFile, facilityResult]);
+
   return (
     <main className={`app-shell tool-app-shell tool-${activeTool}`}>
       <header className="topbar">

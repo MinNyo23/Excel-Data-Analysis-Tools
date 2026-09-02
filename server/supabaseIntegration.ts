@@ -58,8 +58,18 @@ export async function supabaseGetAllowedEmailDomain() {
       .select("allowed_email_domain")
       .eq("setting_key", "email_domain")
       .maybeSingle();
-    if (error) return DEFAULT_ALLOWED_EMAIL_DOMAIN;
-    return normalizeAllowedEmailDomain(data?.allowed_email_domain);
+    if (!error && data?.allowed_email_domain) return normalizeAllowedEmailDomain(data.allowed_email_domain);
+
+    // Production deployments may not yet have the optional settings migration.
+    // Keep the policy functional using the existing audit table until it is applied.
+    const fallback = await supabaseAdmin
+      .from("security_audit_events")
+      .select("metadata,created_at")
+      .eq("event_type", "admin_auth_policy")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return normalizeAllowedEmailDomain(fallback.data?.metadata?.allowedEmailDomain);
   } catch {
     return DEFAULT_ALLOWED_EMAIL_DOMAIN;
   }
@@ -69,10 +79,20 @@ export async function supabaseSaveAllowedEmailDomain(actorId: string, domain: st
   if (!isValidAllowedEmailDomain(domain)) throw new Error("Enter a valid email domain, such as gmail.com.");
   const normalized = normalizeAllowedEmailDomain(domain);
   if (!isEmailAllowedForDomain(MASTER_ADMIN_EMAIL, normalized)) throw new Error("The allowed domain must keep the Master Account eligible to sign in.");
-  const { error } = await requireAdmin()
+  const admin = requireAdmin();
+  const { error } = await admin
     .from("admin_auth_settings")
     .upsert({ setting_key: "email_domain", allowed_email_domain: normalized, updated_by: actorId, updated_at: new Date().toISOString() });
-  if (error) throw new Error("Email-domain policy could not be saved.");
+  if (!error) return normalized;
+
+  // Fallback for production projects where the optional settings table migration
+  // has not been applied yet. The latest audit record acts as the policy value.
+  const fallback = await admin.from("security_audit_events").insert({
+    user_id: actorId,
+    event_type: "admin_auth_policy",
+    metadata: { allowedEmailDomain: normalized },
+  });
+  if (fallback.error) throw new Error("Email-domain policy could not be saved.");
   return normalized;
 }
 

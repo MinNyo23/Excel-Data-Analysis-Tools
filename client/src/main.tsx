@@ -6,7 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { supabase } from "./lib/supabase";
-import { getProcessingApiBaseUrl } from "./lib/processingApi";
+import { PROCESSING_API_BASE_URL } from "./lib/processingApi";
 import { getLoginPathForCurrentLocation } from "./lib/loginNavigation";
 import { getFriendlyApiMessage, isPassiveCurrentUserQuery, isUnauthenticatedApiError, reportRateLimitIfPresent } from "./lib/apiFeedback";
 import { RateLimitFeedback, RateLimitFeedbackProvider } from "./components/RateLimitFeedback";
@@ -83,8 +83,10 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-const useExternalProcessing = import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API === "true";
-const processingApiUrl = getProcessingApiBaseUrl(useExternalProcessing);
+// In production, use the configured processor whenever it exists. The prior
+// feature-flag-only check caused deployed builds to fall back to /api/trpc when
+// the flag was omitted or serialized differently by the hosting environment.
+const processingApiUrl = PROCESSING_API_BASE_URL ?? "";
 
 const trpcClient = trpc.createClient({
   links: [

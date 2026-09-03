@@ -1,6 +1,17 @@
-const configuredProcessingApiUrl = import.meta.env.VITE_PROCESSING_API_URL as string | undefined;
+const configuredProcessingApiUrl = (import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.trim();
 
-// The Vercel project is a static frontend. Keep a browser-safe fallback so an
-// omitted Vercel environment variable cannot route API calls to /api/trpc on the
-// static host and produce FUNCTION_INVOCATION_FAILED responses.
-export const PROCESSING_API_BASE_URL = (configuredProcessingApiUrl || "https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer").replace(/\/$/, "");
+/**
+ * External processing is opt-in. Never fall back to a stale preview/sandbox
+ * hostname: that can produce opaque 500s after the sandbox is terminated.
+ */
+export const PROCESSING_API_BASE_URL = configuredProcessingApiUrl
+  ? configuredProcessingApiUrl.replace(/\/$/, "")
+  : null;
+
+export function getProcessingApiBaseUrl(useExternalProcessing: boolean) {
+  if (!useExternalProcessing) return "";
+  if (!PROCESSING_API_BASE_URL) {
+    throw new Error("Excel processing is not configured. Set VITE_PROCESSING_API_URL or disable external processing.");
+  }
+  return PROCESSING_API_BASE_URL;
+}

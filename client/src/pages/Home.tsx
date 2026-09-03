@@ -17,6 +17,9 @@ import { PairedFileUploadPanel, type PairMapping } from "@/components/PairedFile
 import { BriefcaseBusiness, Building2, Download, FileSpreadsheet, FileUp, Layers3, Loader2, ListTree, Phone, RotateCcw, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
 const ACCEPTED_TYPES = ".xlsx,.csv";
+// Vercel Functions cap request bodies at 4.5 MB. Base64 expands files by
+// roughly one third, so keep the raw consolidation payload below that ceiling.
+const MAX_CONSOLIDATION_BYTES = 3 * 1024 * 1024;
 const TOOL_CARDS = [
   { slug: "consolidation", title: "Master consolidation", description: "Merge Addition and Deletion sheets from many workbooks.", icon: Layers3 },
   { slug: "deletion-summary", title: "Deletion summary list", description: "Count deletion records by entity and preserve the source data.", icon: ListTree },
@@ -348,6 +351,10 @@ export default function Home() {
 
   async function processFiles() {
     if (selectedFiles.length === 0) return;
+    if (totalSize > MAX_CONSOLIDATION_BYTES) {
+      toast.error(`Master consolidation supports up to 3 MB total per request. Your selected files are ${formatBytes(totalSize)}. Remove a file or split the work into smaller batches.`);
+      return;
+    }
     try {
       const files = await Promise.all(selectedFiles.map(async ({ file }) => ({ name: file.name, data: await fileToBase64(file) })));
       processMutation.mutate({ files });
@@ -466,7 +473,7 @@ export default function Home() {
           <CardContent>
             <div className={`dropzone ${isDragging ? "dragging" : ""}`} onDragOver={event => { event.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={event => { event.preventDefault(); setIsDragging(false); addFiles(event.dataTransfer.files); }} onClick={() => inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") inputRef.current?.click(); }}>
               <input ref={inputRef} type="file" accept={ACCEPTED_TYPES} multiple hidden onChange={event => event.target.files && addFiles(event.target.files)} />
-              <div className="upload-icon"><FileUp size={22} /></div><h3>Drop CSV or XLSX files here</h3><p>or <span>browse from your computer</span></p><small>Supports .csv and .xlsx · Up to 50 files per run</small>
+              <div className="upload-icon"><FileUp size={22} /></div><h3>Drop CSV or XLSX files here</h3><p>or <span>browse from your computer</span></p><small>Supports .csv and .xlsx · Up to 3 MB total per request on Vercel</small>
             </div>
             {selectedFiles.length > 0 && <div className="file-list"><div className="file-list-heading"><span>{selectedFiles.length} file{selectedFiles.length === 1 ? "" : "s"} selected</span><span>{formatBytes(totalSize)} total</span></div>{selectedFiles.map(({ id, file }) => <div className="file-row" key={id}><FileSpreadsheet size={18} className="file-symbol" /><div className="file-name"><strong>{file.name}</strong><span>{formatBytes(file.size)}</span></div><button type="button" aria-label={`Remove ${file.name}`} onClick={() => removeFile(id)}><X size={16} /></button></div>)}</div>}
             <div className="action-row"><Button variant="ghost" onClick={reset} disabled={selectedFiles.length === 0 || isBusy}><RotateCcw size={16} /> Clear</Button><Button className="process-button" onClick={processFiles} disabled={selectedFiles.length === 0 || isBusy}>{isBusy ? <><Loader2 className="animate-spin" size={17} /> Building workbook…</> : <><Layers3 size={17} /> Merge and preview</>}</Button></div>

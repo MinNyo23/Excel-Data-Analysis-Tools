@@ -83,9 +83,9 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-const processingApiUrl = import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API === "true"
-  ? ((import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? "")
-  : "";
+// Excel processing runs on the managed Python service. The Vercel project is
+// a static frontend, so never send workbook payloads to its API function.
+const processingApiUrl = PROCESSING_API_BASE_URL;
 
 const trpcClient = trpc.createClient({
   links: [

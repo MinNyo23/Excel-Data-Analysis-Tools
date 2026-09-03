@@ -6,7 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { supabase } from "./lib/supabase";
-import { PROCESSING_API_BASE_URL } from "./lib/processingApi";
+import { getProcessingApiBaseUrl } from "./lib/processingApi";
 import { getLoginPathForCurrentLocation } from "./lib/loginNavigation";
 import { getFriendlyApiMessage, isPassiveCurrentUserQuery, isUnauthenticatedApiError, reportRateLimitIfPresent } from "./lib/apiFeedback";
 import { RateLimitFeedback, RateLimitFeedbackProvider } from "./components/RateLimitFeedback";
@@ -83,9 +83,8 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-const processingApiUrl = import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API === "true"
-  ? ((import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? "")
-  : "";
+const useExternalProcessing = import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API === "true";
+const processingApiUrl = getProcessingApiBaseUrl(useExternalProcessing);
 
 const trpcClient = trpc.createClient({
   links: [

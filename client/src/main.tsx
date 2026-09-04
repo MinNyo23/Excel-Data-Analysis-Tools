@@ -83,10 +83,31 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-// Only workbook upload/processing mutations use the managed backend because
-// their base64 payloads can exceed Vercel's serverless request limit. Ordinary
-// auth, profile, history, and policy queries stay on the Vercel API.
+// Keep normal requests and small files on Vercel. Only route an upload or
+// processing mutation externally when its serialized payload is large enough
+// to exceed Vercel's serverless request limit.
 const processingApiUrl = PROCESSING_API_BASE_URL;
+const VERCEL_SAFE_UPLOAD_PAYLOAD_BYTES = 3_000_000;
+const uploadRouteNames = new Set([
+  "excel",
+  "workbookColumns",
+  "deletionSummary",
+  "deletionDuplicates",
+  "deletionWithSummary",
+  "additionExitMatch",
+  "deletionOnboardMatch",
+  "readyUpload",
+  "facilityConversion",
+]);
+const shouldUseManagedBackend = (operation: { path: string; input: unknown }) => {
+  const procedure = operation.path.split(".")[0] ?? "";
+  if (!uploadRouteNames.has(procedure)) return false;
+  try {
+    return JSON.stringify(operation.input ?? null).length > VERCEL_SAFE_UPLOAD_PAYLOAD_BYTES;
+  } catch {
+    return false;
+  }
+};
 const makeHttpLink = (baseUrl: string) => httpBatchLink({
   url: `${baseUrl}/api/trpc`,
   transformer: superjson,
@@ -110,20 +131,9 @@ const makeHttpLink = (baseUrl: string) => httpBatchLink({
     return globalThis.fetch(input, { ...(init ?? {}), credentials: baseUrl ? "omit" : "include" });
   },
 });
-const uploadRouteNames = new Set([
-  "excel",
-  "workbookColumns",
-  "deletionSummary",
-  "deletionDuplicates",
-  "deletionWithSummary",
-  "additionExitMatch",
-  "deletionOnboardMatch",
-  "readyUpload",
-  "facilityConversion",
-]);
 const trpcClient = trpc.createClient({
   links: [splitLink({
-    condition: operation => uploadRouteNames.has(operation.path.split(".")[0] ?? ""),
+    condition: shouldUseManagedBackend,
     true: makeHttpLink(processingApiUrl),
     false: makeHttpLink(""),
   })],

@@ -1,5 +1,7 @@
 export const MAX_UPLOAD_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_UPLOAD_FILE_SIZE_LABEL = "10 MB";
+export const MAX_PAIRED_FILE_BYTES = 100 * 1024 * 1024;
+export const MAX_PAIRED_FILE_SIZE_LABEL = "100 MB";
 
 export function isSupportedWorkbookFileName(fileName: string) {
   const normalizedName = fileName.trim().toLowerCase();

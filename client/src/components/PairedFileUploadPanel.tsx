@@ -2,7 +2,7 @@ import { Building2, CheckCircle2, FileSpreadsheet, FileUp, Loader2, Phone, Rotat
 import { useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { MAX_UPLOAD_FILE_SIZE_LABEL, getWorkbookSelectionError } from "@shared/uploadLimits";
+import { MAX_PAIRED_FILE_BYTES, MAX_PAIRED_FILE_SIZE_LABEL, isSupportedWorkbookFileName } from "@shared/uploadLimits";
 import "./PairedFileUploadPanel.css";
 
 export type PairMapping = {
@@ -56,7 +56,11 @@ export function PairedFileUploadPanel({ originalFile, secondFile, originalLabel,
   const [selectionError, setSelectionError] = useState<{ target: "original" | "second"; message: string } | null>(null);
   const selectFile = (target: "original" | "second", file?: File) => {
     if (!file) return;
-    const error = getWorkbookSelectionError(file);
+    const error = !isSupportedWorkbookFileName(file.name)
+      ? "Only CSV and XLSX files are allowed. Choose a file ending in .csv or .xlsx."
+      : file.size > MAX_PAIRED_FILE_BYTES
+        ? `${file.name} is too large. Choose a file no larger than ${MAX_PAIRED_FILE_SIZE_LABEL}.`
+        : null;
     if (error) {
       setSelectionError({ target, message: error });
       if (target === "original" && originalInputRef.current) originalInputRef.current.value = "";
@@ -78,11 +82,11 @@ export function PairedFileUploadPanel({ originalFile, secondFile, originalLabel,
     <div className="paired-dropzone-grid">
       <section className={`paired-file-zone ${dragTarget === "original" ? "is-dragging" : ""}`} {...dropHandlers("original")} role="button" tabIndex={0} onClick={() => originalInputRef.current?.click()} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") originalInputRef.current?.click(); }} aria-label={`Choose ${originalLabel}`}>
         <input ref={originalInputRef} type="file" accept=".xlsx,.csv" hidden onChange={event => selectFile("original", event.target.files?.[0])} />
-        <span className="paired-step-number">01</span><span className="paired-zone-icon"><FileSpreadsheet size={21} /></span><strong>{originalLabel}</strong><p>{originalFile ? originalFile.name : originalDescription}</p>{originalFile && <span className="selected-file-size"><CheckCircle2 size={13}/> Selected · {formatFileSize(originalFile.size)} · {MAX_UPLOAD_FILE_SIZE_LABEL} max</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "original" ? "Release to select this Original File" : originalFile ? "Selected · choose again to replace" : "Drop Original File here or browse"}</small>{selectionError?.target === "original" && <span className="file-selection-error" role="alert">{selectionError.message}</span>}
+        <span className="paired-step-number">01</span><span className="paired-zone-icon"><FileSpreadsheet size={21} /></span><strong>{originalLabel}</strong><p>{originalFile ? originalFile.name : originalDescription}</p>{originalFile && <span className="selected-file-size"><CheckCircle2 size={13}/> Selected · {formatFileSize(originalFile.size)} · {MAX_PAIRED_FILE_SIZE_LABEL} max</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "original" ? "Release to select this Original File" : originalFile ? "Selected · choose again to replace" : "Drop Original File here or browse"}</small>{selectionError?.target === "original" && <span className="file-selection-error" role="alert">{selectionError.message}</span>}
       </section>
       <section className={`paired-file-zone ${dragTarget === "second" ? "is-dragging" : ""}`} {...dropHandlers("second")} role="button" tabIndex={0} onClick={() => secondInputRef.current?.click()} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") secondInputRef.current?.click(); }} aria-label={`Choose ${secondLabel}`}>
         <input ref={secondInputRef} type="file" accept=".xlsx,.csv" hidden onChange={event => selectFile("second", event.target.files?.[0])} />
-        <span className="paired-step-number">02</span><span className="paired-zone-icon"><FileUp size={21} /></span><strong>{secondLabel}</strong><p>{secondFile ? secondFile.name : secondDescription}</p>{secondFile && <span className="selected-file-size"><CheckCircle2 size={13}/> Selected · {formatFileSize(secondFile.size)} · {MAX_UPLOAD_FILE_SIZE_LABEL} max</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "second" ? "Release to select this 2nd File" : secondFile ? "Selected · choose again to replace" : "Drop 2nd File here or browse"}</small>{selectionError?.target === "second" && <span className="file-selection-error" role="alert">{selectionError.message}</span>}
+        <span className="paired-step-number">02</span><span className="paired-zone-icon"><FileUp size={21} /></span><strong>{secondLabel}</strong><p>{secondFile ? secondFile.name : secondDescription}</p>{secondFile && <span className="selected-file-size"><CheckCircle2 size={13}/> Selected · {formatFileSize(secondFile.size)} · {MAX_PAIRED_FILE_SIZE_LABEL} max</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "second" ? "Release to select this 2nd File" : secondFile ? "Selected · choose again to replace" : "Drop 2nd File here or browse"}</small>{selectionError?.target === "second" && <span className="file-selection-error" role="alert">{selectionError.message}</span>}
       </section>
     </div>
     <details className="column-mapping-panel" open>

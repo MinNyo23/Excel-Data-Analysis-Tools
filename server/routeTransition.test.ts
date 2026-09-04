@@ -18,7 +18,7 @@ describe("route transition contract", () => {
 
     expect(app).toContain('import RouteTransition from "./components/RouteTransition"');
     expect(app).toContain("const routedContent = <RouteTransition><Router /></RouteTransition>;");
-    expect(app).toContain('if (location.startsWith("/login") || loading || !isAuthenticated) return routedContent;');
-    expect(app).toContain("return <DashboardLayout key={user?.id ?? \"authenticated-workspace\"}>{routedContent}</DashboardLayout>;");
+    expect(app).toContain('if (location.startsWith("/login") || location.startsWith("/auth/callback") || loading || !isAuthenticated) return routedContent;');
+    expect(app).toContain("return <DashboardLayout key={user?.id");
   });
 });

@@ -164,7 +164,7 @@ export function deleteProcessHistoryForUser(db: { delete: (table: typeof process
   return db.delete(processHistory).where(eq(processHistory.userId, userId));
 }
 
-export const RETENTION_DAYS_OPTIONS = [7, 30, 90, 180, 365] as const;
+export const RETENTION_DAYS_OPTIONS = [0.5, 1, 5, 7, 30, 90, 180, 365] as const;
 export type RetentionDays = typeof RETENTION_DAYS_OPTIONS[number] | null;
 
 export function retentionCutoffDate(retentionDays: RetentionDays, now = new Date()) {
@@ -176,14 +176,15 @@ export async function getProcessHistoryRetention(userId: number): Promise<Retent
   const db = await getDb();
   if (!db) throw new Error("Process history database is unavailable");
   const result = await db.select().from(userProcessSettings).where(eq(userProcessSettings.userId, userId)).limit(1);
-  return (result[0]?.retentionDays ?? null) as RetentionDays;
+  const stored = result[0]?.retentionDays;
+  return stored === null || stored === undefined ? null : Number(stored) as RetentionDays;
 }
 
 export async function saveProcessHistoryRetention(userId: number, retentionDays: RetentionDays) {
   const db = await getDb();
   if (!db) throw new Error("Process history database is unavailable");
-  await db.insert(userProcessSettings).values({ userId, retentionDays }).onDuplicateKeyUpdate({
-    set: { retentionDays, updatedAt: new Date() },
+  await db.insert(userProcessSettings).values({ userId, retentionDays: retentionDays === null ? null : String(retentionDays) }).onDuplicateKeyUpdate({
+    set: { retentionDays: retentionDays === null ? null : String(retentionDays), updatedAt: new Date() },
   });
 }
 

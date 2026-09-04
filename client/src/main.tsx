@@ -123,7 +123,7 @@ const uploadRouteNames = new Set([
 ]);
 const trpcClient = trpc.createClient({
   links: [splitLink({
-    condition: operation => uploadRouteNames.has(operation.path[0] ?? ""),
+    condition: operation => uploadRouteNames.has(operation.path.split(".")[0] ?? ""),
     true: makeHttpLink(processingApiUrl),
     false: makeHttpLink(""),
   })],

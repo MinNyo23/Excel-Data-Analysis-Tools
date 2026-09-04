@@ -86,7 +86,9 @@ queryClient.getMutationCache().subscribe(event => {
 // In production, use the configured processor whenever it exists. The prior
 // feature-flag-only check caused deployed builds to fall back to /api/trpc when
 // the flag was omitted or serialized differently by the hosting environment.
-const processingApiUrl = PROCESSING_API_BASE_URL ?? "";
+// Every workbook route uses the external processor so large files never hit
+// Vercel's FUNCTION_PAYLOAD_TOO_LARGE limit. Non-workbook routes stay on Vercel.
+const processingApiUrl = PROCESSING_API_BASE_URL;
 
 const makeHttpLink = (baseUrl: string) => httpBatchLink({
   url: `${baseUrl}/api/trpc`,

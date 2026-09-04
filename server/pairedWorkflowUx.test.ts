@@ -40,6 +40,6 @@ describe("paired matching workflow UX", () => {
     expect(() => pairedColumnMappingSchema.parse({ unexpected: "column" })).toThrow();
     expect(router).toContain("workbookColumns");
     expect(router).toContain("normalizeUploadedFiles([input.file])");
-    expect(inspector).toContain("readHeaderColumns");
+    expect(inspector).toContain("inspect_workbook_columns.py");
   });
 });

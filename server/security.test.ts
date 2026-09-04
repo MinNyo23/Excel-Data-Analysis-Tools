@@ -6,12 +6,22 @@ import { uploadedFile } from "./routers";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { SESSION_MAX_AGE_MS } from "../shared/const";
 import { getWorkbookSelectionError, isSupportedWorkbookFileName, MAX_UPLOAD_FILE_BYTES } from "../shared/uploadLimits";
-import * as XLSX from "xlsx";
 
-function minimalXlsxBase64() {
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["Name"], ["Sample"]]), "Sheet1");
-  return (XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer).toString("base64");
+function safeXlsxBase64(entryCount = 1) {
+  const local = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
+  const name = Buffer.from("[Content_Types].xml");
+  const central = Buffer.alloc(46 + name.length);
+  central.writeUInt32LE(0x02014b50, 0);
+  central.writeUInt32LE(32, 20);
+  central.writeUInt32LE(64, 24);
+  central.writeUInt16LE(name.length, 28);
+  name.copy(central, 46);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(entryCount, 8);
+  eocd.writeUInt16LE(entryCount, 10);
+  eocd.writeUInt32LE(4, 16);
+  return Buffer.concat([local, central, eocd]).toString("base64");
 }
 
 function containsValue(value: unknown, target: unknown, seen = new Set<unknown>()): boolean {
@@ -30,16 +40,16 @@ describe("application security controls", () => {
     expect(getWorkbookSelectionError({ name: "source.xlsx", size: MAX_UPLOAD_FILE_BYTES })).toBeNull();
     expect(getWorkbookSelectionError({ name: "too-large.xlsx", size: MAX_UPLOAD_FILE_BYTES + 1 })).toBe("too-large.xlsx is too large. Choose a file no larger than 10 MB.");
     expect(getWorkbookSelectionError({ name: "source.pdf", size: 10 })).toMatch(/Only CSV and XLSX/);
-    expect(validateUploadedWorkbook({ name: "source.xlsx", data: minimalXlsxBase64() })).toBeNull();
+    expect(validateUploadedWorkbook({ name: "source.xlsx", data: safeXlsxBase64() })).toBeNull();
     expect(validateUploadedWorkbook({ name: "source.csv", data: Buffer.from("Name,Entity\nA,One\n").toString("base64") })).toBeNull();
-    expect(validateUploadedWorkbook({ name: "source.xls", data: minimalXlsxBase64() })).toMatch(/Only CSV and XLSX/);
-    expect(validateUploadedWorkbook({ name: "../source.xlsx", data: minimalXlsxBase64() })).toMatch(/File name/);
+    expect(validateUploadedWorkbook({ name: "source.xls", data: safeXlsxBase64() })).toMatch(/Only CSV and XLSX/);
+    expect(validateUploadedWorkbook({ name: "../source.xlsx", data: safeXlsxBase64() })).toMatch(/File name/);
     expect(validateUploadedWorkbook({ name: "source.csv", data: Buffer.from([0x41, 0x00, 0x42]).toString("base64") })).toMatch(/binary/);
-    expect(uploadedFile.safeParse({ name: "source.exe", data: minimalXlsxBase64() }).success).toBe(false);
+    expect(uploadedFile.safeParse({ name: "source.exe", data: safeXlsxBase64() }).success).toBe(false);
   });
 
-  it("rejects invalid XLSX payloads and oversized upload batches", () => {
-    expect(validateUploadedWorkbook({ name: "broken.xlsx", data: Buffer.from("not-a-workbook").toString("base64") })).toMatch(/valid ZIP/);
+  it("rejects suspicious XLSX archive counts and oversized upload batches", () => {
+    expect(validateUploadedWorkbook({ name: "many.xlsx", data: safeXlsxBase64(501) })).toMatch(/too many archive entries/);
     const csv = { name: "source.csv", data: Buffer.from("A\n1\n").toString("base64") };
     expect(validateUploadedWorkbookBatch(Array.from({ length: 11 }, () => csv))).toMatch(/between 1 and 10/);
   });

@@ -1,11 +1,15 @@
 import { createHash } from "node:crypto";
-import * as XLSX from "xlsx";
 import type { NextFunction, Request, Response } from "express";
 import { GOOGLE_RECAPTCHA_ORIGINS } from "../shared/contentSecurityPolicy.js";
-import { MAX_UPLOAD_BATCH_BYTES, MAX_UPLOAD_FILE_BYTES, MAX_UPLOAD_REQUEST_BYTES } from "../shared/uploadLimits.js";
+import { MAX_UPLOAD_FILE_BYTES } from "../shared/uploadLimits.js";
 
-export { MAX_UPLOAD_FILE_BYTES, MAX_UPLOAD_BATCH_BYTES } from "../shared/uploadLimits.js";
+export { MAX_UPLOAD_FILE_BYTES } from "../shared/uploadLimits.js";
+export const MAX_UPLOAD_BATCH_BYTES = 20 * 1024 * 1024;
 export const MAX_UPLOAD_FILES = 10;
+const MAX_ZIP_ENTRIES = 500;
+const MAX_ZIP_UNCOMPRESSED_BYTES = 80 * 1024 * 1024;
+const MAX_ZIP_ENTRY_BYTES = 40 * 1024 * 1024;
+const MAX_ZIP_COMPRESSION_RATIO = 200;
 
 type UploadedFileLike = { name: string; data: string };
 
@@ -14,10 +18,6 @@ const FRONTEND_ORIGIN_ENV_KEYS = ["ALLOWED_FRONTEND_ORIGINS", "FRONTEND_URL", "P
 
 function allowedFrontendOrigins() {
   const origins = new Set(DEFAULT_FRONTEND_ORIGINS);
-  if (process.env.NODE_ENV !== "production") {
-    origins.add("http://localhost:3000");
-    origins.add("http://127.0.0.1:3000");
-  }
   for (const key of FRONTEND_ORIGIN_ENV_KEYS) {
     for (const value of (process.env[key] ?? "").split(",")) {
       const origin = value.trim().replace(/\/$/, "");
@@ -32,16 +32,30 @@ function isBase64(value: string) {
 }
 
 function validateXlsxArchive(bytes: Buffer) {
-  if (bytes.length < 4 || bytes.readUInt32LE(0) !== 0x04034b50) {
-    return "XLSX files must be valid ZIP-based workbooks.";
+  if (bytes.length < 22 || bytes.readUInt32LE(0) !== 0x04034b50) return "XLSX files must be valid ZIP-based workbooks.";
+  if (!bytes.includes(Buffer.from("[Content_Types].xml"))) return "XLSX workbook content markers are missing.";
+  const eocdOffset = bytes.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  if (eocdOffset < 0 || eocdOffset + 22 > bytes.length) return "XLSX archive directory is invalid.";
+  const entryCount = bytes.readUInt16LE(eocdOffset + 10);
+  const directoryOffset = bytes.readUInt32LE(eocdOffset + 16);
+  if (entryCount > MAX_ZIP_ENTRIES) return "XLSX contains too many archive entries.";
+  if (directoryOffset >= bytes.length) return "XLSX archive directory is out of bounds.";
+  let offset = directoryOffset;
+  let totalUncompressed = 0;
+  for (let index = 0; index < entryCount; index += 1) {
+    if (offset + 46 > bytes.length || bytes.readUInt32LE(offset) !== 0x02014b50) return "XLSX archive entry is invalid.";
+    const compressedSize = bytes.readUInt32LE(offset + 20);
+    const uncompressedSize = bytes.readUInt32LE(offset + 24);
+    const fileNameLength = bytes.readUInt16LE(offset + 28);
+    const extraLength = bytes.readUInt16LE(offset + 30);
+    const commentLength = bytes.readUInt16LE(offset + 32);
+    if (uncompressedSize > MAX_ZIP_ENTRY_BYTES) return "XLSX contains an oversized archive entry.";
+    if (compressedSize > 0 && uncompressedSize / compressedSize > MAX_ZIP_COMPRESSION_RATIO) return "XLSX compression ratio is unsafe.";
+    totalUncompressed += uncompressedSize;
+    if (totalUncompressed > MAX_ZIP_UNCOMPRESSED_BYTES) return "XLSX expands beyond the safe processing limit.";
+    offset += 46 + fileNameLength + extraLength + commentLength;
   }
-  try {
-    const workbook = XLSX.read(bytes, { type: "buffer", bookSheets: true, sheetRows: 1 });
-    if (!workbook.SheetNames.length) return "XLSX workbook content markers are missing.";
-    return null;
-  } catch {
-    return "XLSX files must be valid ZIP-based workbooks.";
-  }
+  return null;
 }
 
 export function validateUploadedWorkbook(file: UploadedFileLike): string | null {
@@ -156,7 +170,7 @@ export function securityHeaders(req: any, res: any, next: any) {
 
 export function apiRequestGuards(req: any, res: any, next: any) {
   const contentLength = Number(req.headers["content-length"] ?? 0);
-  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_REQUEST_BYTES) return res.status(413).json({ error: "Request body is too large." });
+  if (Number.isFinite(contentLength) && contentLength > 30 * 1024 * 1024) return res.status(413).json({ error: "Request body is too large." });
   if (!mutationOriginIsTrusted(req)) return res.status(403).json({ error: "Untrusted request origin." });
   const limit = consumeRateLimit(`api:${requestIdentity(req)}`, 120, 60_000);
   if (!limit.allowed) {

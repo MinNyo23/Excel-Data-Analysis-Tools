@@ -32,10 +32,10 @@ function normalizeCell(value: unknown): CellValue {
   return String(value);
 }
 
-export function readWorkbook(base64: string, options: XLSX.ParsingOptions = {}): XLSX.WorkBook {
+export function readWorkbook(base64: string): XLSX.WorkBook {
   const buffer = Buffer.from(base64, "base64");
   if (buffer.length === 0) throw new Error("The uploaded workbook is empty.");
-  return XLSX.read(buffer, { type: "buffer", cellDates: true, ...options });
+  return XLSX.read(buffer, { type: "buffer", cellDates: true });
 }
 
 export function sheetNames(workbook: XLSX.WorkBook): string[] {
@@ -188,7 +188,7 @@ export function previewTable(table: Table, limit = 50): Preview {
 
 /** Reads the first sheet header only (used by the column inspector). */
 export function readHeaderColumns(base64: string): { sheetName: string; columns: string[] } {
-  const workbook = readWorkbook(base64, { sheetRows: 1 });
+  const workbook = readWorkbook(base64);
   const [sheetName] = workbook.SheetNames;
   if (!sheetName) throw new Error("The workbook does not contain a readable sheet.");
   const table = readSheet(workbook, sheetName);

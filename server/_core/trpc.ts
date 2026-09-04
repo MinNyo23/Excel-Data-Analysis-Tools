@@ -1,5 +1,4 @@
 import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '../../shared/const.js';
-import { isSafeUploadValidationMessage } from '../../shared/uploadLimits.js';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context.js";
@@ -24,9 +23,7 @@ export function redactTRPCErrorShape(shape: PublicErrorShape, errorCode: string,
     : errorCode === "NOT_FOUND"
       ? "The requested API operation was not found."
       : errorCode === "BAD_REQUEST"
-        ? isSafeUploadValidationMessage(shape.message)
-          ? shape.message
-          : "We could not use that request. Please check your selected file or settings and try again."
+        ? "We could not use that request. Please check your selected file or settings and try again."
       : shape.message;
   const retryAfterSeconds = errorCode === "TOO_MANY_REQUESTS" ? retryAfterSecondsFromCause(cause) : undefined;
   return {

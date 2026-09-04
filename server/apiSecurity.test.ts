@@ -14,15 +14,6 @@ describe("browser and API security contracts", () => {
     expect(redacted).toEqual({ message: "Request could not be completed.", data: { code: "INTERNAL_SERVER_ERROR", httpStatus: 500 } });
   });
 
-  it("returns safe upload validation messages for bad workbook requests", () => {
-    const redacted = redactTRPCErrorShape({
-      message: "File exceeds the 10 MB upload limit.",
-      data: { code: "BAD_REQUEST", httpStatus: 400, zodError: { issues: [{ message: "File exceeds the 10 MB upload limit." }] } },
-    }, "BAD_REQUEST");
-
-    expect(redacted.message).toBe("File exceeds the 10 MB upload limit.");
-  });
-
   it("keeps unknown procedure names and user-editable Supabase metadata out of the authorization response path", () => {
     const notFound = redactTRPCErrorShape({ message: "No procedure found on path private.internal", data: { code: "NOT_FOUND", httpStatus: 404, path: "private.internal" } }, "NOT_FOUND");
     const supabaseAuth = readFileSync(path.resolve(process.cwd(), "server/supabaseIntegration.ts"), "utf8");

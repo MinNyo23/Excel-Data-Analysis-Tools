@@ -14,6 +14,15 @@ describe("browser and API security contracts", () => {
     expect(redacted).toEqual({ message: "Request could not be completed.", data: { code: "INTERNAL_SERVER_ERROR", httpStatus: 500 } });
   });
 
+  it("returns safe upload validation messages for bad workbook requests", () => {
+    const redacted = redactTRPCErrorShape({
+      message: "File exceeds the 10 MB upload limit.",
+      data: { code: "BAD_REQUEST", httpStatus: 400, zodError: { issues: [{ message: "File exceeds the 10 MB upload limit." }] } },
+    }, "BAD_REQUEST");
+
+    expect(redacted.message).toBe("File exceeds the 10 MB upload limit.");
+  });
+
   it("keeps unknown procedure names and user-editable Supabase metadata out of the authorization response path", () => {
     const notFound = redactTRPCErrorShape({ message: "No procedure found on path private.internal", data: { code: "NOT_FOUND", httpStatus: 404, path: "private.internal" } }, "NOT_FOUND");
     const supabaseAuth = readFileSync(path.resolve(process.cwd(), "server/supabaseIntegration.ts"), "utf8");
@@ -45,7 +54,7 @@ describe("browser and API security contracts", () => {
     expect(csp).toContain("script-src-attr 'none'");
     expect(csp).toContain("worker-src 'none'");
     expect(csp).toContain("https://lltzfiewqyhdbfvjqxon.supabase.co");
-    expect(csp).toContain("https://3000-il1ewvzwfbgv4rg9wy6pi-abbe9b7d.us4.manus.computer");
+    expect(csp).not.toContain("manus.computer");
     expect(valueFor("Access-Control-Allow-Origin")).toBe("https://excel-master-file-tool.vercel.app");
     expect(valueFor("X-Content-Type-Options")).toBe("nosniff");
     expect(valueFor("X-Frame-Options")).toBe("DENY");

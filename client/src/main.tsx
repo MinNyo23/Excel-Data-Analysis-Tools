@@ -95,6 +95,7 @@ const uploadRouteNames = new Set([
   "deletionWithSummary",
   "additionExitMatch",
   "deletionOnboardMatch",
+  "fileComparison",
   "readyUpload",
   "facilityConversion",
 ]);

@@ -13,8 +13,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getFriendlyApiMessage } from "@/lib/apiFeedback";
 import "@/privacy-diagram.css";
 import { WorkflowGuide, type WorkflowGuideContent } from "@/components/WorkflowGuide";
+import { ConditionalFileComparisonPanel, EMPTY_FILE_COMPARISON_SETTINGS, type FileComparisonSettings } from "@/components/ConditionalFileComparisonPanel";
 import { PairedFileUploadPanel, type PairMapping } from "@/components/PairedFileUploadPanel";
-import { BriefcaseBusiness, Building2, Download, FileSpreadsheet, FileUp, Layers3, Loader2, ListTree, Phone, RotateCcw, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
+import { BriefcaseBusiness, Building2, Download, FileSpreadsheet, FileUp, GitCompare, Layers3, Loader2, ListTree, Phone, RotateCcw, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
 const ACCEPTED_TYPES = ".xlsx,.csv";
 // Vercel Functions cap request bodies at 4.5 MB. Base64 expands files by
@@ -26,6 +27,7 @@ const TOOL_CARDS = [
   { slug: "duplicates", title: "Duplicate separation", description: "Keep first records and move repeated name and NRC combinations.", icon: Layers3 },
   { slug: "entity-summary", title: "Deletion with summary", description: "Compare entity counts across every sheet in one workbook.", icon: ListTree },
   { slug: "addition-exit", title: "Addition & exit match", description: "Validate exit data against an original Addition list.", icon: Layers3 },
+  { slug: "file-comparison", title: "Multi-condition file compare", description: "Compare two workbooks with one or two column conditions.", icon: GitCompare },
   { slug: "onboard", title: "Deletion & onboard check", description: "Match deletion NRCs against onboard records.", icon: ListTree },
   { slug: "ready-upload", title: "Ready file to upload", description: "Convert employee files into the final upload schema.", icon: FileSpreadsheet },
   { slug: "facility", title: "Facility by facility", description: "Create an entity summary and separate worksheets per facility.", icon: Layers3 },
@@ -66,6 +68,13 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose two CSV or XLSX files: your original Addition file and the Exit Data file you want to validate.",
     process: "The tool checks mobile numbers first, then NRC numbers, and separates records into match groups for review.",
     output: "Review the Both Matched, Mobile Only, NRC Only, and No Match groups, then download the match report.",
+  },
+  "file-comparison": {
+    title: "Multi-condition file compare",
+    purpose: "Compare two Excel files with one or two column conditions, similar to a Colab-style file-to-file analysis.",
+    upload: "Choose two CSV or XLSX files. After upload, pick the columns to compare from each file.",
+    process: "The tool builds a composite match key from your selected columns, then runs the comparison operation you choose.",
+    output: "Review the summary and result preview, then download the comparison workbook.",
   },
   onboard: {
     title: "Deletion check with onboard",
@@ -122,6 +131,7 @@ type AdditionExitMatchResult = { outputFilename: string; summary: Preview; group
 type DeletionOnboardMatchResult = { outputFilename: string; summary: Preview; matched: Preview; noMatch: Preview; workbookBase64: string };
 type ReadyUploadResult = { outputFilename: string; rowCount: number; columnCount: number; preview: Preview; workbookBase64: string };
 type FacilityConversionResult = { outputFilename: string; facilityCount: number; recordCount: number; summary: Preview; facilitySheets: string[]; workbookBase64: string };
+type FileComparisonResult = { outputFilename: string; operationLabel: string; file1RowCount: number; resultRowCount: number; summary: Preview; result: Preview; workbookBase64: string };
 type DeletionSummaryResult = {
   outputFilename: string;
   sourceFilename: string;
@@ -241,6 +251,12 @@ export default function Home() {
   const [readyUploadResult, setReadyUploadResult] = useState<ReadyUploadResult | null>(null);
   const [facilityFile, setFacilityFile] = useState<File | null>(null);
   const [facilityResult, setFacilityResult] = useState<FacilityConversionResult | null>(null);
+  const [comparisonFile1, setComparisonFile1] = useState<File | null>(null);
+  const [comparisonFile2, setComparisonFile2] = useState<File | null>(null);
+  const [comparisonResult, setComparisonResult] = useState<FileComparisonResult | null>(null);
+  const [comparisonFile1Columns, setComparisonFile1Columns] = useState<string[]>([]);
+  const [comparisonFile2Columns, setComparisonFile2Columns] = useState<string[]>([]);
+  const [comparisonSettings, setComparisonSettings] = useState<FileComparisonSettings>(EMPTY_FILE_COMPARISON_SETTINGS);
   function recordCompletion(toolKey: string, toolName: string, inputFileNames: string[], outputFilename: string, totalRecords: number) {
     if (!isAuthenticated || inputFileNames.length === 0) return;
     historyMutation.mutate({ toolKey, toolName, inputFileNames, outputFilename, totalRecords });
@@ -249,6 +265,7 @@ export default function Home() {
   const readyUploadMutation = trpc.readyUpload.process.useMutation({ onSuccess: data => { const item = data as ReadyUploadResult; setReadyUploadResult(item); recordCompletion("ready-upload", "Ready file to upload", readyUploadFile ? [readyUploadFile.name] : [], item.outputFilename, item.rowCount); toast.success("Upload-ready workbook is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "The file could not be converted. Please try again.")) });
   const onboardMutation = trpc.deletionOnboardMatch.process.useMutation({ onSuccess: data => { const item = data as DeletionOnboardMatchResult; setOnboardResult(item); recordCompletion("onboard", "Deletion & onboard check", [onboardFile?.name, deletionCheckFile?.name].filter((name): name is string => Boolean(name)), item.outputFilename, totalFromPreview(item.summary)); toast.success("NRC match report is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "NRC matching could not be completed. Please try again.")) });
   const matchMutation = trpc.additionExitMatch.process.useMutation({ onSuccess: data => { const item = data as AdditionExitMatchResult; setMatchResult(item); recordCompletion("addition-exit", "Addition & exit match", [originalMatchFile?.name, exitMatchFile?.name].filter((name): name is string => Boolean(name)), item.outputFilename, totalFromPreview(item.summary)); toast.success("Addition match report is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "The match report could not be created. Please try again.")) });
+  const fileComparisonMutation = trpc.fileComparison.process.useMutation({ onSuccess: data => { const item = data as FileComparisonResult; setComparisonResult(item); recordCompletion("file-comparison", "Multi-condition file compare", [comparisonFile1?.name, comparisonFile2?.name].filter((name): name is string => Boolean(name)), item.outputFilename, item.resultRowCount); toast.success("File comparison report is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "The file comparison could not be completed. Please try again.")) });
   const entitySummaryMutation = trpc.deletionWithSummary.process.useMutation({
     onSuccess: data => { const item = data as DeletionWithSummaryResult; setEntitySummaryResult(item); recordCompletion("entity-summary", "Deletion with summary", entitySummaryFile ? [entitySummaryFile.name] : [], item.outputFilename, item.entityCount); toast.success("Entity summary is ready to review."); },
     onError: error => toast.error(getFriendlyApiMessage(error, "The entity summary could not be created. Please try again.")),
@@ -328,6 +345,26 @@ export default function Home() {
     catch (error) { toast.error(error instanceof Error ? error.message : "Could not read the NRC match files."); }
   }
 
+  async function processFileComparison() {
+    if (!comparisonFile1 || !comparisonFile2) return;
+    try {
+      fileComparisonMutation.mutate({
+        file1: { name: comparisonFile1.name, data: await fileToBase64(comparisonFile1) },
+        file2: { name: comparisonFile2.name, data: await fileToBase64(comparisonFile2) },
+        config: {
+          file1Column1: comparisonSettings.file1Column1,
+          file2Column1: comparisonSettings.file2Column1,
+          enableSecondCondition: comparisonSettings.enableSecondCondition,
+          file1Column2: comparisonSettings.enableSecondCondition ? comparisonSettings.file1Column2 : undefined,
+          file2Column2: comparisonSettings.enableSecondCondition ? comparisonSettings.file2Column2 : undefined,
+          operation: comparisonSettings.operation,
+        },
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not read the comparison files.");
+    }
+  }
+
   async function processReadyUpload() {
     if (!readyUploadFile) return;
     try { readyUploadMutation.mutate({ file: { name: readyUploadFile.name, data: await fileToBase64(readyUploadFile) } }); }
@@ -401,11 +438,14 @@ export default function Home() {
   function selectAdditionExitSecond(file: File) { if (!validatePairedFile(file)) return; setExitMatchFile(file); setMatchResult(null); setAdditionExitSecondColumns([]); void inspectColumns(file, setAdditionExitSecondColumns); }
   function selectOnboardOriginal(file: File) { if (!validatePairedFile(file)) return; setOnboardFile(file); setOnboardResult(null); setOnboardOriginalColumns([]); void inspectColumns(file, setOnboardOriginalColumns); }
   function selectOnboardSecond(file: File) { if (!validatePairedFile(file)) return; setDeletionCheckFile(file); setOnboardResult(null); setOnboardSecondColumns([]); void inspectColumns(file, setOnboardSecondColumns); }
+  function selectComparisonFile1(file: File) { if (!validatePairedFile(file)) return; setComparisonFile1(file); setComparisonResult(null); setComparisonFile1Columns([]); void inspectColumns(file, setComparisonFile1Columns); }
+  function selectComparisonFile2(file: File) { if (!validatePairedFile(file)) return; setComparisonFile2(file); setComparisonResult(null); setComparisonFile2Columns([]); void inspectColumns(file, setComparisonFile2Columns); }
   function resetAdditionExitMatch() { setOriginalMatchFile(null); setExitMatchFile(null); setMatchResult(null); setAdditionExitOriginalColumns([]); setAdditionExitSecondColumns([]); setAdditionExitMapping(EMPTY_PAIR_MAPPING); }
   function resetOnboardMatch() { setOnboardFile(null); setDeletionCheckFile(null); setOnboardResult(null); setOnboardOriginalColumns([]); setOnboardSecondColumns([]); setOnboardMapping(EMPTY_PAIR_MAPPING); }
+  function resetFileComparison() { setComparisonFile1(null); setComparisonFile2(null); setComparisonResult(null); setComparisonFile1Columns([]); setComparisonFile2Columns([]); setComparisonSettings(EMPTY_FILE_COMPARISON_SETTINGS); }
 
-  const isAnyWorkflowProcessing = processMutation.isPending || deletionMutation.isPending || duplicateMutation.isPending || entitySummaryMutation.isPending || matchMutation.isPending || onboardMutation.isPending || readyUploadMutation.isPending || facilityMutation.isPending || workbookColumnsMutation.isPending;
-  const hasWorkingData = selectedFiles.length > 0 || Boolean(result || deletionSummary || deletionFile || duplicateFile || duplicateResult || entitySummaryFile || entitySummaryResult || originalMatchFile || exitMatchFile || matchResult || onboardFile || deletionCheckFile || onboardResult || readyUploadFile || readyUploadResult || facilityFile || facilityResult);
+  const isAnyWorkflowProcessing = processMutation.isPending || deletionMutation.isPending || duplicateMutation.isPending || entitySummaryMutation.isPending || matchMutation.isPending || fileComparisonMutation.isPending || onboardMutation.isPending || readyUploadMutation.isPending || facilityMutation.isPending || workbookColumnsMutation.isPending;
+  const hasWorkingData = selectedFiles.length > 0 || Boolean(result || deletionSummary || deletionFile || duplicateFile || duplicateResult || entitySummaryFile || entitySummaryResult || originalMatchFile || exitMatchFile || matchResult || comparisonFile1 || comparisonFile2 || comparisonResult || onboardFile || deletionCheckFile || onboardResult || readyUploadFile || readyUploadResult || facilityFile || facilityResult);
 
   useEffect(() => {
     if (!hasWorkingData || isAnyWorkflowProcessing) return;
@@ -424,6 +464,12 @@ export default function Home() {
       setAdditionExitOriginalColumns([]);
       setAdditionExitSecondColumns([]);
       setAdditionExitMapping(EMPTY_PAIR_MAPPING);
+      setComparisonFile1(null);
+      setComparisonFile2(null);
+      setComparisonResult(null);
+      setComparisonFile1Columns([]);
+      setComparisonFile2Columns([]);
+      setComparisonSettings(EMPTY_FILE_COMPARISON_SETTINGS);
       setOnboardFile(null);
       setDeletionCheckFile(null);
       setOnboardResult(null);
@@ -438,7 +484,7 @@ export default function Home() {
       toast.info("Temporary workbook data was cleared after one minute of inactivity.");
     }, 60_000);
     return () => window.clearTimeout(cleanupTimer);
-  }, [hasWorkingData, isAnyWorkflowProcessing, selectedFiles, result, deletionSummary, deletionFile, duplicateFile, duplicateResult, entitySummaryFile, entitySummaryResult, originalMatchFile, exitMatchFile, matchResult, onboardFile, deletionCheckFile, onboardResult, readyUploadFile, readyUploadResult, facilityFile, facilityResult]);
+  }, [hasWorkingData, isAnyWorkflowProcessing, selectedFiles, result, deletionSummary, deletionFile, duplicateFile, duplicateResult, entitySummaryFile, entitySummaryResult, originalMatchFile, exitMatchFile, matchResult, comparisonFile1, comparisonFile2, comparisonResult, onboardFile, deletionCheckFile, onboardResult, readyUploadFile, readyUploadResult, facilityFile, facilityResult]);
 
   return (
     <main className={`app-shell tool-app-shell tool-${activeTool}`}>
@@ -522,6 +568,10 @@ export default function Home() {
       <section className="container duplicate-section tool-section tool-addition-exit">
         <div className="deletion-heading"><div><Badge className="soft-badge">ADDITION ORIGINAL & EXIT MATCH</Badge><h2>Validate exit data against <em>the original addition list.</em></h2><p>Upload the original Addition workbook and the Exit Data workbook. Mobile matching is prioritized before NRC matching, and every result is grouped for review.</p></div><div className="deletion-heading-icon"><Layers3 size={28} /></div></div>
         <Card className="deletion-card paired-workflow-card"><CardContent><div className="paired-workflow-layout"><PairedFileUploadPanel originalFile={originalMatchFile} secondFile={exitMatchFile} originalLabel="Original File" originalDescription="Original Addition source" secondLabel="2nd File" secondDescription="Exit data to validate" originalColumns={additionExitOriginalColumns} secondColumns={additionExitSecondColumns} mapping={additionExitMapping} isInspecting={workbookColumnsMutation.isPending} isProcessing={matchMutation.isPending} processingMessage="Parsing and matching…" onOriginalFile={selectAdditionExitOriginal} onSecondFile={selectAdditionExitSecond} onMappingChange={(field, value) => setAdditionExitMapping(current => ({ ...current, [field]: value }))} onProcess={processAdditionExitMatch} onReset={resetAdditionExitMatch} /><div className="deletion-result">{!matchResult ? <div className="deletion-empty"><Layers3 size={25} /><strong>Match report preview waiting</strong><span>Add both files, optionally confirm columns, then select <strong>Parse and preview</strong>.</span></div> : <><div className="deletion-metrics">{Object.entries(matchResult.groups).map(([name, value]) => <div key={name}><span>{name}</span><strong>{value.rows.length}</strong></div>)}</div><Tabs defaultValue="summary" className="preview-tabs"><TabsList><TabsTrigger value="summary">Summary</TabsTrigger>{Object.keys(matchResult.groups).map((name,index) => <TabsTrigger key={name} value={`group-${index}`}>{name}</TabsTrigger>)}</TabsList><TabsContent value="summary"><PreviewTable preview={matchResult.summary} /></TabsContent>{Object.entries(matchResult.groups).map(([name,value],index) => <TabsContent key={name} value={`group-${index}`}><PreviewTable preview={value} /></TabsContent>)}</Tabs><div className="download-panel paired-export-panel"><div><strong>Multi-sheet Excel output is ready</strong><span>{matchResult.outputFilename}</span></div><div><Button variant="outline" onClick={resetAdditionExitMatch}><RotateCcw size={16}/> Process new files</Button><Button className="download-button" onClick={() => downloadBytes(matchResult.workbookBase64, matchResult.outputFilename)}><Download size={17} /> Download Excel output</Button></div></div></>}</div></div></CardContent></Card>
+      </section>
+      <section className="container duplicate-section tool-section tool-file-comparison">
+        <div className="deletion-heading"><div><Badge className="soft-badge">MULTI-CONDITION FILE COMPARE</Badge><h2>Compare two workbooks with <em>one or two conditions.</em></h2><p>Upload File 1 and File 2, choose the columns to match, optionally add a second condition, then run exists, duplicate, or missing-record analysis.</p></div><div className="deletion-heading-icon"><GitCompare size={28} /></div></div>
+        <Card className="deletion-card paired-workflow-card"><CardContent><div className="paired-workflow-layout"><ConditionalFileComparisonPanel file1={comparisonFile1} file2={comparisonFile2} file1Columns={comparisonFile1Columns} file2Columns={comparisonFile2Columns} settings={comparisonSettings} isInspecting={workbookColumnsMutation.isPending} isProcessing={fileComparisonMutation.isPending} processingMessage="Running comparison…" onFile1={selectComparisonFile1} onFile2={selectComparisonFile2} onSettingsChange={(field, value) => setComparisonSettings(current => ({ ...current, [field]: value }))} onProcess={processFileComparison} onReset={resetFileComparison} /><div className="deletion-result">{!comparisonResult ? <div className="deletion-empty"><GitCompare size={25} /><strong>Comparison preview waiting</strong><span>Add both files, choose your columns and operation, then select <strong>Run analysis</strong>.</span></div> : <><div className="deletion-metrics"><div><span>Operation</span><strong>{comparisonResult.operationLabel}</strong></div><div><span>File 1 rows</span><strong>{comparisonResult.file1RowCount.toLocaleString()}</strong></div><div><span>Result rows</span><strong>{comparisonResult.resultRowCount.toLocaleString()}</strong></div></div><Tabs defaultValue="summary" className="preview-tabs"><TabsList><TabsTrigger value="summary">Summary</TabsTrigger><TabsTrigger value="result">Result</TabsTrigger></TabsList><TabsContent value="summary"><PreviewTable preview={comparisonResult.summary} /></TabsContent><TabsContent value="result"><PreviewTable preview={comparisonResult.result} /></TabsContent></Tabs><div className="download-panel paired-export-panel"><div><strong>Comparison workbook is ready</strong><span>{comparisonResult.outputFilename}</span></div><div><Button variant="outline" onClick={resetFileComparison}><RotateCcw size={16}/> Process new files</Button><Button className="download-button" onClick={() => downloadBytes(comparisonResult.workbookBase64, comparisonResult.outputFilename)}><Download size={17} /> Download Excel output</Button></div></div></>}</div></div></CardContent></Card>
       </section>
       <section className="container duplicate-section tool-section tool-onboard"><div className="deletion-heading"><div><Badge className="soft-badge">DELETION CHECK WITH ONBOARD</Badge><h2>Check deletion NRCs against <em>onboard records.</em></h2><p>Upload onboard data and a deletion list to enrich NRC matches and separate unmatched records.</p></div><div className="deletion-heading-icon"><ListTree size={28}/></div></div><Card className="deletion-card paired-workflow-card"><CardContent><div className="paired-workflow-layout"><PairedFileUploadPanel originalFile={onboardFile} secondFile={deletionCheckFile} originalLabel="Original File" originalDescription="Original onboard source" secondLabel="2nd File" secondDescription="Deletion file to check" originalColumns={onboardOriginalColumns} secondColumns={onboardSecondColumns} mapping={onboardMapping} showPhoneMapping={false} isInspecting={workbookColumnsMutation.isPending} isProcessing={onboardMutation.isPending} processingMessage="Parsing NRC data…" onOriginalFile={selectOnboardOriginal} onSecondFile={selectOnboardSecond} onMappingChange={(field, value) => setOnboardMapping(current => ({ ...current, [field]: value }))} onProcess={processOnboardMatch} onReset={resetOnboardMatch} /><div className="deletion-result">{!onboardResult?<div className="deletion-empty"><ListTree size={25}/><strong>NRC report preview waiting</strong><span>Add both files, optionally confirm columns, then select <strong>Parse and preview</strong>.</span></div>:<><Tabs defaultValue="summary" className="preview-tabs"><TabsList><TabsTrigger value="summary">Summary</TabsTrigger><TabsTrigger value="matched">Matched</TabsTrigger><TabsTrigger value="no-match">No Match</TabsTrigger></TabsList><TabsContent value="summary"><PreviewTable preview={onboardResult.summary}/></TabsContent><TabsContent value="matched"><PreviewTable preview={onboardResult.matched}/></TabsContent><TabsContent value="no-match"><PreviewTable preview={onboardResult.noMatch}/></TabsContent></Tabs><div className="download-panel paired-export-panel"><div><strong>Multi-sheet Excel output is ready</strong><span>{onboardResult.outputFilename}</span></div><div><Button variant="outline" onClick={resetOnboardMatch}><RotateCcw size={16}/> Process new files</Button><Button className="download-button" onClick={()=>downloadBytes(onboardResult.workbookBase64,onboardResult.outputFilename)}><Download size={17}/> Download Excel output</Button></div></div></>}</div></div></CardContent></Card></section>
       <section className="container duplicate-section tool-section tool-ready-upload"><div className="deletion-heading"><div><Badge className="soft-badge">READY FILE TO UPLOAD</Badge><h2>Convert employee data into an <em>upload-ready file.</em></h2><p>Rename source fields, normalize dates, insert required blank fields, and apply the final upload schema in one downloadable workbook.</p></div><div className="deletion-heading-icon"><FileSpreadsheet size={28}/></div></div><Card className="deletion-card"><CardContent><div className="deletion-grid"><div className="deletion-upload"><input ref={readyUploadInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={e=>{const f=e.target.files?.[0];if(f){setReadyUploadFile(f);setReadyUploadResult(null)}}}/><div className="mini-dropzone" onClick={()=>readyUploadInputRef.current?.click()}><div className="upload-icon"><FileUp size={20}/></div><strong>{readyUploadFile?readyUploadFile.name:'Choose employee source file'}</strong><span>{readyUploadFile?formatBytes(readyUploadFile.size):'One .csv or .xlsx file'}</span></div><div className="action-row"><Button className="process-button" onClick={processReadyUpload} disabled={!readyUploadFile||readyUploadMutation.isPending}>{readyUploadMutation.isPending?<><Loader2 className="animate-spin" size={17}/> Converting…</>:<><FileSpreadsheet size={17}/> Convert and preview</>}</Button></div></div><div className="deletion-result">{!readyUploadResult?<div className="deletion-empty"><FileSpreadsheet size={25}/><strong>Upload-ready preview waiting</strong><span>Choose an employee file to apply the target upload schema.</span></div>:<><div className="deletion-metrics"><div><span>Rows</span><strong>{readyUploadResult.rowCount}</strong></div><div><span>Final columns</span><strong>{readyUploadResult.columnCount}</strong></div><div><span>Date format</span><strong>MM/DD/YYYY</strong></div></div><PreviewTable preview={readyUploadResult.preview}/><div className="download-panel"><div><strong>Ready to export</strong><span>{readyUploadResult.outputFilename}</span></div><Button className="download-button" onClick={()=>downloadBytes(readyUploadResult.workbookBase64,readyUploadResult.outputFilename)}><Download size={17}/> Download ready file</Button></div></>}</div></div></CardContent></Card></section>

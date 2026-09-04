@@ -13,7 +13,7 @@ describe("plain-language Excel workflow guides", () => {
     expect(component).toContain("2. Process");
     expect(component).toContain("3. Review and download");
     expect(component).toContain("processed temporarily in memory");
-    ["consolidation", "deletion-summary", "duplicates", "entity-summary", "addition-exit", "onboard", "ready-upload", "facility"].forEach(key => {
+    ["consolidation", "deletion-summary", "duplicates", "entity-summary", "addition-exit", "file-comparison", "onboard", "ready-upload", "facility"].forEach(key => {
       expect(home).toMatch(new RegExp(`["']?${key}["']?\\s*:`));
     });
     expect(home).toContain("<WorkflowGuide {...activeWorkflowGuide} />");

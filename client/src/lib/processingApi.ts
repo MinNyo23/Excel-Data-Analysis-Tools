@@ -1,15 +1,26 @@
-function envFlag(value: string | undefined) {
-  return value?.trim().toLowerCase() === "true";
-}
+import {
+  getWorkbookSelectionError,
+  MAX_UPLOAD_FILE_SIZE_LABEL,
+  MAX_VERCEL_SAME_ORIGIN_FILE_BYTES,
+  MAX_VERCEL_SAME_ORIGIN_FILE_SIZE_LABEL,
+} from "@shared/uploadLimits";
 
-const useExternalProcessingApi = envFlag(import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API as string | undefined);
 const configuredProcessingApiUrl = (import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.trim();
 
-// Vercel production uses same-origin /api/trpc unless external processing is explicitly enabled.
-// Local dev can set VITE_PROCESSING_API_URL=http://localhost:3000 in .env.
-export const PROCESSING_API_BASE_URL =
-  useExternalProcessingApi && configuredProcessingApiUrl
-    ? configuredProcessingApiUrl.replace(/\/$/, "")
-    : import.meta.env.DEV && configuredProcessingApiUrl
-      ? configuredProcessingApiUrl.replace(/\/$/, "")
-      : "";
+// Workbook uploads are base64-encoded in JSON and exceed Vercel's ~4.5 MB function
+// payload cap unless routed to an external Node processing service.
+export const PROCESSING_API_BASE_URL = configuredProcessingApiUrl?.replace(/\/$/, "") ?? "";
+export const USES_EXTERNAL_PROCESSING_API = Boolean(PROCESSING_API_BASE_URL);
+
+export const CLIENT_MAX_UPLOAD_FILE_SIZE_LABEL =
+  USES_EXTERNAL_PROCESSING_API || import.meta.env.DEV
+    ? MAX_UPLOAD_FILE_SIZE_LABEL
+    : MAX_VERCEL_SAME_ORIGIN_FILE_SIZE_LABEL;
+
+export function getClientWorkbookSelectionError(file: Pick<File, "name" | "size">) {
+  if (USES_EXTERNAL_PROCESSING_API || import.meta.env.DEV) return getWorkbookSelectionError(file);
+  return getWorkbookSelectionError(file, {
+    maxBytes: MAX_VERCEL_SAME_ORIGIN_FILE_BYTES,
+    maxLabel: MAX_VERCEL_SAME_ORIGIN_FILE_SIZE_LABEL,
+  });
+}

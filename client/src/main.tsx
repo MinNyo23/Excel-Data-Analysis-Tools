@@ -83,9 +83,8 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-// Same-origin /api/trpc on Vercel is the default. Workbook routes only use an
-// external processing API when VITE_USE_EXTERNAL_PROCESSING_API=true and
-// VITE_PROCESSING_API_URL are configured at build time.
+// Workbook uploads must use an external processing API on Vercel when configured,
+// because base64 JSON payloads exceed the ~4.5 MB serverless function limit.
 const processingApiUrl = PROCESSING_API_BASE_URL;
 const uploadRouteNames = new Set([
   "excel",

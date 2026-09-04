@@ -54,6 +54,9 @@ export function getFriendlyApiMessage(error: unknown, fallback: string) {
     }
     return "We could not use that request. Please check your selected file or settings and try again.";
   }
+  if (details.httpStatus === 413 || /FUNCTION_PAYLOAD_TOO_LARGE|Request Entity Too Large|payload too large/i.test(details.message)) {
+    return "This file is too large for the Vercel upload limit (~3 MB on the hosted app). Use a smaller CSV or XLSX file, or ask your administrator to configure an external processing API for larger workbooks.";
+  }
   if (details.httpStatus === 413 || /too large|exceeds the.*limit/i.test(details.message)) return "The upload is too large. Choose a smaller CSV or XLSX file and try again.";
   return fallback;
 }

@@ -16,8 +16,8 @@ describe("paired matching workflow UX", () => {
     expect(panel).toContain(".XLSX");
     expect(panel).toContain(".CSV");
     expect(panel).toContain("formatFileSize");
-    expect(panel).toContain("Selected · {formatFileSize(originalFile.size)} · {MAX_UPLOAD_FILE_SIZE_LABEL} max");
-    expect(panel).toContain("getWorkbookSelectionError(file)");
+    expect(panel).toContain("Selected · {formatFileSize(originalFile.size)} · {CLIENT_MAX_UPLOAD_FILE_SIZE_LABEL} max");
+    expect(panel).toContain("getClientWorkbookSelectionError(file)");
     expect(uploadLimits).toContain("Only CSV and XLSX files are allowed.");
     expect(uploadLimits).toContain("Choose a file no larger than ${MAX_UPLOAD_FILE_SIZE_LABEL}.");
     expect(panel).toContain('role="alert"');

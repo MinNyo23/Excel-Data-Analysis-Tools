@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { getWorkbookSelectionError, MAX_UPLOAD_FILE_SIZE_LABEL } from "@shared/uploadLimits";
+import { CLIENT_MAX_UPLOAD_FILE_SIZE_LABEL, getClientWorkbookSelectionError } from "@/lib/processingApi";
 import "./PairedFileUploadPanel.css";
 
 export type FileComparisonOperation = "exists_in_file2" | "find_duplicates" | "missing_in_file2";
@@ -96,7 +96,7 @@ export function ConditionalFileComparisonPanel({
 
   const selectFile = (target: "file1" | "file2", file?: File) => {
     if (!file) return;
-    const error = getWorkbookSelectionError(file);
+    const error = getClientWorkbookSelectionError(file);
     if (error) {
       setSelectionError({ target, message: error });
       if (target === "file1" && file1InputRef.current) file1InputRef.current.value = "";
@@ -129,11 +129,11 @@ export function ConditionalFileComparisonPanel({
       <div className="paired-dropzone-grid">
         <section className={`paired-file-zone ${dragTarget === "file1" ? "is-dragging" : ""}`} {...dropHandlers("file1")} role="button" tabIndex={0} onClick={() => file1InputRef.current?.click()} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") file1InputRef.current?.click(); }} aria-label="Choose File 1">
           <input ref={file1InputRef} type="file" accept=".xlsx,.csv" hidden onChange={event => selectFile("file1", event.target.files?.[0])} />
-          <span className="paired-step-number">01</span><span className="paired-zone-icon"><FileSpreadsheet size={21} /></span><strong>File 1</strong><p>{file1 ? file1.name : "Primary workbook to analyze"}</p>{file1 && <span className="selected-file-size"><CheckCircle2 size={13} /> Selected · {formatFileSize(file1.size)} · {MAX_UPLOAD_FILE_SIZE_LABEL} max</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "file1" ? "Release to select File 1" : file1 ? "Selected · choose again to replace" : "Drop File 1 here or browse"}</small>{selectionError?.target === "file1" && <span className="file-selection-error" role="alert">{selectionError.message}</span>}
+          <span className="paired-step-number">01</span><span className="paired-zone-icon"><FileSpreadsheet size={21} /></span><strong>File 1</strong><p>{file1 ? file1.name : "Primary workbook to analyze"}</p>{file1 && <span className="selected-file-size"><CheckCircle2 size={13} /> Selected · {formatFileSize(file1.size)} · {CLIENT_MAX_UPLOAD_FILE_SIZE_LABEL} max</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "file1" ? "Release to select File 1" : file1 ? "Selected · choose again to replace" : "Drop File 1 here or browse"}</small>{selectionError?.target === "file1" && <span className="file-selection-error" role="alert">{selectionError.message}</span>}
         </section>
         <section className={`paired-file-zone ${dragTarget === "file2" ? "is-dragging" : ""}`} {...dropHandlers("file2")} role="button" tabIndex={0} onClick={() => file2InputRef.current?.click()} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") file2InputRef.current?.click(); }} aria-label="Choose File 2">
           <input ref={file2InputRef} type="file" accept=".xlsx,.csv" hidden onChange={event => selectFile("file2", event.target.files?.[0])} />
-          <span className="paired-step-number">02</span><span className="paired-zone-icon"><FileUp size={21} /></span><strong>File 2</strong><p>{file2 ? file2.name : "Reference workbook to compare against"}</p>{file2 && <span className="selected-file-size"><CheckCircle2 size={13} /> Selected · {formatFileSize(file2.size)} · {MAX_UPLOAD_FILE_SIZE_LABEL} max</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "file2" ? "Release to select File 2" : file2 ? "Selected · choose again to replace" : "Drop File 2 here or browse"}</small>{selectionError?.target === "file2" && <span className="file-selection-error" role="alert">{selectionError.message}</span>}
+          <span className="paired-step-number">02</span><span className="paired-zone-icon"><FileUp size={21} /></span><strong>File 2</strong><p>{file2 ? file2.name : "Reference workbook to compare against"}</p>{file2 && <span className="selected-file-size"><CheckCircle2 size={13} /> Selected · {formatFileSize(file2.size)} · {CLIENT_MAX_UPLOAD_FILE_SIZE_LABEL} max</span>}<AcceptedFileTags /><small aria-live="polite">{dragTarget === "file2" ? "Release to select File 2" : file2 ? "Selected · choose again to replace" : "Drop File 2 here or browse"}</small>{selectionError?.target === "file2" && <span className="file-selection-error" role="alert">{selectionError.message}</span>}
         </section>
       </div>
 

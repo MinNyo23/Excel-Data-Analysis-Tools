@@ -83,9 +83,10 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-const processingApiUrl = import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API === "true"
-  ? ((import.meta.env.VITE_PROCESSING_API_URL as string | undefined)?.replace(/\/$/, "") ?? "")
-  : "";
+// Workbook payloads can exceed Vercel’s serverless request limit. Always use
+// the managed processing backend for tRPC, which accepts the documented 10 MB
+// file limit and keeps processing off the static frontend deployment.
+const processingApiUrl = PROCESSING_API_BASE_URL;
 
 const trpcClient = trpc.createClient({
   links: [

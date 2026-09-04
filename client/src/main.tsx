@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { COOKIE_NAME, UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink, splitLink, TRPCClientError } from "@trpc/client";
+import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
@@ -83,55 +83,37 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-// In production, use the configured processor whenever it exists. The prior
-// feature-flag-only check caused deployed builds to fall back to /api/trpc when
-// the flag was omitted or serialized differently by the hosting environment.
-// Every workbook route uses the external processor so large files never hit
-// Vercel's FUNCTION_PAYLOAD_TOO_LARGE limit. Non-workbook routes stay on Vercel.
+// Keep every tRPC request on the managed processing backend. Workbook payloads
+// can exceed Vercel's serverless request limit, and the same backend also owns
+// the authenticated profile, history, and module procedures.
 const processingApiUrl = PROCESSING_API_BASE_URL;
 
-const makeHttpLink = (baseUrl: string) => httpBatchLink({
-  url: `${baseUrl}/api/trpc`,
-  transformer: superjson,
-  async headers() {
-    const supabaseSession = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-    if (supabaseSession.data.session?.access_token) return { Authorization: `Bearer ${supabaseSession.data.session.access_token}` };
-    try {
-      const raw = sessionStorage.getItem("manus-cookie");
-      if (raw) {
-        const prefix = `${COOKIE_NAME}=`;
-        const pair = raw.split(";").find(s => s.trim().startsWith(prefix));
-        const token = pair?.trim().slice(prefix.length);
-        if (token) return { Authorization: `Bearer ${token}` };
-      }
-    } catch {
-      // sessionStorage unavailable
-    }
-    return {};
-  },
-  fetch(input, init) {
-    return globalThis.fetch(input, { ...(init ?? {}), credentials: baseUrl ? "omit" : "include" });
-  },
-});
-
-const uploadRouteNames = new Set([
-  "excel",
-  "workbookColumns",
-  "deletionSummary",
-  "deletionDuplicates",
-  "deletionWithSummary",
-  "additionExitMatch",
-  "deletionOnboardMatch",
-  "readyUpload",
-  "facilityConversion",
-]);
-
 const trpcClient = trpc.createClient({
-  links: [splitLink({
-    condition: operation => uploadRouteNames.has(operation.path[0] ?? ""),
-    true: makeHttpLink(processingApiUrl),
-    false: makeHttpLink(""),
-  })],
+  links: [
+    httpBatchLink({
+      url: `${processingApiUrl}/api/trpc`,
+      transformer: superjson,
+      async headers() {
+        const supabaseSession = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+        if (supabaseSession.data.session?.access_token) return { Authorization: `Bearer ${supabaseSession.data.session.access_token}` };
+        try {
+          const raw = sessionStorage.getItem("manus-cookie");
+          if (raw) {
+            const prefix = `${COOKIE_NAME}=`;
+            const pair = raw.split(";").find(s => s.trim().startsWith(prefix));
+            const token = pair?.trim().slice(prefix.length);
+            if (token) return { Authorization: `Bearer ${token}` };
+          }
+        } catch {
+          // sessionStorage unavailable
+        }
+        return {};
+      },
+      fetch(input, init) {
+        return globalThis.fetch(input, { ...(init ?? {}), credentials: "omit" });
+      },
+    }),
+  ],
 });
 
 createRoot(document.getElementById("root")!).render(

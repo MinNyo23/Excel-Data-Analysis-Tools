@@ -112,9 +112,21 @@ const makeHttpLink = (baseUrl: string) => httpBatchLink({
   },
 });
 
+const uploadRouteNames = new Set([
+  "excel",
+  "workbookColumns",
+  "deletionSummary",
+  "deletionDuplicates",
+  "deletionWithSummary",
+  "additionExitMatch",
+  "deletionOnboardMatch",
+  "readyUpload",
+  "facilityConversion",
+]);
+
 const trpcClient = trpc.createClient({
   links: [splitLink({
-    condition: operation => operation.path[0] === "excel",
+    condition: operation => uploadRouteNames.has(operation.path[0] ?? ""),
     true: makeHttpLink(processingApiUrl),
     false: makeHttpLink(""),
   })],

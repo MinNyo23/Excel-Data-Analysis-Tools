@@ -174,7 +174,7 @@ export function retentionCutoffDate(retentionDays: RetentionDays, now = new Date
 
 export async function getProcessHistoryRetention(userId: number): Promise<RetentionDays> {
   const db = await getDb();
-  if (!db) throw new Error("Process history database is unavailable");
+  if (!db) return null;
   const result = await db.select().from(userProcessSettings).where(eq(userProcessSettings.userId, userId)).limit(1);
   const stored = result[0]?.retentionDays;
   return stored === null || stored === undefined ? null : Number(stored) as RetentionDays;
@@ -189,11 +189,11 @@ export async function saveProcessHistoryRetention(userId: number, retentionDays:
 }
 
 export async function applyProcessHistoryRetention(userId: number, now = new Date()) {
+  const db = await getDb();
+  if (!db) return { retentionDays: null as RetentionDays, deletedCount: 0 };
   const retentionDays = await getProcessHistoryRetention(userId);
   const cutoff = retentionCutoffDate(retentionDays, now);
   if (!cutoff) return { retentionDays, deletedCount: 0 };
-  const db = await getDb();
-  if (!db) throw new Error("Process history database is unavailable");
   const result = await deleteExpiredProcessHistoryForUser(db, userId, cutoff);
   return { retentionDays, deletedCount: Number(result[0]?.affectedRows ?? 0) };
 }
@@ -211,7 +211,7 @@ export type EditableUserProfile = {
 
 export async function getUserProfile(userId: number): Promise<EditableUserProfile | null> {
   const db = await getDb();
-  if (!db) throw new Error("Profile database is unavailable");
+  if (!db) return null;
   const result = await selectUserProfileForUser(db, userId);
   const row = result[0];
   if (!row) return null;

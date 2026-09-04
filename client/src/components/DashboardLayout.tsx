@@ -10,7 +10,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { FileSpreadsheet, FolderKanban, Layers3, ListTree, LogOut, ScanSearch, ShieldCheck, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
+import { FileSpreadsheet, FolderKanban, GitCompare, Layers3, ListTree, LogOut, ScanSearch, ShieldCheck, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 import AppFooter from "./AppFooter";
@@ -23,6 +23,7 @@ const tools = [
   { icon: Layers3, label: "Duplicate separation", path: "/tools/duplicates" },
   { icon: ListTree, label: "Deletion with summary", path: "/tools/entity-summary" },
   { icon: ScanSearch, label: "Addition & exit match", path: "/tools/addition-exit" },
+  { icon: GitCompare, label: "Multi-condition file compare", path: "/tools/file-comparison" },
   { icon: ScanSearch, label: "Deletion & onboard check", path: "/tools/onboard" },
   { icon: UploadCloud, label: "Ready file to upload", path: "/tools/ready-upload" },
   { icon: Sheet, label: "Facility by facility", path: "/tools/facility" },

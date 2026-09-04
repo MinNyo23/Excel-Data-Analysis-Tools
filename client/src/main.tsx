@@ -87,7 +87,9 @@ queryClient.getMutationCache().subscribe(event => {
 // processing mutation externally when its serialized payload is large enough
 // to exceed Vercel's serverless request limit.
 const processingApiUrl = PROCESSING_API_BASE_URL;
-const VERCEL_SAFE_UPLOAD_PAYLOAD_BYTES = 3_000_000;
+if (!processingApiUrl) {
+  console.warn("[v0] VITE_PROCESSING_API_URL is not configured; large workbook routes cannot be processed.");
+}
 const uploadRouteNames = new Set([
   "excel",
   "workbookColumns",
@@ -99,14 +101,11 @@ const uploadRouteNames = new Set([
   "readyUpload",
   "facilityConversion",
 ]);
-const shouldUseManagedBackend = (operation: { path: string; input: unknown }) => {
-  const procedure = operation.path.split(".")[0] ?? "";
-  if (!uploadRouteNames.has(procedure)) return false;
-  try {
-    return JSON.stringify(operation.input ?? null).length > VERCEL_SAFE_UPLOAD_PAYLOAD_BYTES;
-  } catch {
-    return false;
-  }
+const shouldUseManagedBackend = (operation: { path: string }) => {
+  // Every workbook operation must bypass Vercel. Even a small column-inspection
+  // request can be followed by a large paired processing request, and routing
+  // by serialized size caused workbookColumns.inspect to hit /api/trpc.
+  return uploadRouteNames.has(operation.path.split(".")[0] ?? "");
 };
 const makeHttpLink = (baseUrl: string) => httpBatchLink({
   url: `${baseUrl}/api/trpc`,

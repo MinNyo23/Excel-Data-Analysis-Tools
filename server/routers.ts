@@ -60,7 +60,7 @@ export const accountExportInputSchema = z.object({
   startDate: dateInputSchema.optional(),
   endDate: dateInputSchema.optional(),
 }).strict().refine(input => !input.startDate || !input.endDate || input.startDate <= input.endDate, { message: "Start date must be on or before end date." });
-export const retentionDaysSchema = z.union([z.literal(7), z.literal(30), z.literal(90), z.literal(180), z.literal(365), z.null()]);
+export const retentionDaysSchema = z.union([z.literal(0.5), z.literal(1), z.literal(5), z.literal(7), z.literal(30), z.literal(90), z.literal(180), z.literal(365), z.null()]);
 const optionalColumnName = z.string().trim().max(120).optional();
 export const pairedColumnMappingSchema = z.object({
   originalPhone: optionalColumnName,

@@ -499,7 +499,7 @@ export default function Home() {
       </section>
       <section className="container overview-suggestions" aria-label="Suggested workflows">
         <div className="overview-suggestions-heading"><Badge className="soft-badge">TOOL OVERVIEW</Badge><h2>Choose an Excel workflow</h2><p>Use the menu below to select a workflow. Each tool explains what it does before you upload files.</p></div>
-        <div className="tool-card-grid">{TOOL_CARDS.slice(0, 4).map(tool => <Link key={tool.slug} href={`/tools/${tool.slug}`} className="tool-card-link"><article className="tool-menu-card"><span className="tool-menu-icon"><tool.icon size={20} /></span><div><h3>{tool.title}</h3><p>{tool.description}</p></div><span className="tool-menu-arrow">Open →</span></article></Link>)}</div>
+        <div className="tool-card-grid">{TOOL_CARDS.map(tool => <Link key={tool.slug} href={`/tools/${tool.slug}`} className="tool-card-link"><article className="tool-menu-card"><span className="tool-menu-icon"><tool.icon size={20} /></span><div><h3>{tool.title}</h3><p>{tool.description}</p></div><span className="tool-menu-arrow">Open →</span></article></Link>)}</div>
       </section>
       <section className="container profile-dashboard" aria-label="Your profile">
         <div className="profile-dashboard-heading"><div><Badge className="soft-badge">YOUR PROFILE</Badge><h2>Keep your details <em>current and protected.</em></h2><p>Your sign-in identity is provided by your login service. The editable profile fields below are encrypted before database storage and are visible only to you.</p></div></div>
@@ -547,7 +547,7 @@ export default function Home() {
         </Card>
       </section>
       <section className="container duplicate-section tool-section tool-duplicates">
-        <div className="deletion-heading"><div><Badge className="soft-badge">DUPLICATE SEPARATION</Badge><h2>Keep one clean record and <em>move the repeats.</em></h2><p>Upload a deletion list to identify repeated Employee Full Name and NRC No combinations. The first occurrence stays in Clean Data; later occurrences move to Duplicates Moved.</p></div><div className="deletion-heading-icon"><Layers3 size={28} /></div></div>
+        <div className="deletion-heading"><div><Badge className="soft-badge">DUPLICATE SEPARATION</Badge><h2>Keep one clean record and <em>move the repeats.</em></h2><p>Upload a deletion file to separate duplicates. Repeated records are removed from the clean data and moved to Duplicates Moved, leaving a clean list for use.</p></div><div className="deletion-heading-icon"><Layers3 size={28} /></div></div>
         <Card className="deletion-card">
           <CardContent>
             <div className="deletion-grid">

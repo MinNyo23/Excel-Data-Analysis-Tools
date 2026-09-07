@@ -24,10 +24,10 @@ export function isSupabaseUserId(userId: ApplicationUser["id"]): userId is strin
 }
 
 export async function authenticateSupabaseRequest(req: Request): Promise<ApplicationUser | null> {
-  const authorization = req.header("authorization") ?? "";
+  const authorization = req.headers.authorization ?? "";
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
   if (!token || !supabaseAdmin) return null;
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  const { data, error } = await (supabaseAdmin.auth as any).getUser(token);
   if (error || !data.user) return null;
   const allowedDomain = await supabaseGetAllowedEmailDomain();
   if (!isEmailAllowedForDomain(data.user.email, allowedDomain)) return null;
@@ -97,9 +97,9 @@ export async function supabaseSaveAllowedEmailDomain(actorId: string, domain: st
 }
 
 export async function supabaseListAllUsers() {
-  const { data, error } = await requireAdmin().auth.admin.listUsers({ page: 1, perPage: 1000 });
+  const { data, error } = await (requireAdmin().auth as any).admin.listUsers({ page: 1, perPage: 1000 });
   if (error) throw new Error("Supabase user list failed.");
-  return (data.users ?? []).map(user => ({
+  return (data.users ?? []).map((user: { id: string; email?: string | null; created_at?: string | null; last_sign_in_at?: string | null; email_confirmed_at?: string | null; banned_until?: string | null }) => ({
     id: user.id,
     email: user.email ?? "",
     createdAt: user.created_at ?? null,
@@ -182,7 +182,7 @@ async function insertAdminActionHistory(admin: ReturnType<typeof requireAdmin>, 
 export async function supabaseModerateUser(actor: { id: string; email?: string | null }, targetUserId: string, action: SupabaseAdminAction) {
   if (actor.id === targetUserId) throw new Error("The Master Account cannot be modified.");
   const admin = requireAdmin();
-  const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
+  const { data: targetData, error: targetError } = await (admin.auth as any).admin.getUserById(targetUserId);
   if (targetError || !targetData.user) throw new Error("Supabase user not found.");
 
   const record: AdminActionHistoryRecord = {
@@ -195,8 +195,8 @@ export async function supabaseModerateUser(actor: { id: string; email?: string |
   let actionError: unknown = null;
   try {
     const result = action === "delete"
-      ? await admin.auth.admin.deleteUser(targetUserId)
-      : await admin.auth.admin.updateUserById(targetUserId, { ban_duration: action === "ban" ? "876000h" : "none" });
+      ? await (admin.auth as any).admin.deleteUser(targetUserId)
+      : await (admin.auth as any).admin.updateUserById(targetUserId, { ban_duration: action === "ban" ? "876000h" : "none" });
     if (result.error) throw new Error("Supabase user action failed.");
   } catch (error) {
     actionError = error;

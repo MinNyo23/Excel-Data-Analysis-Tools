@@ -24,7 +24,7 @@ export function isSupabaseUserId(userId: ApplicationUser["id"]): userId is strin
 }
 
 export async function authenticateSupabaseRequest(req: Request): Promise<ApplicationUser | null> {
-  const authorization = req.headers.authorization ?? "";
+  const authorization = (req as unknown as { get?: (name: string) => string | undefined }).get?.("authorization") ?? "";
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
   if (!token || !supabaseAdmin) return null;
   const { data, error } = await (supabaseAdmin.auth as any).getUser(token);

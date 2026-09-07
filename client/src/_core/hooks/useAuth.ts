@@ -2,7 +2,10 @@ import { supabase, usesSupabaseAuth } from "@/lib/supabase";
 import { trpc } from "@/lib/trpc";
 import { useQueryClient } from "@tanstack/react-query";
 import { TRPCClientError } from "@trpc/client";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+
+export const INACTIVITY_TIMEOUT_STORAGE_KEY = "excel-session-timeout";
+export const INACTIVITY_TIMEOUT_OPTIONS = [0, 3600] as const;
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
@@ -17,6 +20,7 @@ export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
+  const inactivityLogoutInProgress = useRef(false);
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
@@ -77,6 +81,35 @@ export function useAuth(options?: UseAuthOptions) {
     logoutMutation.error,
     logoutMutation.isPending,
   ]);
+
+  useEffect(() => {
+    if (!state.user || typeof window === "undefined") return;
+    const storedTimeout = Number(window.localStorage.getItem(INACTIVITY_TIMEOUT_STORAGE_KEY));
+    const timeoutSeconds = INACTIVITY_TIMEOUT_OPTIONS.includes(storedTimeout as 0 | 3600) ? storedTimeout : 0;
+    if (!timeoutSeconds) return;
+
+    let lastActivityAt = Date.now();
+    let timer: number;
+    const resetTimer = () => {
+      lastActivityAt = Date.now();
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        if (Date.now() - lastActivityAt >= timeoutSeconds * 1000 && !inactivityLogoutInProgress.current) {
+          inactivityLogoutInProgress.current = true;
+          void logout();
+        } else {
+          resetTimer();
+        }
+      }, timeoutSeconds * 1000);
+    };
+    const activityEvents = ["pointerdown", "keydown", "scroll", "touchstart"];
+    activityEvents.forEach(event => window.addEventListener(event, resetTimer, { passive: true }));
+    resetTimer();
+    return () => {
+      window.clearTimeout(timer);
+      activityEvents.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [logout, state.user]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;

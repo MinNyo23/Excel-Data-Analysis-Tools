@@ -22,15 +22,15 @@ const ACCEPTED_TYPES = ".xlsx,.csv";
 // roughly one third, so keep the raw consolidation payload below that ceiling.
 const MAX_CONSOLIDATION_BYTES = 3 * 1024 * 1024;
 const TOOL_CARDS = [
-  { slug: "consolidation", title: "Master consolidation", description: "Merge Addition and Deletion sheets from many workbooks.", icon: Layers3 },
+  { slug: "consolidation", title: "Master consolidation", description: "Merge multiple workbooks into one master file, including Addition and Deletion data.", icon: Layers3 },
+  { slug: "addition-exit", title: "Addition & exit match", description: "Match exit records against the original Addition file.", icon: Layers3 },
+  { slug: "facility", title: "Facility by facility", description: "Create an entity summary and separate worksheets for each facility.", icon: Layers3 },
   { slug: "deletion-summary", title: "Deletion summary list", description: "Count deletion records by entity and preserve the source data.", icon: ListTree },
-  { slug: "duplicates", title: "Duplicate separation", description: "Keep first records and move repeated name and NRC combinations.", icon: Layers3 },
   { slug: "entity-summary", title: "Deletion with summary", description: "Compare entity counts across every sheet in one workbook.", icon: ListTree },
-  { slug: "addition-exit", title: "Addition & exit match", description: "Validate exit data against an original Addition list.", icon: Layers3 },
+  { slug: "onboard", title: "Deletion check with onboard", description: "Match deletion records against onboard records.", icon: ListTree },
+  { slug: "duplicates", title: "Duplicate separation", description: "Remove repeated deletion records and leave clean data in a separate list.", icon: Layers3 },
   { slug: "file-comparison", title: "Multi-condition file compare", description: "Compare two workbooks with one or two column conditions.", icon: GitCompare },
-  { slug: "onboard", title: "Deletion & onboard check", description: "Match deletion NRCs against onboard records.", icon: ListTree },
   { slug: "ready-upload", title: "Ready file to upload", description: "Convert employee files into the final upload schema.", icon: FileSpreadsheet },
-  { slug: "facility", title: "Facility by facility", description: "Create an entity summary and separate worksheets per facility.", icon: Layers3 },
 ];
 
 const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
@@ -38,7 +38,7 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     title: "Master consolidation",
     purpose: "Combine Addition and Deletion data from your corporate workbooks into one master Excel file.",
     upload: "Choose one or more CSV or XLSX corporate workbooks. For the full report, use files that contain Addition and/or Deletion sheets.",
-    process: "The tool finds matching Addition and Deletion sheets, combines the records, adds the source filename, and prepares a summary report.",
+    process: "The tool combines the Addition and Deletion data from multiple workbooks into one master file, adds the source filename, and prepares a summary report.",
     output: "Review the Summary Report, Addition, and Deletion previews, then download one consolidated XLSX workbook.",
   },
   "deletion-summary": {
@@ -52,7 +52,7 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     title: "Duplicate separation",
     purpose: "Find repeated deletion records and separate the repeated rows into their own list.",
     upload: "Choose one CSV or XLSX deletion file with Employee Full Name and NRC No columns.",
-    process: "The first record for each matching name-and-NRC combination stays in Clean Data; later matching records move to Duplicates Moved.",
+    process: "The first record stays in Clean Data. Duplicate records are removed from the clean list and moved to Duplicates Moved for review.",
     output: "Review both groups, then download one workbook with Clean Data and Duplicates Moved sheets.",
   },
   "entity-summary": {
@@ -498,7 +498,7 @@ export default function Home() {
         <div className="hero-meta"><div><strong>01</strong><span>Choose tool</span></div><div><strong>02</strong><span>Upload data</span></div><div><strong>03</strong><span>Review output</span></div></div>
       </section>
       <section className="container overview-suggestions" aria-label="Suggested workflows">
-        <div className="overview-suggestions-heading"><Badge className="soft-badge">SUGGESTED NEXT STEPS</Badge><h2>What would you like to <em>work on?</em></h2><p>Start with the workflow that matches your spreadsheet task. You can preview every result before downloading it.</p></div>
+        <div className="overview-suggestions-heading"><Badge className="soft-badge">TOOL OVERVIEW</Badge><h2>Choose an Excel workflow</h2><p>Use the menu below to select a workflow. Each tool explains what it does before you upload files.</p></div>
         <div className="tool-card-grid">{TOOL_CARDS.slice(0, 4).map(tool => <Link key={tool.slug} href={`/tools/${tool.slug}`} className="tool-card-link"><article className="tool-menu-card"><span className="tool-menu-icon"><tool.icon size={20} /></span><div><h3>{tool.title}</h3><p>{tool.description}</p></div><span className="tool-menu-arrow">Open →</span></article></Link>)}</div>
       </section>
       <section className="container profile-dashboard" aria-label="Your profile">
@@ -515,7 +515,7 @@ export default function Home() {
       </section>
       <section className="container work-area tool-section tool-consolidation">
         <Card className="upload-card">
-          <CardHeader><div className="section-kicker"><span className="step-number">01</span><span>Source workbooks</span></div><CardTitle>Upload your CSV or Excel files</CardTitle><CardDescription>Select all files for this consolidation run. The processor will find Addition and Deletion sheets even when their names include date ranges or minor variations.</CardDescription></CardHeader>
+          <CardHeader><div className="section-kicker"><span className="step-number">01</span><span>Source workbooks</span></div><CardTitle>Upload your CSV or Excel files</CardTitle><CardDescription>Upload multiple workbooks to merge their Addition and Deletion data into one master file. The processor will find matching sheets even when their names include date ranges or minor variations.</CardDescription></CardHeader>
           <CardContent>
             <div className={`dropzone ${isDragging ? "dragging" : ""}`} onDragOver={event => { event.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={event => { event.preventDefault(); setIsDragging(false); addFiles(event.dataTransfer.files); }} onClick={() => inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") inputRef.current?.click(); }}>
               <input ref={inputRef} type="file" accept={ACCEPTED_TYPES} multiple hidden onChange={event => event.target.files && addFiles(event.target.files)} />

@@ -10,14 +10,13 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { FileSpreadsheet, FolderKanban, GitCompare, Layers3, ListTree, LogOut, ScanSearch, ShieldCheck, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
+import { FileSpreadsheet, GitCompare, Layers3, ListTree, LogOut, ScanSearch, ShieldCheck, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 import AppFooter from "./AppFooter";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const tools = [
-  { icon: FolderKanban, label: "Tool overview", path: "/" },
   { icon: Layers3, label: "Master consolidation", path: "/tools/consolidation" },
   { icon: ScanSearch, label: "Addition & exit match", path: "/tools/addition-exit" },
   { icon: Sheet, label: "Facility by facility", path: "/tools/facility" },

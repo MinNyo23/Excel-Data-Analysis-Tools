@@ -69,3 +69,26 @@ button { cursor: pointer; }
 .admin-history-section { margin-top: 34px; }.admin-history-heading { margin-bottom: 14px; }.admin-history-heading h2 { margin: 10px 0 7px; color: #1c3528; font-size: 24px; letter-spacing: -.04em; }.admin-history-heading p { margin: 0; color: #718077; font-size: 12px; line-height: 1.6; }.admin-status.pending { background: #fff7dd; color: #8b6a22; }.admin-history-table { min-width: 760px; }
 .admin-policy-card { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:24px; padding:20px; border:1px solid #d7e5d7; border-radius:16px; background:#f6fbf4; box-shadow:var(--shadow); }.admin-policy-copy { max-width:680px; }.admin-policy-copy h2 { margin:10px 0 7px; color:#1c3528; font-size:24px; letter-spacing:-.04em; }.admin-policy-copy p { margin:0; color:#718077; font-size:12px; line-height:1.6; }.admin-policy-form { display:flex; align-items:flex-end; gap:10px; min-width:280px; }.admin-policy-form label { display:grid; gap:6px; flex:1; color:#718077; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }.admin-domain-input { display:flex; align-items:center; min-height:40px; padding-left:10px; border:1px solid #d5e3d5; border-radius:9px; background:#fff; color:#70907a; }.admin-domain-input b { font-size:13px; }.admin-domain-input input { min-width:0; border:0; box-shadow:none; }.admin-policy-form button { min-height:40px; white-space:nowrap; }.login-domain-hint { display:block; margin-top:5px; color:#8a9990; font-size:11px; line-height:1.4; }.login-domain-hint strong { color:#4e7960; }
 @media (max-width:760px) { .admin-policy-card { align-items:stretch; flex-direction:column; gap:18px; }.admin-policy-form { min-width:0; }.admin-policy-form button { flex:0 0 auto; } }
+
+/* Account surfaces: quiet, structured cards with clearer actions and hierarchy. */
+.account-card, .profile-settings-card, .profile-card { position: relative; overflow: hidden; border-color: #d3e2d4; box-shadow: 0 14px 34px rgba(37, 62, 51, .06); transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+.account-card::before, .profile-settings-card::before, .profile-card::before { position: absolute; inset: 0 0 auto; height: 3px; background: #2f8a63; content: ""; opacity: .78; }
+.account-card:hover, .profile-settings-card:hover, .profile-card:hover { transform: translateY(-2px); border-color: #a9c9ad; box-shadow: 0 20px 42px rgba(37, 62, 51, .1); }
+.account-card [data-slot='card-content'], .profile-settings-card [data-slot='card-content'] { padding: 27px; }
+.account-card h2, .profile-settings-card h2 { font-size: 21px; }
+.account-card p, .profile-settings-card p { max-width: 48rem; }
+.account-icon, .profile-settings-icon { width: 48px; height: 48px; border: 1px solid rgba(47, 138, 99, .12); border-radius: 15px; box-shadow: inset 0 1px rgba(255,255,255,.8); }
+.profile-settings-grid { gap: 20px; }
+.profile-settings-card:first-child { background: linear-gradient(145deg, #ffffff 0%, #f5fbf3 100%); }
+.profile-settings-card:nth-child(2) { background: linear-gradient(145deg, #ffffff 0%, #fbfaf3 100%); }
+.profile-settings-card:nth-child(2)::before { background: #b3883e; }
+.profile-settings-card .process-button, .account-card .account-action { min-height: 42px; margin-top: 5px; font-weight: 800; }
+.profile-retention-control select, .account-date-grid input { transition: border-color 160ms ease, box-shadow 160ms ease; }
+.profile-retention-control select:focus, .account-date-grid input:focus { border-color: #74aa7d; outline: none; box-shadow: 0 0 0 3px rgba(116, 170, 125, .16); }
+.admin-policy-card { position: relative; overflow: hidden; border-color: #c9ddca; background: linear-gradient(120deg, #f5fbf3, #ffffff); box-shadow: 0 14px 34px rgba(37, 62, 51, .07); }
+.admin-policy-card::before { position: absolute; inset: 0 0 auto; height: 3px; background: #2f8a63; content: ""; }
+.admin-stats div { border-color: #d3e2d4; background: linear-gradient(145deg, #ffffff, #f3faf1); box-shadow: 0 8px 20px rgba(37, 62, 51, .04); }
+.admin-stats div:nth-child(2) { background: linear-gradient(145deg, #ffffff, #f3f7fb); }
+.admin-stats div:nth-child(3) { background: linear-gradient(145deg, #ffffff, #fbf7ef); }
+.admin-stats div:nth-child(4) { background: linear-gradient(145deg, #ffffff, #f8f2f8); }
+@media (prefers-reduced-motion: reduce) { .account-card, .profile-settings-card, .profile-card { transition: none; }.account-card:hover, .profile-settings-card:hover, .profile-card:hover { transform: none; } }

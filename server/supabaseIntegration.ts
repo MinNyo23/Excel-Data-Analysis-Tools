@@ -19,6 +19,8 @@ const supabaseAdmin = supabaseUrl && serviceRoleKey
   ? createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
   : null;
 
+export const usesSupabaseServerAuth = Boolean(supabaseAdmin);
+
 export function isSupabaseUserId(userId: ApplicationUser["id"]): userId is string {
   return typeof userId === "string" && /^[0-9a-f-]{36}$/i.test(userId);
 }

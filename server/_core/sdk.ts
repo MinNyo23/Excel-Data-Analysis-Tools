@@ -166,13 +166,15 @@ class SDKServer {
    */
   async createSessionToken(
     openId: string,
-    options: { expiresInMs?: number; name?: string } = {}
+    options: { expiresInMs?: number; name?: string; appId?: string } = {}
   ): Promise<string> {
+    const appId = options.appId || ENV.appId || "excel-local";
+    const name = options.name?.trim() || "user";
     return this.signSession(
       {
         openId,
-        appId: ENV.appId,
-        name: options.name || "",
+        appId,
+        name,
       },
       options
     );

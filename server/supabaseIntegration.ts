@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Request } from "express";
-import { DEFAULT_ALLOWED_EMAIL_DOMAIN, isEmailAllowedForDomain, isValidAllowedEmailDomain, MASTER_ADMIN_EMAIL, normalizeAllowedEmailDomain } from "../shared/authPolicy.js";
+import { ALLOW_ALL_EMAIL_DOMAINS, DEFAULT_ALLOWED_EMAIL_DOMAIN, isAllowAllEmailDomains, isEmailAllowedForDomain, isValidAllowedEmailDomain, MASTER_ADMIN_EMAIL, normalizeAllowedEmailDomain } from "../shared/authPolicy.js";
 import { decryptProfileValue, encryptProfileValue } from "./profileEncryption.js";
 import type { EditableUserProfile, ProcessHistoryDateRange, RetentionDays, SecurityAuditMetadata } from "./db.js";
 
@@ -10,7 +10,7 @@ export type ApplicationUser = {
   name?: string | null;
   email?: string | null;
   role: "user" | "admin";
-  authProvider: "manus" | "supabase";
+  authProvider: "manus" | "supabase" | "local";
 };
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL ?? "";
@@ -53,7 +53,12 @@ function requireAdmin() {
 }
 
 export async function supabaseGetAllowedEmailDomain() {
-  if (!supabaseAdmin) return DEFAULT_ALLOWED_EMAIL_DOMAIN;
+  if (!supabaseAdmin) {
+    // Local / non-Supabase SMTP OTP: unset, empty, or * means any valid email.
+    const raw = process.env.ALLOWED_EMAIL_DOMAIN;
+    if (raw === undefined || isAllowAllEmailDomains(raw)) return ALLOW_ALL_EMAIL_DOMAINS;
+    return normalizeAllowedEmailDomain(raw);
+  }
   try {
     const { data, error } = await supabaseAdmin
       .from("admin_auth_settings")
@@ -78,9 +83,13 @@ export async function supabaseGetAllowedEmailDomain() {
 }
 
 export async function supabaseSaveAllowedEmailDomain(actorId: string, domain: string) {
-  if (!isValidAllowedEmailDomain(domain)) throw new Error("Enter a valid email domain, such as gmail.com.");
+  if (!isValidAllowedEmailDomain(domain) && !isAllowAllEmailDomains(domain)) {
+    throw new Error("Enter a valid email domain, such as gmail.com, or * to allow any email.");
+  }
   const normalized = normalizeAllowedEmailDomain(domain);
-  if (!isEmailAllowedForDomain(MASTER_ADMIN_EMAIL, normalized)) throw new Error("The allowed domain must keep the Master Account eligible to sign in.");
+  if (normalized !== ALLOW_ALL_EMAIL_DOMAINS && !isEmailAllowedForDomain(MASTER_ADMIN_EMAIL, normalized)) {
+    throw new Error("The allowed domain must keep the Master Account eligible to sign in.");
+  }
   const admin = requireAdmin();
   const { error } = await admin
     .from("admin_auth_settings")

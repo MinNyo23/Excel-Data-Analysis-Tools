@@ -1,9 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_ALLOWED_EMAIL_DOMAIN, isEmailAllowedForDomain, isValidAllowedEmailDomain, normalizeAllowedEmailDomain } from "../shared/authPolicy";
+import {
+  ALLOW_ALL_EMAIL_DOMAINS,
+  DEFAULT_ALLOWED_EMAIL_DOMAIN,
+  isAllowAllEmailDomains,
+  isEmailAllowedForDomain,
+  isValidAllowedEmailDomain,
+  normalizeAllowedEmailDomain,
+} from "../shared/authPolicy";
 
 describe("configurable email-domain policy", () => {
   it("defaults to gmail.com when no setting is available", () => {
     expect(normalizeAllowedEmailDomain(undefined)).toBe(DEFAULT_ALLOWED_EMAIL_DOMAIN);
+    expect(normalizeAllowedEmailDomain(null)).toBe(DEFAULT_ALLOWED_EMAIL_DOMAIN);
+  });
+
+  it("treats * and empty string as allow-all", () => {
+    expect(normalizeAllowedEmailDomain("*")).toBe(ALLOW_ALL_EMAIL_DOMAINS);
+    expect(normalizeAllowedEmailDomain("")).toBe(ALLOW_ALL_EMAIL_DOMAINS);
+    expect(normalizeAllowedEmailDomain("  *  ")).toBe(ALLOW_ALL_EMAIL_DOMAINS);
+    expect(isAllowAllEmailDomains("*")).toBe(true);
+    expect(isAllowAllEmailDomains("")).toBe(true);
+    expect(isAllowAllEmailDomains(undefined)).toBe(false);
+    expect(isValidAllowedEmailDomain("*")).toBe(true);
+  });
+
+  it("accepts any email when the policy is allow-all", () => {
+    expect(isEmailAllowedForDomain("user@company.com", "*")).toBe(true);
+    expect(isEmailAllowedForDomain("User@Other.ORG", "")).toBe(true);
+    expect(isEmailAllowedForDomain("a@b.co", ALLOW_ALL_EMAIL_DOMAINS)).toBe(true);
   });
 
   it("accepts exact case-insensitive domain matches", () => {

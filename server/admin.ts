@@ -14,7 +14,7 @@ export function requireMasterAdmin(user: { email?: string | null } | null | unde
   return true;
 }
 
-export async function listManagedUsers(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
+export async function listManagedUsers(actor: { email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined) {
   requireMasterAdmin(actor);
   const isSupabaseAccount = actor?.authProvider === "supabase";
   const [userRows, history] = isSupabaseAccount
@@ -32,23 +32,23 @@ export async function listManagedUsers(actor: { email?: string | null; authProvi
   return userRows.map((user: any) => ({ id: String(user.id), email: user.email ?? "", createdAt: user.createdAt, lastSignInAt: user.lastSignedIn, bannedUntil: user.bannedUntil ?? null, emailConfirmed: user.emailConfirmed ?? true, ...(usage.get(String(user.id)) ?? { workflows: 0, files: 0, records: 0, lastActivity: null }) }));
 }
 
-export async function moderateUser(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined, userId: string, action: SupabaseAdminAction) {
+export async function moderateUser(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined, userId: string, action: SupabaseAdminAction) {
   requireMasterAdmin(actor);
   if (actor?.authProvider === "supabase") return supabaseModerateUser({ id: String(actor.id), email: actor.email }, userId, action);
   throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Admin action '${action}' requires the authentication provider's admin API and is not available for this database-backed account.` });
 }
 
-export async function listUserActionHistory(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
+export async function listUserActionHistory(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined) {
   requireMasterAdmin(actor);
   return actor?.authProvider === "supabase" ? supabaseListUserActionHistory(String(actor.id)) : [];
 }
 
-export async function getAllowedEmailDomain(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
+export async function getAllowedEmailDomain(actor: { email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined) {
   requireMasterAdmin(actor);
   return supabaseGetAllowedEmailDomain();
 }
 
-export async function updateAllowedEmailDomain(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined, domain: string) {
+export async function updateAllowedEmailDomain(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined, domain: string) {
   requireMasterAdmin(actor);
   if (actor?.authProvider !== "supabase") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email-domain settings require Supabase authentication." });
   try {

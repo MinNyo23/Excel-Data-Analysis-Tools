@@ -14,7 +14,7 @@ import { registerRecaptchaRoutes } from "../recaptcha.js";
 import { appRouter } from "../routers.js";
 import { createContext } from "./context.js";
 import { apiRequestGuards, externalApiCors, securityHeaders } from "../security.js";
-import { serveStatic, setupVite } from "./vite.js";
+import { serveStatic } from "./static.js";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -63,6 +63,7 @@ async function startServer() {
   );
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite.js");
     await setupVite(app, server);
   } else {
     serveStatic(app);
@@ -79,8 +80,9 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+  const host = process.env.HOST || "0.0.0.0";
+  server.listen(port, host, () => {
+    console.log(`Server running on http://${host}:${port}/`);
   });
 }
 

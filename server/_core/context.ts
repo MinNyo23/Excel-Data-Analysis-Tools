@@ -20,7 +20,10 @@ export async function createContext(
     // that SDK requires OAUTH_SERVER_URL and is not used by this deployment.
     if (!user && !usesSupabaseServerAuth) {
       const legacyUser = await sdk.authenticateRequest(opts.req);
-      user = legacyUser ? { ...legacyUser, authProvider: "manus" } : null;
+      if (legacyUser) {
+        const authProvider = legacyUser.loginMethod === "email-otp" ? "local" : "manus";
+        user = { ...legacyUser, authProvider };
+      }
     }
   } catch (error) {
     // Authentication is optional for public procedures.

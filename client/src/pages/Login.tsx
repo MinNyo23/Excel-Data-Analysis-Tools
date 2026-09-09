@@ -2,10 +2,9 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { getSafeReturnPath } from "@shared/loginPaths";
-import { isEmailAllowedForDomain } from "@shared/authPolicy";
+import { ALLOW_ALL_EMAIL_DOMAINS, isAllowAllEmailDomains, isEmailAllowedForDomain } from "@shared/authPolicy";
 import { KeyRound, Loader2, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import ReCAPTCHA from "react-google-recaptcha";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -28,7 +27,11 @@ export default function Login() {
   const { isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const emailPolicyQuery = trpc.auth.emailPolicy.useQuery();
-  const allowedEmailDomain = emailPolicyQuery.data ?? "gmail.com";
+  const requestLocalOtp = trpc.auth.requestOtp.useMutation();
+  const verifyLocalOtp = trpc.auth.verifyOtp.useMutation();
+  const utils = trpc.useUtils();
+  const allowedEmailDomain = emailPolicyQuery.data ?? ALLOW_ALL_EMAIL_DOMAINS;
+  const allowAllEmails = isAllowAllEmailDomains(allowedEmailDomain);
   const returnPath = useMemo(getReturnPathFromLocation, []);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -65,7 +68,7 @@ export default function Login() {
       setError("Enter a valid work email address to receive your one-time password.");
       return;
     }
-    if (!isEmailAllowedForDomain(normalizedEmail, allowedEmailDomain)) {
+    if (!allowAllEmails && !isEmailAllowedForDomain(normalizedEmail, allowedEmailDomain)) {
       setError(`Only email addresses ending in @${allowedEmailDomain} can sign in.`);
       return;
     }
@@ -87,7 +90,14 @@ export default function Login() {
         setMessage(`We sent an eight-digit code to ${normalizedEmail}. The code expires soon.`);
         resetCaptcha();
       } else {
-        await startLogin(normalizedEmail, captchaToken ?? undefined, returnPath);
+        await requestLocalOtp.mutateAsync({
+          email: normalizedEmail,
+          captchaToken: captchaToken ?? undefined,
+        });
+        setOtpSent(true);
+        setCooldown(RESEND_COOLDOWN_SECONDS);
+        setMessage(`We sent an eight-digit code to ${normalizedEmail}. The code expires soon.`);
+        resetCaptcha();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "We could not send your one-time password. Please try again.");
@@ -105,15 +115,19 @@ export default function Login() {
       setError("Enter the eight-digit code from your email.");
       return;
     }
-    if (!isEmailAllowedForDomain(normalizedEmail, allowedEmailDomain)) {
+    if (!allowAllEmails && !isEmailAllowedForDomain(normalizedEmail, allowedEmailDomain)) {
       setError(`Only email addresses ending in @${allowedEmailDomain} can sign in.`);
       return;
     }
-    if (!supabase) return;
     setIsBusy(true);
     try {
-      const { error: authError } = await supabase.auth.verifyOtp({ email: normalizedEmail, token: otp, type: "email" });
-      if (authError) throw authError;
+      if (usesSupabaseAuth && supabase) {
+        const { error: authError } = await supabase.auth.verifyOtp({ email: normalizedEmail, token: otp, type: "email" });
+        if (authError) throw authError;
+      } else {
+        await verifyLocalOtp.mutateAsync({ email: normalizedEmail, otp });
+        await utils.auth.me.invalidate();
+      }
       setMessage("Verified. Opening your private workspace…");
       setLocation(returnPath);
     } catch (err) {
@@ -136,7 +150,7 @@ export default function Login() {
         <h2>{otpSent ? "Enter your code" : "Sign in securely"}</h2>
         <p className="login-description">{otpSent ? "Enter the eight-digit one-time password sent to your email. It can only be used once." : "We will send an eight-digit one-time password to your work email. No password is collected by this application."}</p>
         {!otpSent ? <form onSubmit={requestOtp} noValidate>
-          <label className="login-field"><span>Work email address</span><div><Mail size={17}/><Input type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={event => setEmail(event.target.value)} placeholder={`you@${allowedEmailDomain}`} disabled={isBusy || cooldown > 0}/></div><small className="login-domain-hint">Only <strong>@{allowedEmailDomain}</strong> addresses are accepted.</small></label>
+          <label className="login-field"><span>Work email address</span><div><Mail size={17}/><Input type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={event => setEmail(event.target.value)} placeholder={allowAllEmails ? "you@example.com" : `you@${allowedEmailDomain}`} disabled={isBusy || cooldown > 0}/></div>{!allowAllEmails && <small className="login-domain-hint">Only <strong>@{allowedEmailDomain}</strong> addresses are accepted.</small>}</label>
           {captchaRequired && <div className="login-captcha" aria-label="Spam protection"><ReCAPTCHA ref={captchaRef} sitekey={RECAPTCHA_SITE_KEY} onChange={token => setCaptchaToken(token)} onExpired={() => setCaptchaToken(null)} onErrored={() => { setCaptchaToken(null); setError("CAPTCHA could not be verified. Check your Google reCAPTCHA key and domain."); }} /></div>}
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}
           <Button type="submit" className="login-submit" disabled={isBusy || cooldown > 0 || (captchaRequired && !captchaToken)}>{isBusy ? <><Loader2 className="animate-spin" size={17}/> Sending code…</> : cooldown > 0 ? `Code sent · wait ${cooldown}s` : <><Mail size={17}/> Email me a one-time password</>}</Button>

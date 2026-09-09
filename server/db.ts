@@ -104,7 +104,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       set: updateSet,
     });
   } catch (error) {
-    console.error("[Database] Failed to upsert user.");
+    console.error("[Database] Failed to upsert user.", error instanceof Error ? error.message : error);
     throw error;
   }
 }

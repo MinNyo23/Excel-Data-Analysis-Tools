@@ -15,6 +15,7 @@ describe("API feedback helpers", () => {
 
   it("returns clear, non-technical messages for common client-safe failure types", () => {
     expect(getFriendlyApiMessage({ data: { code: "UNAUTHORIZED", httpStatus: 401 } }, "Fallback")).toMatch(/sign in again/i);
+    expect(getFriendlyApiMessage({ message: "File exceeds the 10 MB upload limit.", data: { code: "BAD_REQUEST", httpStatus: 400 } }, "Fallback")).toBe("File exceeds the 10 MB upload limit.");
     expect(getFriendlyApiMessage({ data: { code: "BAD_REQUEST", httpStatus: 400 } }, "Fallback")).toMatch(/selected file or settings/i);
     expect(getFriendlyApiMessage(new Error("internal detail"), "The requested workbook could not be processed. Please try again.")).toBe("The requested workbook could not be processed. Please try again.");
   });
@@ -26,6 +27,9 @@ describe("API feedback helpers", () => {
 
   it("recognizes only the passive current-user query for quiet signed-out feedback", () => {
     expect(isPassiveCurrentUserQuery([["auth", "me"], { type: "query" }])).toBe(true);
-    expect(isPassiveCurrentUserQuery([["profile", "me"], { type: "query" }])).toBe(false);
+    expect(isPassiveCurrentUserQuery([["profile", "me"], { type: "query" }])).toBe(true);
+    expect(isPassiveCurrentUserQuery([["processHistory", "list"], { type: "query" }])).toBe(true);
+    expect(isPassiveCurrentUserQuery([["processHistory", "retention", "get"], { type: "query" }])).toBe(true);
+    expect(isPassiveCurrentUserQuery([["excel", "process"], { type: "mutation" }])).toBe(false);
   });
 });

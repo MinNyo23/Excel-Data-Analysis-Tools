@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, lt, lte } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import { InsertProcessHistory, InsertUser, processHistory, securityAuditEvents, userProcessSettings, userProfiles, users } from "../drizzle/schema.js";
 import { decryptProfileValue, encryptProfileValue } from "./profileEncryption.js";
 import { ENV } from './_core/env.js';
@@ -31,9 +32,14 @@ export function secureDatabaseConnectionOptions(databaseUrl: string | undefined,
 export async function getDb() {
   if (!_db) {
     try {
-      const connection = secureDatabaseConnectionOptions(process.env.DATABASE_URL);
+      const databaseUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
+      const connection = secureDatabaseConnectionOptions(databaseUrl);
       if (!connection) return null;
-      _db = drizzle({ connection });
+      _db = drizzle(postgres(connection.uri, {
+        max: connection.connectionLimit,
+        connect_timeout: connection.connectTimeout / 1000,
+        ssl: connection.ssl ? "require" : undefined,
+      }));
     } catch {
       console.warn("[Database] Connection could not be initialized.");
       _db = null;
@@ -93,7 +99,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -157,7 +164,7 @@ export async function clearProcessHistory(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Process history database is unavailable");
   const result = await deleteProcessHistoryForUser(db, userId);
-  return { deletedCount: Number(result[0]?.affectedRows ?? 0) };
+  return { deletedCount: result.length };
 }
 
 export function deleteProcessHistoryForUser(db: { delete: (table: typeof processHistory) => { where: (condition: any) => any } }, userId: number) {
@@ -174,7 +181,7 @@ export function retentionCutoffDate(retentionDays: RetentionDays, now = new Date
 
 export async function getProcessHistoryRetention(userId: number): Promise<RetentionDays> {
   const db = await getDb();
-  if (!db) throw new Error("Process history database is unavailable");
+  if (!db) return null;
   const result = await db.select().from(userProcessSettings).where(eq(userProcessSettings.userId, userId)).limit(1);
   const stored = result[0]?.retentionDays;
   return stored === null || stored === undefined ? null : Number(stored) as RetentionDays;
@@ -183,19 +190,20 @@ export async function getProcessHistoryRetention(userId: number): Promise<Retent
 export async function saveProcessHistoryRetention(userId: number, retentionDays: RetentionDays) {
   const db = await getDb();
   if (!db) throw new Error("Process history database is unavailable");
-  await db.insert(userProcessSettings).values({ userId, retentionDays: retentionDays === null ? null : String(retentionDays) }).onDuplicateKeyUpdate({
+  await db.insert(userProcessSettings).values({ userId, retentionDays: retentionDays === null ? null : String(retentionDays) }).onConflictDoUpdate({
+    target: userProcessSettings.userId,
     set: { retentionDays: retentionDays === null ? null : String(retentionDays), updatedAt: new Date() },
   });
 }
 
 export async function applyProcessHistoryRetention(userId: number, now = new Date()) {
+  const db = await getDb();
+  if (!db) return { retentionDays: null as RetentionDays, deletedCount: 0 };
   const retentionDays = await getProcessHistoryRetention(userId);
   const cutoff = retentionCutoffDate(retentionDays, now);
   if (!cutoff) return { retentionDays, deletedCount: 0 };
-  const db = await getDb();
-  if (!db) throw new Error("Process history database is unavailable");
   const result = await deleteExpiredProcessHistoryForUser(db, userId, cutoff);
-  return { retentionDays, deletedCount: Number(result[0]?.affectedRows ?? 0) };
+  return { retentionDays, deletedCount: result.length };
 }
 
 export function deleteExpiredProcessHistoryForUser(db: { delete: (table: typeof processHistory) => { where: (condition: any) => any } }, userId: number, cutoff: Date) {
@@ -211,7 +219,7 @@ export type EditableUserProfile = {
 
 export async function getUserProfile(userId: number): Promise<EditableUserProfile | null> {
   const db = await getDb();
-  if (!db) throw new Error("Profile database is unavailable");
+  if (!db) return null;
   const result = await selectUserProfileForUser(db, userId);
   const row = result[0];
   if (!row) return null;
@@ -226,7 +234,8 @@ export async function saveUserProfile(userId: number, profile: EditableUserProfi
   const db = await getDb();
   if (!db) throw new Error("Profile database is unavailable");
   const encryptedPayload = encryptProfileValue(JSON.stringify(profile));
-  await db.insert(userProfiles).values({ userId, encryptedPayload }).onDuplicateKeyUpdate({
+  await db.insert(userProfiles).values({ userId, encryptedPayload }).onConflictDoUpdate({
+    target: userProfiles.userId,
     set: { encryptedPayload, updatedAt: new Date() },
   });
 }
@@ -235,7 +244,7 @@ export async function deleteUserProfile(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Profile database is unavailable");
   const result = await deleteUserProfileForUser(db, userId);
-  return { deletedCount: Number(result[0]?.affectedRows ?? 0) };
+  return { deletedCount: result.length };
 }
 
 export function deleteUserProfileForUser(db: { delete: (table: typeof userProfiles) => { where: (condition: any) => any } }, userId: number) {

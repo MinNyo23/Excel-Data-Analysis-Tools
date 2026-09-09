@@ -83,11 +83,10 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-// Keep normal requests and small files on Vercel. Only route an upload or
-// processing mutation externally when its serialized payload is large enough
-// to exceed Vercel's serverless request limit.
+// Same-origin /api/trpc on Vercel is the default. Workbook routes only use an
+// external processing API when VITE_USE_EXTERNAL_PROCESSING_API=true and
+// VITE_PROCESSING_API_URL are configured at build time.
 const processingApiUrl = PROCESSING_API_BASE_URL;
-const VERCEL_SAFE_UPLOAD_PAYLOAD_BYTES = 3_000_000;
 const uploadRouteNames = new Set([
   "excel",
   "workbookColumns",
@@ -96,17 +95,13 @@ const uploadRouteNames = new Set([
   "deletionWithSummary",
   "additionExitMatch",
   "deletionOnboardMatch",
+  "fileComparison",
   "readyUpload",
   "facilityConversion",
 ]);
-const shouldUseManagedBackend = (operation: { path: string; input: unknown }) => {
-  const procedure = operation.path.split(".")[0] ?? "";
-  if (!uploadRouteNames.has(procedure)) return false;
-  try {
-    return JSON.stringify(operation.input ?? null).length > VERCEL_SAFE_UPLOAD_PAYLOAD_BYTES;
-  } catch {
-    return false;
-  }
+const shouldUseManagedBackend = (operation: { path: string }) => {
+  if (!processingApiUrl) return false;
+  return uploadRouteNames.has(operation.path.split(".")[0] ?? "");
 };
 const makeHttpLink = (baseUrl: string) => httpBatchLink({
   url: `${baseUrl}/api/trpc`,

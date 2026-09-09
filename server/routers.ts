@@ -10,6 +10,7 @@ import { processAdditionExitMatch } from "./additionExitMatchProcessor.js";
 import { processDeletionOnboardMatch } from "./deletionOnboardMatchProcessor.js";
 import { processReadyUpload } from "./readyUploadProcessor.js";
 import { processFacilityConversion } from "./facilityConversionProcessor.js";
+import { processFileComparison } from "./fileComparisonProcessor.js";
 import { processExcelFiles } from "./excelProcessor.js";
 import { inspectWorkbookColumns } from "./workbookColumnInspector.js";
 import { applyProcessHistoryRetention, clearProcessHistory, createProcessHistory, createSecurityAuditEvent, deleteUserProfile, getProcessHistoryRetention, getUserProfile, listProcessHistory, listProcessHistoryForExport, listSecurityAuditEventsForUser, RETENTION_DAYS_OPTIONS, saveProcessHistoryRetention, saveUserProfile, type ProcessHistoryDateRange, type RetentionDays } from "./db.js";
@@ -69,6 +70,18 @@ export const pairedColumnMappingSchema = z.object({
   secondPhone: optionalColumnName,
   secondNrc: optionalColumnName,
 }).strict().optional();
+export const fileComparisonConfigSchema = z.object({
+  file1Column1: z.string().trim().min(1).max(120),
+  file2Column1: z.string().trim().min(1).max(120),
+  enableSecondCondition: z.boolean(),
+  file1Column2: optionalColumnName,
+  file2Column2: optionalColumnName,
+  operation: z.enum(["exists_in_file2", "find_duplicates", "missing_in_file2"]),
+}).strict().superRefine((input, ctx) => {
+  if (input.enableSecondCondition && (!input.file1Column2 || !input.file2Column2)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Both second-condition columns must be selected." });
+  }
+});
 
 export function exportDateRange(input: z.infer<typeof accountExportInputSchema>): ProcessHistoryDateRange {
   return {
@@ -193,6 +206,19 @@ export const appRouter = router({
   deletionOnboardMatch: router({ process: uploadProcedure.input(z.object({ onboard: uploadedFile, deletion: uploadedFile, mapping: pairedColumnMappingSchema }).superRefine((input, ctx) => { const error = validateUploadedWorkbookBatch([input.onboard, input.deletion]); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({input}) => { const [onboard, deletion] = await normalizeUploadedFiles([input.onboard, input.deletion]); return sanitizeGeneratedWorkbookOutput(await processDeletionOnboardMatch(onboard!, deletion!, input.mapping)); }) }),
   readyUpload: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => sanitizeGeneratedWorkbookOutput(await processReadyUpload((await normalizeUploadedFiles([input.file]))[0]!))) }),
   facilityConversion: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => sanitizeGeneratedWorkbookOutput(await processFacilityConversion((await normalizeUploadedFiles([input.file]))[0]!))) }),
+  fileComparison: router({
+    process: uploadProcedure.input(z.object({
+      file1: uploadedFile,
+      file2: uploadedFile,
+      config: fileComparisonConfigSchema,
+    }).superRefine((input, ctx) => {
+      const error = validateUploadedWorkbookBatch([input.file1, input.file2]);
+      if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+    })).mutation(async ({ input }) => {
+      const [file1, file2] = await normalizeUploadedFiles([input.file1, input.file2]);
+      return sanitizeGeneratedWorkbookOutput(await processFileComparison(file1!, file2!, input.config));
+    }),
+  }),
   processHistory: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       await metadataStore.applyRetention(ctx.user.id);

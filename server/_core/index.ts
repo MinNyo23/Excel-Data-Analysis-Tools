@@ -7,9 +7,9 @@ dotenv.config();
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import path from "node:path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth.js";
-import { registerStorageProxy } from "./storageProxy.js";
 import { registerRecaptchaRoutes } from "../recaptcha.js";
 import { appRouter } from "../routers.js";
 import { createContext } from "./context.js";
@@ -46,11 +46,11 @@ async function startServer() {
   app.use(securityHeaders);
   app.use("/api", externalApiCors);
   app.use("/api", apiRequestGuards);
-  // Uploads are base64-encoded in JSON. The route-level validation applies a
-  // stricter 10 MB per file / 20 MB batch limit after parsing.
-  app.use(express.json({ limit: "25mb" }));
-  app.use(express.urlencoded({ limit: "25mb", extended: false }));
-  registerStorageProxy(app);
+  // Uploads are base64-encoded in JSON. Route-level validation enforces decoded
+  // workbook limits after parsing; keep the parser limit above paired uploads.
+  app.use(express.json({ limit: "36mb" }));
+  app.use(express.urlencoded({ limit: "36mb", extended: true }));
+  app.use("/local-storage", express.static(path.resolve(process.env.STORAGE_DIR ?? "./storage"), { index: false }));
   registerOAuthRoutes(app);
   registerRecaptchaRoutes(app);
   // tRPC API

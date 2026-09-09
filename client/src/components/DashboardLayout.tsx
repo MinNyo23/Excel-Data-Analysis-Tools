@@ -10,22 +10,22 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { FileSpreadsheet, FolderKanban, Layers3, ListTree, LogOut, ScanSearch, ShieldCheck, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
+import { FileSpreadsheet, GitCompare, Layers3, ListTree, LogOut, ScanSearch, ShieldCheck, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 import AppFooter from "./AppFooter";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const tools = [
-  { icon: FolderKanban, label: "Tool overview", path: "/" },
   { icon: Layers3, label: "Master consolidation", path: "/tools/consolidation" },
-  { icon: ListTree, label: "Deletion summary list", path: "/tools/deletion-summary" },
-  { icon: Layers3, label: "Duplicate separation", path: "/tools/duplicates" },
-  { icon: ListTree, label: "Deletion with summary", path: "/tools/entity-summary" },
   { icon: ScanSearch, label: "Addition & exit match", path: "/tools/addition-exit" },
-  { icon: ScanSearch, label: "Deletion & onboard check", path: "/tools/onboard" },
-  { icon: UploadCloud, label: "Ready file to upload", path: "/tools/ready-upload" },
   { icon: Sheet, label: "Facility by facility", path: "/tools/facility" },
+  { icon: ListTree, label: "Deletion summary list", path: "/tools/deletion-summary" },
+  { icon: ListTree, label: "Deletion with summary", path: "/tools/entity-summary" },
+  { icon: ScanSearch, label: "Deletion check with onboard", path: "/tools/onboard" },
+  { icon: Layers3, label: "Duplicate separation", path: "/tools/duplicates" },
+  { icon: GitCompare, label: "Multi-condition file compare", path: "/tools/file-comparison" },
+  { icon: UploadCloud, label: "Ready file to upload", path: "/tools/ready-upload" },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

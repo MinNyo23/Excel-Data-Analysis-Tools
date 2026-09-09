@@ -8,35 +8,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getFriendlyApiMessage } from "@/lib/apiFeedback";
 import "@/privacy-diagram.css";
 import { WorkflowGuide, type WorkflowGuideContent } from "@/components/WorkflowGuide";
+import { ConditionalFileComparisonPanel, EMPTY_FILE_COMPARISON_SETTINGS, type FileComparisonSettings } from "@/components/ConditionalFileComparisonPanel";
 import { PairedFileUploadPanel, type PairMapping } from "@/components/PairedFileUploadPanel";
-import { BriefcaseBusiness, Building2, Download, FileSpreadsheet, FileUp, Layers3, Loader2, ListTree, Phone, RotateCcw, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
+import { BriefcaseBusiness, Building2, Download, FileSpreadsheet, FileUp, GitCompare, Layers3, Loader2, ListTree, Phone, RotateCcw, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
 const ACCEPTED_TYPES = ".xlsx,.csv";
 // Vercel Functions cap request bodies at 4.5 MB. Base64 expands files by
 // roughly one third, so keep the raw consolidation payload below that ceiling.
 const MAX_CONSOLIDATION_BYTES = 3 * 1024 * 1024;
-const TOOL_CARDS = [
-  { slug: "consolidation", title: "Master consolidation", description: "Merge Addition and Deletion sheets from many workbooks.", icon: Layers3 },
-  { slug: "deletion-summary", title: "Deletion summary list", description: "Count deletion records by entity and preserve the source data.", icon: ListTree },
-  { slug: "duplicates", title: "Duplicate separation", description: "Keep first records and move repeated name and NRC combinations.", icon: Layers3 },
-  { slug: "entity-summary", title: "Deletion with summary", description: "Compare entity counts across every sheet in one workbook.", icon: ListTree },
-  { slug: "addition-exit", title: "Addition & exit match", description: "Validate exit data against an original Addition list.", icon: Layers3 },
-  { slug: "onboard", title: "Deletion & onboard check", description: "Match deletion NRCs against onboard records.", icon: ListTree },
-  { slug: "ready-upload", title: "Ready file to upload", description: "Convert employee files into the final upload schema.", icon: FileSpreadsheet },
-  { slug: "facility", title: "Facility by facility", description: "Create an entity summary and separate worksheets per facility.", icon: Layers3 },
-];
-
 const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
   consolidation: {
     title: "Master consolidation",
     purpose: "Combine Addition and Deletion data from your corporate workbooks into one master Excel file.",
     upload: "Choose one or more CSV or XLSX corporate workbooks. For the full report, use files that contain Addition and/or Deletion sheets.",
-    process: "The tool finds matching Addition and Deletion sheets, combines the records, adds the source filename, and prepares a summary report.",
+    process: "The tool combines the Addition and Deletion data from multiple workbooks into one master file, adds the source filename, and prepares a summary report.",
     output: "Review the Summary Report, Addition, and Deletion previews, then download one consolidated XLSX workbook.",
   },
   "deletion-summary": {
@@ -50,7 +40,7 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     title: "Duplicate separation",
     purpose: "Find repeated deletion records and separate the repeated rows into their own list.",
     upload: "Choose one CSV or XLSX deletion file with Employee Full Name and NRC No columns.",
-    process: "The first record for each matching name-and-NRC combination stays in Clean Data; later matching records move to Duplicates Moved.",
+    process: "The first record stays in Clean Data. Duplicate records are removed from the clean list and moved to Duplicates Moved for review.",
     output: "Review both groups, then download one workbook with Clean Data and Duplicates Moved sheets.",
   },
   "entity-summary": {
@@ -66,6 +56,13 @@ const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
     upload: "Choose two CSV or XLSX files: your original Addition file and the Exit Data file you want to validate.",
     process: "The tool checks mobile numbers first, then NRC numbers, and separates records into match groups for review.",
     output: "Review the Both Matched, Mobile Only, NRC Only, and No Match groups, then download the match report.",
+  },
+  "file-comparison": {
+    title: "Multi-condition file compare",
+    purpose: "Compare two Excel files with one or two column conditions, similar to a Colab-style file-to-file analysis.",
+    upload: "Choose two CSV or XLSX files. After upload, pick the columns to compare from each file.",
+    process: "The tool builds a composite match key from your selected columns, then runs the comparison operation you choose.",
+    output: "Review the summary and result preview, then download the comparison workbook.",
   },
   onboard: {
     title: "Deletion check with onboard",
@@ -122,6 +119,7 @@ type AdditionExitMatchResult = { outputFilename: string; summary: Preview; group
 type DeletionOnboardMatchResult = { outputFilename: string; summary: Preview; matched: Preview; noMatch: Preview; workbookBase64: string };
 type ReadyUploadResult = { outputFilename: string; rowCount: number; columnCount: number; preview: Preview; workbookBase64: string };
 type FacilityConversionResult = { outputFilename: string; facilityCount: number; recordCount: number; summary: Preview; facilitySheets: string[]; workbookBase64: string };
+type FileComparisonResult = { outputFilename: string; operationLabel: string; file1RowCount: number; resultRowCount: number; summary: Preview; result: Preview; workbookBase64: string };
 type DeletionSummaryResult = {
   outputFilename: string;
   sourceFilename: string;
@@ -241,6 +239,12 @@ export default function Home() {
   const [readyUploadResult, setReadyUploadResult] = useState<ReadyUploadResult | null>(null);
   const [facilityFile, setFacilityFile] = useState<File | null>(null);
   const [facilityResult, setFacilityResult] = useState<FacilityConversionResult | null>(null);
+  const [comparisonFile1, setComparisonFile1] = useState<File | null>(null);
+  const [comparisonFile2, setComparisonFile2] = useState<File | null>(null);
+  const [comparisonResult, setComparisonResult] = useState<FileComparisonResult | null>(null);
+  const [comparisonFile1Columns, setComparisonFile1Columns] = useState<string[]>([]);
+  const [comparisonFile2Columns, setComparisonFile2Columns] = useState<string[]>([]);
+  const [comparisonSettings, setComparisonSettings] = useState<FileComparisonSettings>(EMPTY_FILE_COMPARISON_SETTINGS);
   function recordCompletion(toolKey: string, toolName: string, inputFileNames: string[], outputFilename: string, totalRecords: number) {
     if (!isAuthenticated || inputFileNames.length === 0) return;
     historyMutation.mutate({ toolKey, toolName, inputFileNames, outputFilename, totalRecords });
@@ -249,6 +253,7 @@ export default function Home() {
   const readyUploadMutation = trpc.readyUpload.process.useMutation({ onSuccess: data => { const item = data as ReadyUploadResult; setReadyUploadResult(item); recordCompletion("ready-upload", "Ready file to upload", readyUploadFile ? [readyUploadFile.name] : [], item.outputFilename, item.rowCount); toast.success("Upload-ready workbook is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "The file could not be converted. Please try again.")) });
   const onboardMutation = trpc.deletionOnboardMatch.process.useMutation({ onSuccess: data => { const item = data as DeletionOnboardMatchResult; setOnboardResult(item); recordCompletion("onboard", "Deletion & onboard check", [onboardFile?.name, deletionCheckFile?.name].filter((name): name is string => Boolean(name)), item.outputFilename, totalFromPreview(item.summary)); toast.success("NRC match report is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "NRC matching could not be completed. Please try again.")) });
   const matchMutation = trpc.additionExitMatch.process.useMutation({ onSuccess: data => { const item = data as AdditionExitMatchResult; setMatchResult(item); recordCompletion("addition-exit", "Addition & exit match", [originalMatchFile?.name, exitMatchFile?.name].filter((name): name is string => Boolean(name)), item.outputFilename, totalFromPreview(item.summary)); toast.success("Addition match report is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "The match report could not be created. Please try again.")) });
+  const fileComparisonMutation = trpc.fileComparison.process.useMutation({ onSuccess: data => { const item = data as FileComparisonResult; setComparisonResult(item); recordCompletion("file-comparison", "Multi-condition file compare", [comparisonFile1?.name, comparisonFile2?.name].filter((name): name is string => Boolean(name)), item.outputFilename, item.resultRowCount); toast.success("File comparison report is ready."); }, onError: error => toast.error(getFriendlyApiMessage(error, "The file comparison could not be completed. Please try again.")) });
   const entitySummaryMutation = trpc.deletionWithSummary.process.useMutation({
     onSuccess: data => { const item = data as DeletionWithSummaryResult; setEntitySummaryResult(item); recordCompletion("entity-summary", "Deletion with summary", entitySummaryFile ? [entitySummaryFile.name] : [], item.outputFilename, item.entityCount); toast.success("Entity summary is ready to review."); },
     onError: error => toast.error(getFriendlyApiMessage(error, "The entity summary could not be created. Please try again.")),
@@ -328,6 +333,26 @@ export default function Home() {
     catch (error) { toast.error(error instanceof Error ? error.message : "Could not read the NRC match files."); }
   }
 
+  async function processFileComparison() {
+    if (!comparisonFile1 || !comparisonFile2) return;
+    try {
+      fileComparisonMutation.mutate({
+        file1: { name: comparisonFile1.name, data: await fileToBase64(comparisonFile1) },
+        file2: { name: comparisonFile2.name, data: await fileToBase64(comparisonFile2) },
+        config: {
+          file1Column1: comparisonSettings.file1Column1,
+          file2Column1: comparisonSettings.file2Column1,
+          enableSecondCondition: comparisonSettings.enableSecondCondition,
+          file1Column2: comparisonSettings.enableSecondCondition ? comparisonSettings.file1Column2 : undefined,
+          file2Column2: comparisonSettings.enableSecondCondition ? comparisonSettings.file2Column2 : undefined,
+          operation: comparisonSettings.operation,
+        },
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not read the comparison files.");
+    }
+  }
+
   async function processReadyUpload() {
     if (!readyUploadFile) return;
     try { readyUploadMutation.mutate({ file: { name: readyUploadFile.name, data: await fileToBase64(readyUploadFile) } }); }
@@ -401,11 +426,14 @@ export default function Home() {
   function selectAdditionExitSecond(file: File) { if (!validatePairedFile(file)) return; setExitMatchFile(file); setMatchResult(null); setAdditionExitSecondColumns([]); void inspectColumns(file, setAdditionExitSecondColumns); }
   function selectOnboardOriginal(file: File) { if (!validatePairedFile(file)) return; setOnboardFile(file); setOnboardResult(null); setOnboardOriginalColumns([]); void inspectColumns(file, setOnboardOriginalColumns); }
   function selectOnboardSecond(file: File) { if (!validatePairedFile(file)) return; setDeletionCheckFile(file); setOnboardResult(null); setOnboardSecondColumns([]); void inspectColumns(file, setOnboardSecondColumns); }
+  function selectComparisonFile1(file: File) { if (!validatePairedFile(file)) return; setComparisonFile1(file); setComparisonResult(null); setComparisonFile1Columns([]); void inspectColumns(file, setComparisonFile1Columns); }
+  function selectComparisonFile2(file: File) { if (!validatePairedFile(file)) return; setComparisonFile2(file); setComparisonResult(null); setComparisonFile2Columns([]); void inspectColumns(file, setComparisonFile2Columns); }
   function resetAdditionExitMatch() { setOriginalMatchFile(null); setExitMatchFile(null); setMatchResult(null); setAdditionExitOriginalColumns([]); setAdditionExitSecondColumns([]); setAdditionExitMapping(EMPTY_PAIR_MAPPING); }
   function resetOnboardMatch() { setOnboardFile(null); setDeletionCheckFile(null); setOnboardResult(null); setOnboardOriginalColumns([]); setOnboardSecondColumns([]); setOnboardMapping(EMPTY_PAIR_MAPPING); }
+  function resetFileComparison() { setComparisonFile1(null); setComparisonFile2(null); setComparisonResult(null); setComparisonFile1Columns([]); setComparisonFile2Columns([]); setComparisonSettings(EMPTY_FILE_COMPARISON_SETTINGS); }
 
-  const isAnyWorkflowProcessing = processMutation.isPending || deletionMutation.isPending || duplicateMutation.isPending || entitySummaryMutation.isPending || matchMutation.isPending || onboardMutation.isPending || readyUploadMutation.isPending || facilityMutation.isPending || workbookColumnsMutation.isPending;
-  const hasWorkingData = selectedFiles.length > 0 || Boolean(result || deletionSummary || deletionFile || duplicateFile || duplicateResult || entitySummaryFile || entitySummaryResult || originalMatchFile || exitMatchFile || matchResult || onboardFile || deletionCheckFile || onboardResult || readyUploadFile || readyUploadResult || facilityFile || facilityResult);
+  const isAnyWorkflowProcessing = processMutation.isPending || deletionMutation.isPending || duplicateMutation.isPending || entitySummaryMutation.isPending || matchMutation.isPending || fileComparisonMutation.isPending || onboardMutation.isPending || readyUploadMutation.isPending || facilityMutation.isPending || workbookColumnsMutation.isPending;
+  const hasWorkingData = selectedFiles.length > 0 || Boolean(result || deletionSummary || deletionFile || duplicateFile || duplicateResult || entitySummaryFile || entitySummaryResult || originalMatchFile || exitMatchFile || matchResult || comparisonFile1 || comparisonFile2 || comparisonResult || onboardFile || deletionCheckFile || onboardResult || readyUploadFile || readyUploadResult || facilityFile || facilityResult);
 
   useEffect(() => {
     if (!hasWorkingData || isAnyWorkflowProcessing) return;
@@ -424,6 +452,12 @@ export default function Home() {
       setAdditionExitOriginalColumns([]);
       setAdditionExitSecondColumns([]);
       setAdditionExitMapping(EMPTY_PAIR_MAPPING);
+      setComparisonFile1(null);
+      setComparisonFile2(null);
+      setComparisonResult(null);
+      setComparisonFile1Columns([]);
+      setComparisonFile2Columns([]);
+      setComparisonSettings(EMPTY_FILE_COMPARISON_SETTINGS);
       setOnboardFile(null);
       setDeletionCheckFile(null);
       setOnboardResult(null);
@@ -438,7 +472,7 @@ export default function Home() {
       toast.info("Temporary workbook data was cleared after one minute of inactivity.");
     }, 60_000);
     return () => window.clearTimeout(cleanupTimer);
-  }, [hasWorkingData, isAnyWorkflowProcessing, selectedFiles, result, deletionSummary, deletionFile, duplicateFile, duplicateResult, entitySummaryFile, entitySummaryResult, originalMatchFile, exitMatchFile, matchResult, onboardFile, deletionCheckFile, onboardResult, readyUploadFile, readyUploadResult, facilityFile, facilityResult]);
+  }, [hasWorkingData, isAnyWorkflowProcessing, selectedFiles, result, deletionSummary, deletionFile, duplicateFile, duplicateResult, entitySummaryFile, entitySummaryResult, originalMatchFile, exitMatchFile, matchResult, comparisonFile1, comparisonFile2, comparisonResult, onboardFile, deletionCheckFile, onboardResult, readyUploadFile, readyUploadResult, facilityFile, facilityResult]);
 
   return (
     <main className={`app-shell tool-app-shell tool-${activeTool}`}>
@@ -451,10 +485,6 @@ export default function Home() {
         <div className="hero-copy"><Badge className="soft-badge">EXCEL OPERATIONS WORKSPACE</Badge><h2>Choose a workflow<br /><em>from the menu.</em></h2><p>Each tool has its own upload, preview, and download workspace. Select the process you need from the clearly visible navigation menu on the left.</p><details className="privacy-details" open><summary>Your file privacy</summary><p>Your selected CSV or XLSX file is used as temporary data for the workflow you choose. The tool processes it securely in memory, lets you review the result, and then returns the finished file for download. Uploaded workbooks, spreadsheet cells, previews, and generated files are not stored in this application database or file storage.</p></details></div>
         <div className="hero-meta"><div><strong>01</strong><span>Choose tool</span></div><div><strong>02</strong><span>Upload data</span></div><div><strong>03</strong><span>Review output</span></div></div>
       </section>
-      <section className="container overview-suggestions" aria-label="Suggested workflows">
-        <div className="overview-suggestions-heading"><Badge className="soft-badge">SUGGESTED NEXT STEPS</Badge><h2>What would you like to <em>work on?</em></h2><p>Start with the workflow that matches your spreadsheet task. You can preview every result before downloading it.</p></div>
-        <div className="tool-card-grid">{TOOL_CARDS.slice(0, 4).map(tool => <Link key={tool.slug} href={`/tools/${tool.slug}`} className="tool-card-link"><article className="tool-menu-card"><span className="tool-menu-icon"><tool.icon size={20} /></span><div><h3>{tool.title}</h3><p>{tool.description}</p></div><span className="tool-menu-arrow">Open →</span></article></Link>)}</div>
-      </section>
       <section className="container profile-dashboard" aria-label="Your profile">
         <div className="profile-dashboard-heading"><div><Badge className="soft-badge">YOUR PROFILE</Badge><h2>Keep your details <em>current and protected.</em></h2><p>Your sign-in identity is provided by your login service. The editable profile fields below are encrypted before database storage and are visible only to you.</p></div></div>
         {!isAuthenticated ? <Card className="profile-card"><CardContent className="profile-sign-in"><ShieldCheck size={25}/><div><strong>Sign in to manage your profile</strong><p>After signing in, you can save your preferred name, phone number, organization, and job title in your private dashboard.</p></div><Button className="process-button" onClick={() => setLocation("/login")}>Sign in</Button></CardContent></Card> : <Card className="profile-card"><CardContent className="profile-grid">{profileQuery.isLoading ? <div className="profile-loading"><Loader2 className="animate-spin" size={22}/><span>Loading your protected profile…</span></div> : profileQuery.error ? <div className="profile-sign-in"><ShieldCheck size={25}/><div><strong>Could not load your protected profile</strong><p>Your saved profile was not changed. Please retry the secure profile request.</p></div><Button className="process-button" onClick={() => profileQuery.refetch()}>Retry</Button></div> : <><aside className="identity-card"><div className="identity-avatar"><UserRound size={21}/></div><div><span>Signed-in identity</span><strong>{profileQuery.data?.identity.name || "Your account"}</strong><p>{profileQuery.data?.identity.email || "Email is managed by your sign-in provider"}</p></div><small>Identity information is managed by your sign-in provider and cannot be edited here.</small></aside><form className="profile-form" onSubmit={event => { event.preventDefault(); profileMutation.mutate(profileForm); }}><div className="profile-fields"><label><span><UserRound size={14}/> Preferred name</span><Input value={profileForm.displayName} maxLength={120} placeholder="How should we address you?" onChange={event => setProfileForm(current => ({ ...current, displayName: event.target.value }))}/></label><label><span><Phone size={14}/> Phone number</span><Input value={profileForm.phoneNumber} maxLength={40} placeholder="Optional contact number" onChange={event => setProfileForm(current => ({ ...current, phoneNumber: event.target.value }))}/></label><label><span><Building2 size={14}/> Organization</span><Input value={profileForm.organization} maxLength={160} placeholder="Company or team" onChange={event => setProfileForm(current => ({ ...current, organization: event.target.value }))}/></label><label><span><BriefcaseBusiness size={14}/> Job title</span><Input value={profileForm.jobTitle} maxLength={120} placeholder="Your role" onChange={event => setProfileForm(current => ({ ...current, jobTitle: event.target.value }))}/></label></div><div className="profile-save-row"><span><ShieldCheck size={14}/> Encrypted at rest · accessible only through your signed-in account</span><Button type="submit" className="process-button" disabled={profileMutation.isPending}>{profileMutation.isPending ? <><Loader2 className="animate-spin" size={16}/> Saving profile…</> : "Save profile"}</Button></div></form></>}</CardContent></Card>}
@@ -463,13 +493,9 @@ export default function Home() {
         <div className="process-dashboard-heading"><div><Badge className="soft-badge">PROCESS DASHBOARD</Badge><h2>Completed work, <em>without stored spreadsheet data.</em></h2><p>This dashboard saves only the tool used, completion status, file name metadata, safe totals, output filename, and completion time. It never saves uploaded workbook bytes, spreadsheet rows, previews, or generated Excel data.</p></div>{isAuthenticated && <AlertDialog><AlertDialogTrigger asChild><Button variant="outline" className="clear-history-button" disabled={(historyQuery.data?.length ?? 0) === 0}><Trash2 size={15}/> Clear history</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Clear saved process history?</AlertDialogTitle><AlertDialogDescription>This permanently deletes your completed-process metadata, including tool names, file name metadata, totals, output filenames, and times. It does not affect Excel files or downloads because they are not stored.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => clearHistoryMutation.mutate()}>Delete history</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}</div>
         {!isAuthenticated ? <Card className="history-card"><CardContent className="history-empty"><ShieldCheck size={25}/><div><strong>Sign in to save your private process history</strong><p>Excel files remain temporary. Signing in saves only completed-run metadata to your own dashboard.</p></div><Button className="process-button" onClick={() => setLocation("/login")}>Sign in</Button></CardContent></Card> : <Card className="history-card"><CardContent>{historyQuery.isLoading ? <div className="history-empty"><Loader2 className="animate-spin" size={22}/><span>Loading process history…</span></div> : <><div className="history-metrics"><div><span>Completed runs</span><strong>{historyQuery.data?.length ?? 0}</strong></div><div><span>Tools used</span><strong>{toolTotals.length}</strong></div><div><span>Retention</span><strong>Metadata only</strong></div></div>{toolTotals.length > 0 && <div className="history-tool-totals">{toolTotals.map(([key, item]) => <div key={key}><span>{item.label}</span><strong>{item.count} completed</strong></div>)}</div>}{(historyQuery.data?.length ?? 0) === 0 ? <div className="history-empty"><FileSpreadsheet size={23}/><span>Your completed processes will appear here after you run a tool.</span></div> : <div className="history-list">{historyQuery.data?.map(item => <article className="history-row" key={item.id}><div className="history-status"><ShieldCheck size={17}/></div><div className="history-main"><strong>{item.toolName}</strong><span>{storedFileNames(item.inputFileNames)} · {item.totalRecords.toLocaleString()} records · {item.outputFilename}</span></div><time>{new Date(item.completedAt).toLocaleString()}</time></article>)}</div>}</>}</CardContent></Card>}
       </section>
-      <section className="container tool-dashboard" aria-label="Excel workflow menu" aria-hidden="true">
-        <div className="tool-dashboard-heading"><div><Badge className="soft-badge">SELECT A WORKFLOW</Badge><h2>One focused tool <em>at a time.</em></h2><p>Choose the Excel process you need. Each workspace keeps uploads, preview data, and downloads together without mixing tasks.</p></div></div>
-        <div className="tool-card-grid">{TOOL_CARDS.map(tool => <Link key={tool.slug} href={`/tools/${tool.slug}`} className="tool-card-link"><article className="tool-menu-card"><span className="tool-menu-icon"><tool.icon size={20} /></span><div><h3>{tool.title}</h3><p>{tool.description}</p></div><span className="tool-menu-arrow">Open →</span></article></Link>)}</div>
-      </section>
       <section className="container work-area tool-section tool-consolidation">
         <Card className="upload-card">
-          <CardHeader><div className="section-kicker"><span className="step-number">01</span><span>Source workbooks</span></div><CardTitle>Upload your CSV or Excel files</CardTitle><CardDescription>Select all files for this consolidation run. The processor will find Addition and Deletion sheets even when their names include date ranges or minor variations.</CardDescription></CardHeader>
+          <CardHeader><div className="section-kicker"><span className="step-number">01</span><span>Source workbooks</span></div><CardTitle>Upload your CSV or Excel files</CardTitle><CardDescription>Upload multiple workbooks to merge their Addition and Deletion data into one master file. The processor will find matching sheets even when their names include date ranges or minor variations.</CardDescription></CardHeader>
           <CardContent>
             <div className={`dropzone ${isDragging ? "dragging" : ""}`} onDragOver={event => { event.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={event => { event.preventDefault(); setIsDragging(false); addFiles(event.dataTransfer.files); }} onClick={() => inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") inputRef.current?.click(); }}>
               <input ref={inputRef} type="file" accept={ACCEPTED_TYPES} multiple hidden onChange={event => event.target.files && addFiles(event.target.files)} />
@@ -501,7 +527,7 @@ export default function Home() {
         </Card>
       </section>
       <section className="container duplicate-section tool-section tool-duplicates">
-        <div className="deletion-heading"><div><Badge className="soft-badge">DUPLICATE SEPARATION</Badge><h2>Keep one clean record and <em>move the repeats.</em></h2><p>Upload a deletion list to identify repeated Employee Full Name and NRC No combinations. The first occurrence stays in Clean Data; later occurrences move to Duplicates Moved.</p></div><div className="deletion-heading-icon"><Layers3 size={28} /></div></div>
+        <div className="deletion-heading"><div><Badge className="soft-badge">DUPLICATE SEPARATION</Badge><h2>Keep one clean record and <em>move the repeats.</em></h2><p>Upload a deletion file to separate duplicates. Repeated records are removed from the clean data and moved to Duplicates Moved, leaving a clean list for use.</p></div><div className="deletion-heading-icon"><Layers3 size={28} /></div></div>
         <Card className="deletion-card">
           <CardContent>
             <div className="deletion-grid">
@@ -522,6 +548,10 @@ export default function Home() {
       <section className="container duplicate-section tool-section tool-addition-exit">
         <div className="deletion-heading"><div><Badge className="soft-badge">ADDITION ORIGINAL & EXIT MATCH</Badge><h2>Validate exit data against <em>the original addition list.</em></h2><p>Upload the original Addition workbook and the Exit Data workbook. Mobile matching is prioritized before NRC matching, and every result is grouped for review.</p></div><div className="deletion-heading-icon"><Layers3 size={28} /></div></div>
         <Card className="deletion-card paired-workflow-card"><CardContent><div className="paired-workflow-layout"><PairedFileUploadPanel originalFile={originalMatchFile} secondFile={exitMatchFile} originalLabel="Original File" originalDescription="Original Addition source" secondLabel="2nd File" secondDescription="Exit data to validate" originalColumns={additionExitOriginalColumns} secondColumns={additionExitSecondColumns} mapping={additionExitMapping} isInspecting={workbookColumnsMutation.isPending} isProcessing={matchMutation.isPending} processingMessage="Parsing and matching…" onOriginalFile={selectAdditionExitOriginal} onSecondFile={selectAdditionExitSecond} onMappingChange={(field, value) => setAdditionExitMapping(current => ({ ...current, [field]: value }))} onProcess={processAdditionExitMatch} onReset={resetAdditionExitMatch} /><div className="deletion-result">{!matchResult ? <div className="deletion-empty"><Layers3 size={25} /><strong>Match report preview waiting</strong><span>Add both files, optionally confirm columns, then select <strong>Parse and preview</strong>.</span></div> : <><div className="deletion-metrics">{Object.entries(matchResult.groups).map(([name, value]) => <div key={name}><span>{name}</span><strong>{value.rows.length}</strong></div>)}</div><Tabs defaultValue="summary" className="preview-tabs"><TabsList><TabsTrigger value="summary">Summary</TabsTrigger>{Object.keys(matchResult.groups).map((name,index) => <TabsTrigger key={name} value={`group-${index}`}>{name}</TabsTrigger>)}</TabsList><TabsContent value="summary"><PreviewTable preview={matchResult.summary} /></TabsContent>{Object.entries(matchResult.groups).map(([name,value],index) => <TabsContent key={name} value={`group-${index}`}><PreviewTable preview={value} /></TabsContent>)}</Tabs><div className="download-panel paired-export-panel"><div><strong>Multi-sheet Excel output is ready</strong><span>{matchResult.outputFilename}</span></div><div><Button variant="outline" onClick={resetAdditionExitMatch}><RotateCcw size={16}/> Process new files</Button><Button className="download-button" onClick={() => downloadBytes(matchResult.workbookBase64, matchResult.outputFilename)}><Download size={17} /> Download Excel output</Button></div></div></>}</div></div></CardContent></Card>
+      </section>
+      <section className="container duplicate-section tool-section tool-file-comparison">
+        <div className="deletion-heading"><div><Badge className="soft-badge">MULTI-CONDITION FILE COMPARE</Badge><h2>Compare two workbooks with <em>one or two conditions.</em></h2><p>Upload File 1 and File 2, choose the columns to match, optionally add a second condition, then run exists, duplicate, or missing-record analysis.</p></div><div className="deletion-heading-icon"><GitCompare size={28} /></div></div>
+        <Card className="deletion-card paired-workflow-card"><CardContent><div className="paired-workflow-layout"><ConditionalFileComparisonPanel file1={comparisonFile1} file2={comparisonFile2} file1Columns={comparisonFile1Columns} file2Columns={comparisonFile2Columns} settings={comparisonSettings} isInspecting={workbookColumnsMutation.isPending} isProcessing={fileComparisonMutation.isPending} processingMessage="Running comparison…" onFile1={selectComparisonFile1} onFile2={selectComparisonFile2} onSettingsChange={(field, value) => setComparisonSettings(current => ({ ...current, [field]: value }))} onProcess={processFileComparison} onReset={resetFileComparison} /><div className="deletion-result">{!comparisonResult ? <div className="deletion-empty"><GitCompare size={25} /><strong>Comparison preview waiting</strong><span>Add both files, choose your columns and operation, then select <strong>Run analysis</strong>.</span></div> : <><div className="deletion-metrics"><div><span>Operation</span><strong>{comparisonResult.operationLabel}</strong></div><div><span>File 1 rows</span><strong>{comparisonResult.file1RowCount.toLocaleString()}</strong></div><div><span>Result rows</span><strong>{comparisonResult.resultRowCount.toLocaleString()}</strong></div></div><Tabs defaultValue="summary" className="preview-tabs"><TabsList><TabsTrigger value="summary">Summary</TabsTrigger><TabsTrigger value="result">Result</TabsTrigger></TabsList><TabsContent value="summary"><PreviewTable preview={comparisonResult.summary} /></TabsContent><TabsContent value="result"><PreviewTable preview={comparisonResult.result} /></TabsContent></Tabs><div className="download-panel paired-export-panel"><div><strong>Comparison workbook is ready</strong><span>{comparisonResult.outputFilename}</span></div><div><Button variant="outline" onClick={resetFileComparison}><RotateCcw size={16}/> Process new files</Button><Button className="download-button" onClick={() => downloadBytes(comparisonResult.workbookBase64, comparisonResult.outputFilename)}><Download size={17} /> Download Excel output</Button></div></div></>}</div></div></CardContent></Card>
       </section>
       <section className="container duplicate-section tool-section tool-onboard"><div className="deletion-heading"><div><Badge className="soft-badge">DELETION CHECK WITH ONBOARD</Badge><h2>Check deletion NRCs against <em>onboard records.</em></h2><p>Upload onboard data and a deletion list to enrich NRC matches and separate unmatched records.</p></div><div className="deletion-heading-icon"><ListTree size={28}/></div></div><Card className="deletion-card paired-workflow-card"><CardContent><div className="paired-workflow-layout"><PairedFileUploadPanel originalFile={onboardFile} secondFile={deletionCheckFile} originalLabel="Original File" originalDescription="Original onboard source" secondLabel="2nd File" secondDescription="Deletion file to check" originalColumns={onboardOriginalColumns} secondColumns={onboardSecondColumns} mapping={onboardMapping} showPhoneMapping={false} isInspecting={workbookColumnsMutation.isPending} isProcessing={onboardMutation.isPending} processingMessage="Parsing NRC data…" onOriginalFile={selectOnboardOriginal} onSecondFile={selectOnboardSecond} onMappingChange={(field, value) => setOnboardMapping(current => ({ ...current, [field]: value }))} onProcess={processOnboardMatch} onReset={resetOnboardMatch} /><div className="deletion-result">{!onboardResult?<div className="deletion-empty"><ListTree size={25}/><strong>NRC report preview waiting</strong><span>Add both files, optionally confirm columns, then select <strong>Parse and preview</strong>.</span></div>:<><Tabs defaultValue="summary" className="preview-tabs"><TabsList><TabsTrigger value="summary">Summary</TabsTrigger><TabsTrigger value="matched">Matched</TabsTrigger><TabsTrigger value="no-match">No Match</TabsTrigger></TabsList><TabsContent value="summary"><PreviewTable preview={onboardResult.summary}/></TabsContent><TabsContent value="matched"><PreviewTable preview={onboardResult.matched}/></TabsContent><TabsContent value="no-match"><PreviewTable preview={onboardResult.noMatch}/></TabsContent></Tabs><div className="download-panel paired-export-panel"><div><strong>Multi-sheet Excel output is ready</strong><span>{onboardResult.outputFilename}</span></div><div><Button variant="outline" onClick={resetOnboardMatch}><RotateCcw size={16}/> Process new files</Button><Button className="download-button" onClick={()=>downloadBytes(onboardResult.workbookBase64,onboardResult.outputFilename)}><Download size={17}/> Download Excel output</Button></div></div></>}</div></div></CardContent></Card></section>
       <section className="container duplicate-section tool-section tool-ready-upload"><div className="deletion-heading"><div><Badge className="soft-badge">READY FILE TO UPLOAD</Badge><h2>Convert employee data into an <em>upload-ready file.</em></h2><p>Rename source fields, normalize dates, insert required blank fields, and apply the final upload schema in one downloadable workbook.</p></div><div className="deletion-heading-icon"><FileSpreadsheet size={28}/></div></div><Card className="deletion-card"><CardContent><div className="deletion-grid"><div className="deletion-upload"><input ref={readyUploadInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={e=>{const f=e.target.files?.[0];if(f){setReadyUploadFile(f);setReadyUploadResult(null)}}}/><div className="mini-dropzone" onClick={()=>readyUploadInputRef.current?.click()}><div className="upload-icon"><FileUp size={20}/></div><strong>{readyUploadFile?readyUploadFile.name:'Choose employee source file'}</strong><span>{readyUploadFile?formatBytes(readyUploadFile.size):'One .csv or .xlsx file'}</span></div><div className="action-row"><Button className="process-button" onClick={processReadyUpload} disabled={!readyUploadFile||readyUploadMutation.isPending}>{readyUploadMutation.isPending?<><Loader2 className="animate-spin" size={17}/> Converting…</>:<><FileSpreadsheet size={17}/> Convert and preview</>}</Button></div></div><div className="deletion-result">{!readyUploadResult?<div className="deletion-empty"><FileSpreadsheet size={25}/><strong>Upload-ready preview waiting</strong><span>Choose an employee file to apply the target upload schema.</span></div>:<><div className="deletion-metrics"><div><span>Rows</span><strong>{readyUploadResult.rowCount}</strong></div><div><span>Final columns</span><strong>{readyUploadResult.columnCount}</strong></div><div><span>Date format</span><strong>MM/DD/YYYY</strong></div></div><PreviewTable preview={readyUploadResult.preview}/><div className="download-panel"><div><strong>Ready to export</strong><span>{readyUploadResult.outputFilename}</span></div><Button className="download-button" onClick={()=>downloadBytes(readyUploadResult.workbookBase64,readyUploadResult.outputFilename)}><Download size={17}/> Download ready file</Button></div></>}</div></div></CardContent></Card></section>

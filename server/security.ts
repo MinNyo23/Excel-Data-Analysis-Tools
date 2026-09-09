@@ -1,15 +1,11 @@
 import { createHash } from "node:crypto";
+import * as XLSX from "xlsx";
 import type { NextFunction, Request, Response } from "express";
 import { GOOGLE_RECAPTCHA_ORIGINS } from "../shared/contentSecurityPolicy.js";
-import { MAX_UPLOAD_FILE_BYTES } from "../shared/uploadLimits.js";
+import { MAX_UPLOAD_BATCH_BYTES, MAX_UPLOAD_FILE_BYTES, MAX_UPLOAD_REQUEST_BYTES } from "../shared/uploadLimits.js";
 
-export { MAX_UPLOAD_FILE_BYTES } from "../shared/uploadLimits.js";
-export const MAX_UPLOAD_BATCH_BYTES = 20 * 1024 * 1024;
+export { MAX_UPLOAD_FILE_BYTES, MAX_UPLOAD_BATCH_BYTES } from "../shared/uploadLimits.js";
 export const MAX_UPLOAD_FILES = 10;
-const MAX_ZIP_ENTRIES = 500;
-const MAX_ZIP_UNCOMPRESSED_BYTES = 80 * 1024 * 1024;
-const MAX_ZIP_ENTRY_BYTES = 40 * 1024 * 1024;
-const MAX_ZIP_COMPRESSION_RATIO = 200;
 
 type UploadedFileLike = { name: string; data: string };
 
@@ -18,6 +14,10 @@ const FRONTEND_ORIGIN_ENV_KEYS = ["ALLOWED_FRONTEND_ORIGINS", "FRONTEND_URL", "P
 
 function allowedFrontendOrigins() {
   const origins = new Set(DEFAULT_FRONTEND_ORIGINS);
+  if (process.env.NODE_ENV !== "production") {
+    origins.add("http://localhost:3000");
+    origins.add("http://127.0.0.1:3000");
+  }
   for (const key of FRONTEND_ORIGIN_ENV_KEYS) {
     for (const value of (process.env[key] ?? "").split(",")) {
       const origin = value.trim().replace(/\/$/, "");
@@ -32,30 +32,16 @@ function isBase64(value: string) {
 }
 
 function validateXlsxArchive(bytes: Buffer) {
-  if (bytes.length < 22 || bytes.readUInt32LE(0) !== 0x04034b50) return "XLSX files must be valid ZIP-based workbooks.";
-  if (!bytes.includes(Buffer.from("[Content_Types].xml"))) return "XLSX workbook content markers are missing.";
-  const eocdOffset = bytes.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
-  if (eocdOffset < 0 || eocdOffset + 22 > bytes.length) return "XLSX archive directory is invalid.";
-  const entryCount = bytes.readUInt16LE(eocdOffset + 10);
-  const directoryOffset = bytes.readUInt32LE(eocdOffset + 16);
-  if (entryCount > MAX_ZIP_ENTRIES) return "XLSX contains too many archive entries.";
-  if (directoryOffset >= bytes.length) return "XLSX archive directory is out of bounds.";
-  let offset = directoryOffset;
-  let totalUncompressed = 0;
-  for (let index = 0; index < entryCount; index += 1) {
-    if (offset + 46 > bytes.length || bytes.readUInt32LE(offset) !== 0x02014b50) return "XLSX archive entry is invalid.";
-    const compressedSize = bytes.readUInt32LE(offset + 20);
-    const uncompressedSize = bytes.readUInt32LE(offset + 24);
-    const fileNameLength = bytes.readUInt16LE(offset + 28);
-    const extraLength = bytes.readUInt16LE(offset + 30);
-    const commentLength = bytes.readUInt16LE(offset + 32);
-    if (uncompressedSize > MAX_ZIP_ENTRY_BYTES) return "XLSX contains an oversized archive entry.";
-    if (compressedSize > 0 && uncompressedSize / compressedSize > MAX_ZIP_COMPRESSION_RATIO) return "XLSX compression ratio is unsafe.";
-    totalUncompressed += uncompressedSize;
-    if (totalUncompressed > MAX_ZIP_UNCOMPRESSED_BYTES) return "XLSX expands beyond the safe processing limit.";
-    offset += 46 + fileNameLength + extraLength + commentLength;
+  if (bytes.length < 4 || bytes.readUInt32LE(0) !== 0x04034b50) {
+    return "XLSX files must be valid ZIP-based workbooks.";
   }
-  return null;
+  try {
+    const workbook = XLSX.read(bytes, { type: "buffer", bookSheets: true, sheetRows: 1 });
+    if (!workbook.SheetNames.length) return "XLSX workbook content markers are missing.";
+    return null;
+  } catch {
+    return "XLSX files must be valid ZIP-based workbooks.";
+  }
 }
 
 export function validateUploadedWorkbook(file: UploadedFileLike): string | null {
@@ -120,7 +106,9 @@ export function requestIdentity(req: any) {
 export function mutationOriginIsTrusted(req: any) {
   if (req.method !== "POST") return true;
   const origin = req.headers.origin;
-  if (!origin) return true;
+  // Browser mutations must carry an Origin header so requests without CSRF
+  // provenance cannot silently bypass the allowlist.
+  if (!origin) return false;
   const configuredOrigins = allowedFrontendOrigins();
   if (configuredOrigins.has(origin)) return true;
   const host = (req.headers["x-forwarded-host"] || req.headers.host || "") as string;
@@ -139,12 +127,19 @@ export function noStoreApiResponse(_req: any, res: any, next: any) {
 export function externalApiCors(req: any, res: any, next: any) {
   const origin = req.headers.origin;
   const configuredOrigins = allowedFrontendOrigins();
+  if (req.method === "OPTIONS") {
+    if (!origin || !configuredOrigins.has(origin)) return res.status(403).json({ error: "Untrusted request origin." });
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    return res.status(204).end();
+  }
   if (origin && configuredOrigins.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    if (req.method === "OPTIONS") return res.status(204).end();
   }
   return next();
 }
@@ -158,11 +153,14 @@ export function securityHeaders(req: any, res: any, next: any) {
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-read=(), clipboard-write=(), display-capture=(), fullscreen=(), hid=(), serial=(), web-share=(), xr-spatial-tracking=()");
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
   res.setHeader("Origin-Agent-Cluster", "?1");
-  // Public managed-storage redirects are intentionally embedded by the Vercel
-  // frontend. All other application responses remain same-origin isolated.
-  res.setHeader("Cross-Origin-Resource-Policy", req.path.startsWith("/manus-storage/") ? "cross-origin" : "same-origin");
+  res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
   const recaptchaOrigins = GOOGLE_RECAPTCHA_ORIGINS.join(" ");
-  res.setHeader("Content-Security-Policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.manus.computer; frame-src ${recaptchaOrigins}; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' ${recaptchaOrigins}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; connect-src 'self' https: ${recaptchaOrigins}; worker-src 'none'; media-src 'none'; manifest-src 'self'`);
+  const configuredConnectOrigins = [process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL, process.env.VITE_PROCESSING_API_URL]
+    .filter((value): value is string => Boolean(value))
+    .map(value => { try { return new URL(value).origin; } catch { return ""; } })
+    .filter(Boolean)
+    .join(" ");
+  res.setHeader("Content-Security-Policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; frame-src ${recaptchaOrigins}; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' ${recaptchaOrigins}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; connect-src 'self' ${configuredConnectOrigins} ${recaptchaOrigins}; worker-src 'none'; media-src 'none'; manifest-src 'self'`);
   if (isSecure) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   if (req.path.startsWith("/api/")) res.setHeader("Cache-Control", "no-store");
   next();
@@ -170,7 +168,7 @@ export function securityHeaders(req: any, res: any, next: any) {
 
 export function apiRequestGuards(req: any, res: any, next: any) {
   const contentLength = Number(req.headers["content-length"] ?? 0);
-  if (Number.isFinite(contentLength) && contentLength > 30 * 1024 * 1024) return res.status(413).json({ error: "Request body is too large." });
+  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_REQUEST_BYTES) return res.status(413).json({ error: "Request body is too large." });
   if (!mutationOriginIsTrusted(req)) return res.status(403).json({ error: "Untrusted request origin." });
   const limit = consumeRateLimit(`api:${requestIdentity(req)}`, 120, 60_000);
   if (!limit.allowed) {

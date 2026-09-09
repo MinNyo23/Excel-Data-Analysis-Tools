@@ -16,8 +16,9 @@ app.use(securityHeaders);
 app.use("/api", noStoreApiResponse);
 app.use("/api", externalApiCors);
 app.use("/api", apiRequestGuards);
-app.use(express.json({ limit: "4mb" }));
-app.use(express.urlencoded({ limit: "4mb", extended: true }));
+// Workbook uploads are base64-encoded before reaching tRPC.
+app.use(express.json({ limit: "36mb" }));
+app.use(express.urlencoded({ limit: "36mb", extended: true }));
 app.use(
   "/api/trpc",
   createExpressMiddleware({
@@ -25,5 +26,13 @@ app.use(
     createContext,
   }),
 );
+
+app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (error && typeof error === "object" && "type" in error && error.type === "entity.too.large") {
+    return res.status(413).json({ error: "The uploaded workbook is too large. Please use a smaller file or enable external processing." });
+  }
+  console.error("[API] Unhandled request failure", error instanceof Error ? error.message : "unknown error");
+  if (!res.headersSent) return res.status(500).json({ error: "Request could not be completed." });
+});
 
 export default app;

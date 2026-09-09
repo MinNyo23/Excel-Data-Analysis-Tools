@@ -16,7 +16,7 @@ export default defineConfig({
     "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(process.env.VITE_SUPABASE_PUBLISHABLE_KEY),
     "import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API": JSON.stringify(process.env.VITE_USE_EXTERNAL_PROCESSING_API),
     "import.meta.env.VITE_PROCESSING_API_URL": JSON.stringify(process.env.VITE_PROCESSING_API_URL),
-    "import.meta.env.VITE_RECAPTCHA_SITE_KEY": JSON.stringify(process.env.VITE_RECAPTCHA_SITE_KEY || ""),
+    "import.meta.env.VITE_RECAPTCHA_SITE_KEY": JSON.stringify(process.env.VITE_RECAPTCHA_SITE_KEY?.trim() || ""),
   },
   resolve: {
     alias: {

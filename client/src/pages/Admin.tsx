@@ -45,7 +45,7 @@ export default function Admin() {
   const updateEmailPolicy = trpc.admin.updateEmailPolicy.useMutation({
     onSuccess: domain => {
       setEmailDomain(domain);
-      toast.success(`Sign-in restricted to @${domain} addresses.`);
+      toast.success(domain === "*" ? "Any valid email address can sign in." : `Sign-in restricted to @${domain} addresses.`);
       void emailPolicyQuery.refetch();
     },
   });
@@ -75,8 +75,9 @@ export default function Admin() {
     }
     try {
       await updateEmailPolicy.mutateAsync({ domain });
-    } catch {
-      toast.error("Email-domain policy could not be saved. Apply the Supabase policy migration first.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Email-domain policy could not be saved.";
+      toast.error(message);
     }
   }
 
@@ -97,11 +98,11 @@ export default function Admin() {
   }
 
   const pendingActionCopy = pendingAction?.action === "delete"
-    ? { title: "Delete this user?", description: `Permanently delete ${pendingAction.email}? This cannot be undone.`, confirm: "Delete user" }
+    ? { title: "Delete this user?", description: `Permanently delete ${pendingAction.email}? This cannot be undone.`, confirm: "Delete user", badge: "Delete", badgeClass: "danger", actionClass: "admin-confirm-delete" }
     : pendingAction?.action === "ban"
-      ? { title: "Ban this user?", description: `Ban ${pendingAction.email}? They will not be able to sign in until unbanned.`, confirm: "Ban user" }
+      ? { title: "Ban this user?", description: `Ban ${pendingAction.email}? They will not be able to sign in until unbanned.`, confirm: "Ban user", badge: "Ban access", badgeClass: "warn", actionClass: "admin-confirm-ban" }
       : pendingAction
-        ? { title: "Unban this user?", description: `Unban ${pendingAction.email}? They will be able to sign in again.`, confirm: "Unban user" }
+        ? { title: "Unban this user?", description: `Unban ${pendingAction.email}? They will be able to sign in again.`, confirm: "Unban user", badge: "Restore access", badgeClass: "ok", actionClass: "admin-confirm-unban" }
         : null;
 
   return (
@@ -179,15 +180,16 @@ export default function Admin() {
       </section>
 
       <AlertDialog open={Boolean(pendingAction)} onOpenChange={open => { if (!open) setPendingAction(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent className="admin-confirm-dialog">
           <AlertDialogHeader>
+            {pendingActionCopy ? <span className={`admin-confirm-badge ${pendingActionCopy.badgeClass}`}>{pendingActionCopy.badge}</span> : null}
             <AlertDialogTitle>{pendingActionCopy?.title}</AlertDialogTitle>
             <AlertDialogDescription>{pendingActionCopy?.description}</AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="admin-confirm-footer">
+            <AlertDialogCancel className="admin-confirm-cancel">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className={pendingAction?.action === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-[#0f6a51] text-white hover:bg-[#174b3e]"}
+              className={pendingActionCopy?.actionClass ?? "admin-confirm-ban"}
               onClick={() => { void confirmAction(); }}
             >
               {pendingActionCopy?.confirm}

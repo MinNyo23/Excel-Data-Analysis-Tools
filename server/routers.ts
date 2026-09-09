@@ -21,7 +21,8 @@ import { normalizeUploadedFiles } from "./uploadNormalization.js";
 import { metadataStore, type MetadataUserId } from "./metadataStore.js";
 import { sanitizeGeneratedWorkbookOutput } from "./workbookOutputSecurity.js";
 import { getAllowedEmailDomain, listManagedUsers, listUserActionHistory, moderateUser, updateAllowedEmailDomain } from "./admin.js";
-import { supabaseGetAllowedEmailDomain, usesSupabaseServerAuth } from "./supabaseIntegration.js";
+import { resolveAllowedEmailDomain } from "./emailDomainPolicy.js";
+import { usesSupabaseServerAuth } from "./supabaseIntegration.js";
 import { LOCAL_SESSION_APP_ID, requestLocalSignInOtp, verifyLocalSignInOtp } from "./localOtpAuth.js";
 
 
@@ -160,7 +161,7 @@ export const appRouter = router({
     moderate: protectedProcedure.input(z.object({ userId: z.string().min(1).max(64), action: z.enum(["ban", "unban", "delete"]) })).mutation(({ ctx, input }) => moderateUser(ctx.user, input.userId, input.action)),
   }),
   auth: router({
-    emailPolicy: publicProcedure.query(() => supabaseGetAllowedEmailDomain()),
+    emailPolicy: publicProcedure.query(() => resolveAllowedEmailDomain()),
     me: publicProcedure.query(opts => opts.ctx.user),
     requestOtp: publicProcedure
       .input(z.object({

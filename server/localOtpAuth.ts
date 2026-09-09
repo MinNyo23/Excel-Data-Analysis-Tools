@@ -4,7 +4,7 @@ import { isEmailAllowedForDomain } from "../shared/authPolicy.js";
 import { ENV } from "./_core/env.js";
 import * as db from "./db.js";
 import { sendSignInOtpEmail } from "./mail.js";
-import { supabaseGetAllowedEmailDomain } from "./supabaseIntegration.js";
+import { resolveAllowedEmailDomain } from "./emailDomainPolicy.js";
 import { verifyGoogleRecaptchaToken } from "./recaptcha.js";
 
 const OTP_TTL_MS = 10 * 60 * 1000;
@@ -48,7 +48,7 @@ export async function requestLocalSignInOtp(input: {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Enter a valid work email address." });
   }
 
-  const allowedDomain = await supabaseGetAllowedEmailDomain();
+  const allowedDomain = await resolveAllowedEmailDomain();
   if (!isEmailAllowedForDomain(email, allowedDomain)) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -107,7 +107,7 @@ export async function verifyLocalSignInOtp(input: {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Enter the eight-digit code from your email." });
   }
 
-  const allowedDomain = await supabaseGetAllowedEmailDomain();
+  const allowedDomain = await resolveAllowedEmailDomain();
   if (!isEmailAllowedForDomain(email, allowedDomain)) {
     throw new TRPCError({
       code: "FORBIDDEN",

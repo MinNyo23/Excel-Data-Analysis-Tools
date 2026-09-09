@@ -45,7 +45,7 @@ export default function Admin() {
   const updateEmailPolicy = trpc.admin.updateEmailPolicy.useMutation({
     onSuccess: domain => {
       setEmailDomain(domain);
-      toast.success(`Sign-in restricted to @${domain} addresses.`);
+      toast.success(domain === "*" ? "Any valid email address can sign in." : `Sign-in restricted to @${domain} addresses.`);
       void emailPolicyQuery.refetch();
     },
   });
@@ -75,8 +75,9 @@ export default function Admin() {
     }
     try {
       await updateEmailPolicy.mutateAsync({ domain });
-    } catch {
-      toast.error("Email-domain policy could not be saved. Apply the Supabase policy migration first.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Email-domain policy could not be saved.";
+      toast.error(message);
     }
   }
 

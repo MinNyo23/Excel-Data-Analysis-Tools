@@ -1,7 +1,9 @@
-import { COOKIE_NAME } from "../shared/const.js";
+import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "../shared/const.js";
 import { getSessionCookieOptions } from "./_core/cookies.js";
+import { sdk } from "./_core/sdk.js";
 import { systemRouter } from "./_core/systemRouter.js";
 import { protectedProcedure, publicProcedure, router, sensitiveProcedure, uploadProcedure } from "./_core/trpc.js";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { processDeletionSummary } from "./deletionSummaryProcessor.js";
 import { processDeletionDuplicates } from "./deletionDuplicatesProcessor.js";
@@ -19,7 +21,9 @@ import { normalizeUploadedFiles } from "./uploadNormalization.js";
 import { metadataStore, type MetadataUserId } from "./metadataStore.js";
 import { sanitizeGeneratedWorkbookOutput } from "./workbookOutputSecurity.js";
 import { getAllowedEmailDomain, listManagedUsers, listUserActionHistory, moderateUser, updateAllowedEmailDomain } from "./admin.js";
-import { supabaseGetAllowedEmailDomain } from "./supabaseIntegration.js";
+import { resolveAllowedEmailDomain } from "./emailDomainPolicy.js";
+import { usesSupabaseServerAuth } from "./supabaseIntegration.js";
+import { LOCAL_SESSION_APP_ID, requestLocalSignInOtp, verifyLocalSignInOtp } from "./localOtpAuth.js";
 
 
 export const uploadedFile = z.object({
@@ -157,8 +161,57 @@ export const appRouter = router({
     moderate: protectedProcedure.input(z.object({ userId: z.string().min(1).max(64), action: z.enum(["ban", "unban", "delete"]) })).mutation(({ ctx, input }) => moderateUser(ctx.user, input.userId, input.action)),
   }),
   auth: router({
-    emailPolicy: publicProcedure.query(() => supabaseGetAllowedEmailDomain()),
+    emailPolicy: publicProcedure.query(() => resolveAllowedEmailDomain()),
     me: publicProcedure.query(opts => opts.ctx.user),
+    requestOtp: publicProcedure
+      .input(z.object({
+        email: z.string().trim().email().max(320),
+        captchaToken: z.string().trim().max(4096).optional(),
+      }).strict())
+      .mutation(async ({ ctx, input }) => {
+        if (usesSupabaseServerAuth) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Local SMTP OTP is disabled while Supabase auth is configured.",
+          });
+        }
+        const remoteIp = typeof ctx.req.ip === "string" ? ctx.req.ip : undefined;
+        return requestLocalSignInOtp({ email: input.email, captchaToken: input.captchaToken, remoteIp });
+      }),
+    verifyOtp: publicProcedure
+      .input(z.object({
+        email: z.string().trim().email().max(320),
+        otp: z.string().trim().regex(/^\d{8}$/),
+      }).strict())
+      .mutation(async ({ ctx, input }) => {
+        if (usesSupabaseServerAuth) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Local SMTP OTP is disabled while Supabase auth is configured.",
+          });
+        }
+        try {
+          const verified = await verifyLocalSignInOtp(input);
+          const sessionToken = await sdk.createSessionToken(verified.openId, {
+            name: verified.name,
+            appId: LOCAL_SESSION_APP_ID,
+            expiresInMs: SESSION_MAX_AGE_MS,
+          });
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          if (typeof ctx.res.cookie !== "function") {
+            throw new Error("Session cookie API is unavailable on this response object.");
+          }
+          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
+          return { success: true as const };
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          console.error("[Auth] Local OTP verify failed", error instanceof Error ? error.message : error);
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: error instanceof Error ? error.message : "Sign-in verification failed.",
+          });
+        }
+      }),
     logout: protectedProcedure.mutation(async ({ ctx }) => {
       let cleanup = { clearedProcessHistory: 0 };
       try {

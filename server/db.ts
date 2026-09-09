@@ -1,9 +1,12 @@
 import { and, desc, eq, gte, lt, lte } from "drizzle-orm";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { InsertProcessHistory, InsertUser, processHistory, securityAuditEvents, userProcessSettings, userProfiles, users } from "../drizzle/schema.js";
+import { InsertProcessHistory, InsertUser, adminAuthSettings, processHistory, securityAuditEvents, userProcessSettings, userProfiles, users } from "../drizzle/schema.js";
+import { ALLOW_ALL_EMAIL_DOMAINS, isAllowAllEmailDomains, isEmailAllowedForDomain, isValidAllowedEmailDomain, MASTER_ADMIN_EMAIL, normalizeAllowedEmailDomain } from "../shared/authPolicy.js";
 import { decryptProfileValue, encryptProfileValue } from "./profileEncryption.js";
 import { ENV } from './_core/env.js';
+
+const EMAIL_DOMAIN_SETTING_KEY = "email_domain";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -104,7 +107,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       set: updateSet,
     });
   } catch (error) {
-    console.error("[Database] Failed to upsert user.");
+    console.error("[Database] Failed to upsert user.", error instanceof Error ? error.message : error);
     throw error;
   }
 }
@@ -272,4 +275,47 @@ export async function createSecurityAuditEvent(userId: number, eventType: string
 
 export function listSecurityAuditEventsForUser(db: { select: () => { from: (table: typeof securityAuditEvents) => { where: (condition: any) => { orderBy: (order: any) => { limit: (limit: number) => any } } } } }, userId: number) {
   return db.select().from(securityAuditEvents).where(eq(securityAuditEvents.userId, userId)).orderBy(desc(securityAuditEvents.createdAt)).limit(50);
+}
+
+function allowedEmailDomainFromEnv() {
+  const raw = process.env.ALLOWED_EMAIL_DOMAIN;
+  if (raw === undefined || isAllowAllEmailDomains(raw)) return ALLOW_ALL_EMAIL_DOMAINS;
+  return normalizeAllowedEmailDomain(raw);
+}
+
+/** Local / SMTP OTP: DB setting, then ALLOWED_EMAIL_DOMAIN env, then default. */
+export async function getLocalAllowedEmailDomain() {
+  const db = await getDb();
+  if (db) {
+    try {
+      const rows = await db.select().from(adminAuthSettings).where(eq(adminAuthSettings.settingKey, EMAIL_DOMAIN_SETTING_KEY)).limit(1);
+      const stored = rows[0]?.allowedEmailDomain;
+      if (stored != null) return normalizeAllowedEmailDomain(stored);
+    } catch (error) {
+      console.warn("[Database] Email-domain policy read failed; using environment fallback.", error instanceof Error ? error.message : error);
+    }
+  }
+  return allowedEmailDomainFromEnv();
+}
+
+export async function saveLocalAllowedEmailDomain(actorUserId: number, domain: string) {
+  if (!isValidAllowedEmailDomain(domain) && !isAllowAllEmailDomains(domain)) {
+    throw new Error("Enter a valid email domain, such as gmail.com, or * to allow any email.");
+  }
+  const normalized = normalizeAllowedEmailDomain(domain);
+  if (normalized !== ALLOW_ALL_EMAIL_DOMAINS && !isEmailAllowedForDomain(MASTER_ADMIN_EMAIL, normalized)) {
+    throw new Error("The allowed domain must keep the Master Account eligible to sign in.");
+  }
+  const db = await getDb();
+  if (!db) throw new Error("Email-domain policy database is unavailable");
+  await db.insert(adminAuthSettings).values({
+    settingKey: EMAIL_DOMAIN_SETTING_KEY,
+    allowedEmailDomain: normalized,
+    updatedBy: actorUserId,
+    updatedAt: new Date(),
+  }).onConflictDoUpdate({
+    target: adminAuthSettings.settingKey,
+    set: { allowedEmailDomain: normalized, updatedBy: actorUserId, updatedAt: new Date() },
+  });
+  return normalized;
 }

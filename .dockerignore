@@ -1,0 +1,44 @@
+# Dependencies and build output (rebuilt in image)
+node_modules
+.pnpm-store
+dist
+build
+
+# Git and editor
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+
+# Env and secrets (pass via docker run / compose)
+.env
+.env.*
+!.env.example
+
+# Tests and reports
+coverage
+**/*.test.ts
+**/*.spec.ts
+test-results
+
+# Docs and misc
+documentation
+*.md
+.DS_Store
+Thumbs.db
+
+# Docker files (not needed inside image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Vite timestamps
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Local storage / uploads
+storage
+tmp
+temp
+.webdev

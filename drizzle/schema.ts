@@ -62,3 +62,14 @@ export const securityAuditEvents = pgTable("security_audit_events", {
 
 export type SecurityAuditEvent = typeof securityAuditEvents.$inferSelect;
 export type InsertSecurityAuditEvent = typeof securityAuditEvents.$inferInsert;
+
+/** Master Account sign-in policy for local (non-Supabase) auth. */
+export const adminAuthSettings = pgTable("admin_auth_settings", {
+  settingKey: varchar("settingKey", { length: 64 }).primaryKey(),
+  allowedEmailDomain: varchar("allowedEmailDomain", { length: 253 }).notNull().default("gmail.com"),
+  updatedBy: integer("updatedBy"),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type AdminAuthSettings = typeof adminAuthSettings.$inferSelect;
+export type InsertAdminAuthSettings = typeof adminAuthSettings.$inferInsert;

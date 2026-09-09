@@ -1,9 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { MASTER_ADMIN_EMAIL } from "../shared/authPolicy.js";
 import { listAllProcessHistory, listAllUsers } from "./db.js";
-import { supabaseGetAllowedEmailDomain, supabaseListAllProcessHistory, supabaseListAllUsers, supabaseListUserActionHistory, supabaseModerateUser, supabaseSaveAllowedEmailDomain, type SupabaseAdminAction } from "./supabaseIntegration.js";
+import { persistAllowedEmailDomain, resolveAllowedEmailDomain } from "./emailDomainPolicy.js";
+import { supabaseListAllProcessHistory, supabaseListAllUsers, supabaseListUserActionHistory, supabaseModerateUser, usesSupabaseServerAuth, type SupabaseAdminAction } from "./supabaseIntegration.js";
 
 export { MASTER_ADMIN_EMAIL };
+export { resolveAllowedEmailDomain } from "./emailDomainPolicy.js";
 
 export function isMasterAdmin(user: { email?: string | null } | null | undefined) {
   return user?.email?.trim().toLowerCase() === MASTER_ADMIN_EMAIL;
@@ -14,7 +16,7 @@ export function requireMasterAdmin(user: { email?: string | null } | null | unde
   return true;
 }
 
-export async function listManagedUsers(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
+export async function listManagedUsers(actor: { email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined) {
   requireMasterAdmin(actor);
   const isSupabaseAccount = actor?.authProvider === "supabase";
   const [userRows, history] = isSupabaseAccount
@@ -32,34 +34,38 @@ export async function listManagedUsers(actor: { email?: string | null; authProvi
   return userRows.map((user: any) => ({ id: String(user.id), email: user.email ?? "", createdAt: user.createdAt, lastSignInAt: user.lastSignedIn, bannedUntil: user.bannedUntil ?? null, emailConfirmed: user.emailConfirmed ?? true, ...(usage.get(String(user.id)) ?? { workflows: 0, files: 0, records: 0, lastActivity: null }) }));
 }
 
-export async function moderateUser(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined, userId: string, action: SupabaseAdminAction) {
+export async function moderateUser(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined, userId: string, action: SupabaseAdminAction) {
   requireMasterAdmin(actor);
   if (actor?.authProvider === "supabase") return supabaseModerateUser({ id: String(actor.id), email: actor.email }, userId, action);
   throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Admin action '${action}' requires the authentication provider's admin API and is not available for this database-backed account.` });
 }
 
-export async function listUserActionHistory(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
+export async function listUserActionHistory(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined) {
   requireMasterAdmin(actor);
   return actor?.authProvider === "supabase" ? supabaseListUserActionHistory(String(actor.id)) : [];
 }
 
-export async function getAllowedEmailDomain(actor: { email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined) {
+export async function getAllowedEmailDomain(actor: { email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined) {
   requireMasterAdmin(actor);
-  return supabaseGetAllowedEmailDomain();
+  return resolveAllowedEmailDomain();
 }
 
-export async function updateAllowedEmailDomain(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | null } | null | undefined, domain: string) {
+export async function updateAllowedEmailDomain(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined, domain: string) {
   requireMasterAdmin(actor);
-  if (actor?.authProvider !== "supabase") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email-domain settings require Supabase authentication." });
   try {
-    return await supabaseSaveAllowedEmailDomain(String(actor.id), domain);
+    return await persistAllowedEmailDomain(actor!.id, domain);
   } catch (error) {
-    // Keep this actionable instead of allowing a provider/schema failure to be
-    // flattened into an opaque FUNCTION_INVOCATION_FAILED response.
+    if (error instanceof TRPCError) throw error;
     console.error("[Admin] Email-domain policy update failed", error instanceof Error ? error.message : "unknown error");
+    const message = error instanceof Error ? error.message : "Email-domain policy could not be saved.";
+    if (/valid email domain|Master Account eligible|database-backed Master Account/i.test(message)) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message, cause: error });
+    }
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "The email policy table is not ready. Apply the admin email policy migration, then try again.",
+      message: usesSupabaseServerAuth
+        ? "The email policy table is not ready. Apply the admin email policy migration, then try again."
+        : "The email policy table is not ready. Run database migrations (db:push), then try again.",
       cause: error,
     });
   }

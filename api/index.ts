@@ -11,12 +11,15 @@ import { apiRequestGuards, externalApiCors, noStoreApiResponse, securityHeaders 
 const app = express();
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
+// The application only accepts flat form fields. Avoid the nested qs parser
+// attack surface for query strings and URL-encoded request bodies.
+app.set("query parser", "simple");
 app.use(securityHeaders);
 app.use("/api", noStoreApiResponse);
 app.use("/api", externalApiCors);
 app.use("/api", apiRequestGuards);
 app.use(express.json({ limit: "4mb" }));
-app.use(express.urlencoded({ limit: "4mb", extended: true }));
+app.use(express.urlencoded({ limit: "4mb", extended: false }));
 app.use(
   "/api/trpc",
   createExpressMiddleware({

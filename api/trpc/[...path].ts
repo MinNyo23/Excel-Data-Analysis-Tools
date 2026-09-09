@@ -16,8 +16,17 @@ function header(req: any, name: string) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function allowedApiOrigins() {
+  return new Set([
+    "https://excel-master-file-tool.vercel.app",
+    ...(process.env.ALLOWED_FRONTEND_ORIGINS ?? "").split(",").map(value => value.trim().replace(/\/$/, "")).filter(Boolean),
+    ...(process.env.FRONTEND_URL ?? "").split(",").map(value => value.trim().replace(/\/$/, "")).filter(Boolean),
+    ...(process.env.PUBLIC_APP_URL ?? "").split(",").map(value => value.trim().replace(/\/$/, "")).filter(Boolean),
+  ]);
+}
+
 function setApiHeaders(res: any, origin?: string) {
-  if (origin === "https://excel-master-file-tool.vercel.app" || origin?.endsWith(".vercel.app")) {
+  if (origin && allowedApiOrigins().has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }

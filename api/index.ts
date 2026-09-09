@@ -12,6 +12,9 @@ const app = express();
 const configuredTrustProxy = Number(process.env.TRUST_PROXY_HOPS ?? "0");
 app.set("trust proxy", Number.isInteger(configuredTrustProxy) && configuredTrustProxy >= 0 ? configuredTrustProxy : 0);
 app.disable("x-powered-by");
+// The application only accepts flat form fields. Avoid the nested qs parser
+// attack surface for query strings and URL-encoded request bodies.
+app.set("query parser", "simple");
 app.use(securityHeaders);
 app.use("/api", noStoreApiResponse);
 app.use("/api", externalApiCors);

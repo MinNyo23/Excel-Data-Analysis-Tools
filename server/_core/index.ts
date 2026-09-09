@@ -40,6 +40,9 @@ async function startServer() {
   const server = createServer(app);
   app.set("trust proxy", 1);
   app.disable("x-powered-by");
+  // The application only accepts flat form fields. Avoid the nested qs parser
+  // attack surface for query strings and URL-encoded request bodies.
+  app.set("query parser", "simple");
   app.use(securityHeaders);
   app.use("/api", externalApiCors);
   app.use("/api", apiRequestGuards);

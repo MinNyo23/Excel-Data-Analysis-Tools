@@ -131,3 +131,23 @@ button { cursor: pointer; }
 .admin-history-section { margin-top: 42px; }
 .admin-history-heading { padding: 0 4px; }
 @media (max-width: 760px) { .admin-policy-card { padding: 19px; }.admin-policy-form { align-items: stretch; }.admin-table { min-width: 860px; }.admin-history-section { margin-top: 34px; } }
+
+/* Master account ban/delete confirm: solid panel matching site cards. */
+.admin-confirm-dialog { position: relative; overflow: hidden; gap: 18px; padding: 24px; border: 1px solid #d7e5d7; border-radius: 18px; background: #ffffff !important; color: #1d2a26; opacity: 1 !important; box-shadow: 0 24px 60px rgba(37, 62, 51, .22); }
+.admin-confirm-dialog::before { position: absolute; inset: 0 0 auto; height: 3px; border-radius: 18px 18px 0 0; background: #2f8a63; content: ""; }
+.admin-confirm-badge { display: inline-flex; align-items: center; width: fit-content; margin-bottom: 2px; padding: 6px 10px; border-radius: 999px; font: 800 10px 'DM Mono', monospace; letter-spacing: .1em; text-transform: uppercase; }
+.admin-confirm-badge.warn { color: #8b6a22; background: #fff7dd; }
+.admin-confirm-badge.danger { color: #a44949; background: #fff0ee; }
+.admin-confirm-badge.ok { color: #34734e; background: #e6f4e5; }
+.admin-confirm-dialog [data-slot='alert-dialog-header'] { gap: 10px; text-align: left; }
+.admin-confirm-dialog [data-slot='alert-dialog-title'] { margin: 0; color: #1c3528; font-size: 22px; letter-spacing: -.045em; line-height: 1.2; }
+.admin-confirm-dialog [data-slot='alert-dialog-description'] { margin: 0; color: #718077; font-size: 13px; line-height: 1.65; }
+.admin-confirm-footer { gap: 10px; margin-top: 4px; }
+.admin-confirm-cancel, .admin-confirm-ban, .admin-confirm-unban, .admin-confirm-delete { min-height: 40px; border-radius: 10px; font-size: 13px; font-weight: 800; opacity: 1 !important; }
+.admin-confirm-cancel { border: 1px solid #d5e3d5 !important; background: #ffffff !important; color: #52655b !important; box-shadow: none !important; }
+.admin-confirm-cancel:hover { border-color: #b7cabb !important; background: #f4f9f2 !important; color: #1c3528 !important; }
+.admin-confirm-ban, .admin-confirm-unban { border: 0 !important; background: #1e5d4d !important; color: #ffffff !important; box-shadow: 0 7px 16px rgba(30, 93, 77, .18) !important; }
+.admin-confirm-ban:hover, .admin-confirm-unban:hover { background: #174b3e !important; color: #ffffff !important; }
+.admin-confirm-delete { border: 0 !important; background: #a44949 !important; color: #ffffff !important; box-shadow: 0 7px 16px rgba(164, 73, 73, .2) !important; }
+.admin-confirm-delete:hover { background: #8f3737 !important; color: #ffffff !important; }
+[data-slot='alert-dialog-overlay'] { background: rgba(29, 42, 38, .52) !important; backdrop-filter: blur(2px); }

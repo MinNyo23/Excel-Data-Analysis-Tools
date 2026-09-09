@@ -53,7 +53,7 @@ export async function getAllowedEmailDomain(actor: { email?: string | null; auth
 export async function updateAllowedEmailDomain(actor: { id: number | string; email?: string | null; authProvider?: "manus" | "supabase" | "local" | null } | null | undefined, domain: string) {
   requireMasterAdmin(actor);
   try {
-    return await persistAllowedEmailDomain(actor!.id, domain);
+    return await persistAllowedEmailDomain(actor!, domain);
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     console.error("[Admin] Email-domain policy update failed", error instanceof Error ? error.message : "unknown error");

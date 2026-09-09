@@ -34,7 +34,7 @@ export async function verifyGoogleRecaptchaToken(token: string, remoteIp?: strin
     if (result.success !== true) return false;
 
     const hostnames = configuredHostnames();
-    return hostnames.length === 0 || (typeof result.hostname === "string" && hostnames.includes(result.hostname.toLowerCase()));
+    return hostnames.length > 0 && typeof result.hostname === "string" && hostnames.includes(result.hostname.toLowerCase());
   } catch {
     return false;
   }

@@ -9,7 +9,8 @@ import { createContext } from "../server/_core/context.js";
 import { apiRequestGuards, externalApiCors, noStoreApiResponse, securityHeaders } from "../server/security.js";
 
 const app = express();
-app.set("trust proxy", 1);
+const configuredTrustProxy = Number(process.env.TRUST_PROXY_HOPS ?? "0");
+app.set("trust proxy", Number.isInteger(configuredTrustProxy) && configuredTrustProxy >= 0 ? configuredTrustProxy : 0);
 app.disable("x-powered-by");
 app.use(securityHeaders);
 app.use("/api", noStoreApiResponse);

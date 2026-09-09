@@ -106,7 +106,9 @@ export function requestIdentity(req: any) {
 export function mutationOriginIsTrusted(req: any) {
   if (req.method !== "POST") return true;
   const origin = req.headers.origin;
-  if (!origin) return true;
+  // Browser mutations must carry an Origin header so requests without CSRF
+  // provenance cannot silently bypass the allowlist.
+  if (!origin) return false;
   const configuredOrigins = allowedFrontendOrigins();
   if (configuredOrigins.has(origin)) return true;
   const host = (req.headers["x-forwarded-host"] || req.headers.host || "") as string;
@@ -125,12 +127,19 @@ export function noStoreApiResponse(_req: any, res: any, next: any) {
 export function externalApiCors(req: any, res: any, next: any) {
   const origin = req.headers.origin;
   const configuredOrigins = allowedFrontendOrigins();
+  if (req.method === "OPTIONS") {
+    if (!origin || !configuredOrigins.has(origin)) return res.status(403).json({ error: "Untrusted request origin." });
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    return res.status(204).end();
+  }
   if (origin && configuredOrigins.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    if (req.method === "OPTIONS") return res.status(204).end();
   }
   return next();
 }
@@ -148,7 +157,12 @@ export function securityHeaders(req: any, res: any, next: any) {
   // frontend. All other application responses remain same-origin isolated.
   res.setHeader("Cross-Origin-Resource-Policy", req.path.startsWith("/manus-storage/") ? "cross-origin" : "same-origin");
   const recaptchaOrigins = GOOGLE_RECAPTCHA_ORIGINS.join(" ");
-  res.setHeader("Content-Security-Policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.manus.computer; frame-src ${recaptchaOrigins}; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' ${recaptchaOrigins}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; connect-src 'self' https: ${recaptchaOrigins}; worker-src 'none'; media-src 'none'; manifest-src 'self'`);
+  const configuredConnectOrigins = [process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL, process.env.VITE_PROCESSING_API_URL]
+    .filter((value): value is string => Boolean(value))
+    .map(value => { try { return new URL(value).origin; } catch { return ""; } })
+    .filter(Boolean)
+    .join(" ");
+  res.setHeader("Content-Security-Policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.manus.computer; frame-src ${recaptchaOrigins}; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' ${recaptchaOrigins}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; connect-src 'self' ${configuredConnectOrigins} ${recaptchaOrigins}; worker-src 'none'; media-src 'none'; manifest-src 'self'`);
   if (isSecure) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   if (req.path.startsWith("/api/")) res.setHeader("Cache-Control", "no-store");
   next();

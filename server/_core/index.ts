@@ -7,9 +7,9 @@ dotenv.config();
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import path from "node:path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth.js";
-import { registerStorageProxy } from "./storageProxy.js";
 import { registerRecaptchaRoutes } from "../recaptcha.js";
 import { appRouter } from "../routers.js";
 import { createContext } from "./context.js";
@@ -47,7 +47,7 @@ async function startServer() {
   // workbook limits after parsing; keep the parser limit above paired uploads.
   app.use(express.json({ limit: "36mb" }));
   app.use(express.urlencoded({ limit: "36mb", extended: true }));
-  registerStorageProxy(app);
+  app.use("/local-storage", express.static(path.resolve(process.env.STORAGE_DIR ?? "./storage"), { index: false }));
   registerOAuthRoutes(app);
   registerRecaptchaRoutes(app);
   // tRPC API

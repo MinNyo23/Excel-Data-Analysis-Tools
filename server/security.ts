@@ -153,16 +153,14 @@ export function securityHeaders(req: any, res: any, next: any) {
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-read=(), clipboard-write=(), display-capture=(), fullscreen=(), hid=(), serial=(), web-share=(), xr-spatial-tracking=()");
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
   res.setHeader("Origin-Agent-Cluster", "?1");
-  // Public managed-storage redirects are intentionally embedded by the Vercel
-  // frontend. All other application responses remain same-origin isolated.
-  res.setHeader("Cross-Origin-Resource-Policy", req.path.startsWith("/manus-storage/") ? "cross-origin" : "same-origin");
+  res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
   const recaptchaOrigins = GOOGLE_RECAPTCHA_ORIGINS.join(" ");
   const configuredConnectOrigins = [process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL, process.env.VITE_PROCESSING_API_URL]
     .filter((value): value is string => Boolean(value))
     .map(value => { try { return new URL(value).origin; } catch { return ""; } })
     .filter(Boolean)
     .join(" ");
-  res.setHeader("Content-Security-Policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.manus.computer; frame-src ${recaptchaOrigins}; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' ${recaptchaOrigins}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; connect-src 'self' ${configuredConnectOrigins} ${recaptchaOrigins}; worker-src 'none'; media-src 'none'; manifest-src 'self'`);
+  res.setHeader("Content-Security-Policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; frame-src ${recaptchaOrigins}; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' ${recaptchaOrigins}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; connect-src 'self' ${configuredConnectOrigins} ${recaptchaOrigins}; worker-src 'none'; media-src 'none'; manifest-src 'self'`);
   if (isSecure) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   if (req.path.startsWith("/api/")) res.setHeader("Cache-Control", "no-store");
   next();

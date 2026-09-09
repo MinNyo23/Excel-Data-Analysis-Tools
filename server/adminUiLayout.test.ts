@@ -12,6 +12,18 @@ describe("Master Account user-management layout", () => {
     expect(adminPage).not.toContain("window.confirm");
   });
 
+  it("styles the ban and delete confirm dialog with solid site UI classes", () => {
+    const adminPage = readFileSync(path.resolve(process.cwd(), "client/src/pages/Admin.tsx"), "utf8");
+    const styles = readFileSync(path.resolve(process.cwd(), "client/src/index.css"), "utf8");
+
+    expect(adminPage).toContain("admin-confirm-dialog");
+    expect(adminPage).toContain("admin-confirm-cancel");
+    expect(adminPage).toContain("admin-confirm-ban");
+    expect(adminPage).toContain("admin-confirm-delete");
+    expect(styles).toContain(".admin-confirm-dialog");
+    expect(styles).toContain("background: #ffffff !important");
+  });
+
   it("allows the authenticated workspace content to push the footer to the bottom", () => {
     const layout = readFileSync(path.resolve(process.cwd(), "client/src/components/DashboardLayout.tsx"), "utf8");
 

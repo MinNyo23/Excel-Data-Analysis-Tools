@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Request } from "express";
-import { ALLOW_ALL_EMAIL_DOMAINS, DEFAULT_ALLOWED_EMAIL_DOMAIN, isAllowAllEmailDomains, isEmailAllowedForDomain, isValidAllowedEmailDomain, MASTER_ADMIN_EMAIL, normalizeAllowedEmailDomain } from "../shared/authPolicy.js";
+import { ALLOW_ALL_EMAIL_DOMAINS, DEFAULT_ALLOWED_EMAIL_DOMAIN, getAdminEmails, getPrimaryAdminEmail, isAllowAllEmailDomains, isEmailAllowedForDomain, isPrivilegedAdminEmail, isValidAllowedEmailDomain, normalizeAllowedEmailDomain } from "../shared/authPolicy.js";
 import { decryptProfileValue, encryptProfileValue } from "./profileEncryption.js";
 import type { EditableUserProfile, ProcessHistoryDateRange, RetentionDays, SecurityAuditMetadata } from "./db.js";
 
@@ -42,7 +42,7 @@ export async function authenticateSupabaseRequest(req: Request): Promise<Applica
     openId: data.user.id,
     name: typeof metadata.full_name === "string" ? metadata.full_name : typeof metadata.name === "string" ? metadata.name : null,
     email: data.user.email ?? null,
-    role: account?.role === "admin" ? "admin" : "user",
+    role: account?.role === "admin" || isPrivilegedAdminEmail(data.user.email) ? "admin" : "user",
     authProvider: "supabase",
   };
 }
@@ -87,7 +87,7 @@ export async function supabaseSaveAllowedEmailDomain(actorId: string, domain: st
     throw new Error("Enter a valid email domain, such as gmail.com, or * to allow any email.");
   }
   const normalized = normalizeAllowedEmailDomain(domain);
-  if (normalized !== ALLOW_ALL_EMAIL_DOMAINS && !isEmailAllowedForDomain(MASTER_ADMIN_EMAIL, normalized)) {
+  if (normalized !== ALLOW_ALL_EMAIL_DOMAINS && getAdminEmails().some(email => !isEmailAllowedForDomain(email, normalized))) {
     throw new Error("The allowed domain must keep the Master Account eligible to sign in.");
   }
   const admin = requireAdmin();
@@ -241,7 +241,7 @@ function mapAuditActionHistory(rows: any[]) {
     if (!["ban", "unban", "delete"].includes(action)) return [];
     return [{
       id: String(row.id),
-      actorEmail: MASTER_ADMIN_EMAIL,
+      actorEmail: getPrimaryAdminEmail(),
       targetUserId: String(metadata.targetId ?? ""),
       targetEmail: String(metadata.target ?? ""),
       action,

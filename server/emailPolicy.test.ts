@@ -39,8 +39,12 @@ describe("configurable email-domain policy", () => {
     expect(isEmailAllowedForDomain("user@gmail.com.evil.example", "gmail.com")).toBe(false);
   });
 
-  it("keeps the Master Account eligible after the domain changes", () => {
-    expect(isEmailAllowedForDomain("minnyo.work@gmail.com", "company.com")).toBe(true);
+  it("keeps configured admin emails eligible after the domain changes", () => {
+    const previous = process.env.ADMIN_EMAILS;
+    process.env.ADMIN_EMAILS = "ops.admin@example.com";
+    expect(isEmailAllowedForDomain("ops.admin@example.com", "company.com")).toBe(true);
+    expect(isEmailAllowedForDomain("other@gmail.com", "company.com")).toBe(false);
+    process.env.ADMIN_EMAILS = previous;
   });
 
   it("validates domains before they are saved", () => {

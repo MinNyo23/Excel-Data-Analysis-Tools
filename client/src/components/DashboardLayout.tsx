@@ -31,7 +31,7 @@ const tools = [
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
-  const isMasterAdmin = user?.email?.trim().toLowerCase() === "minnyo.work@gmail.com";
+  const isMasterAdmin = user?.role === "admin";
   async function handleSignOut() {
     try {
       await logout();

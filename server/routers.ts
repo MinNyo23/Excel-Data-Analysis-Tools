@@ -2,7 +2,7 @@ import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "../shared/const.js";
 import { getSessionCookieOptions } from "./_core/cookies.js";
 import { sdk } from "./_core/sdk.js";
 import { systemRouter } from "./_core/systemRouter.js";
-import { protectedProcedure, publicProcedure, router, sensitiveProcedure, uploadProcedure } from "./_core/trpc.js";
+import { protectedProcedure, publicProcedure, router, sensitiveProcedure, uploadProcedure, adminProcedure } from "./_core/trpc.js";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { processDeletionSummary } from "./deletionSummaryProcessor.js";
@@ -154,11 +154,11 @@ export async function clearProcessingDataOnLogout(
 export const appRouter = router({
   system: systemRouter,
   admin: router({
-    users: protectedProcedure.query(({ ctx }) => listManagedUsers(ctx.user)),
-    actionHistory: protectedProcedure.query(({ ctx }) => listUserActionHistory(ctx.user)),
-    emailPolicy: protectedProcedure.query(({ ctx }) => getAllowedEmailDomain(ctx.user)),
-    updateEmailPolicy: protectedProcedure.input(z.object({ domain: z.string().trim().min(1).max(253) })).mutation(({ ctx, input }) => updateAllowedEmailDomain(ctx.user, input.domain)),
-    moderate: protectedProcedure.input(z.object({ userId: z.string().min(1).max(64), action: z.enum(["ban", "unban", "delete"]) })).mutation(({ ctx, input }) => moderateUser(ctx.user, input.userId, input.action)),
+    users: adminProcedure.query(({ ctx }) => listManagedUsers(ctx.user)),
+    actionHistory: adminProcedure.query(({ ctx }) => listUserActionHistory(ctx.user)),
+    emailPolicy: adminProcedure.query(({ ctx }) => getAllowedEmailDomain(ctx.user)),
+    updateEmailPolicy: adminProcedure.input(z.object({ domain: z.string().trim().min(1).max(253) })).mutation(({ ctx, input }) => updateAllowedEmailDomain(ctx.user, input.domain)),
+    moderate: adminProcedure.input(z.object({ userId: z.string().min(1).max(64), action: z.enum(["ban", "unban", "delete"]) })).mutation(({ ctx, input }) => moderateUser(ctx.user, input.userId, input.action)),
   }),
   auth: router({
     emailPolicy: publicProcedure.query(() => resolveAllowedEmailDomain()),

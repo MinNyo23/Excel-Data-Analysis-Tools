@@ -1,17 +1,17 @@
 import { TRPCError } from "@trpc/server";
-import { MASTER_ADMIN_EMAIL } from "../shared/authPolicy.js";
+import { isAdminAccount } from "../shared/authPolicy.js";
 import { listAllProcessHistory, listAllUsers } from "./db.js";
 import { persistAllowedEmailDomain, resolveAllowedEmailDomain } from "./emailDomainPolicy.js";
 import { supabaseListAllProcessHistory, supabaseListAllUsers, supabaseListUserActionHistory, supabaseModerateUser, usesSupabaseServerAuth, type SupabaseAdminAction } from "./supabaseIntegration.js";
 
-export { MASTER_ADMIN_EMAIL };
+export { isAdminAccount };
 export { resolveAllowedEmailDomain } from "./emailDomainPolicy.js";
 
-export function isMasterAdmin(user: { email?: string | null } | null | undefined) {
-  return user?.email?.trim().toLowerCase() === MASTER_ADMIN_EMAIL;
+export function isMasterAdmin(user: { email?: string | null; role?: string | null } | null | undefined) {
+  return isAdminAccount(user);
 }
 
-export function requireMasterAdmin(user: { email?: string | null } | null | undefined) {
+export function requireMasterAdmin(user: { email?: string | null; role?: string | null } | null | undefined) {
   if (!isMasterAdmin(user)) throw new TRPCError({ code: "FORBIDDEN", message: "Master account access required." });
   return true;
 }

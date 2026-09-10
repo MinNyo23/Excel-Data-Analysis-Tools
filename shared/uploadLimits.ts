@@ -1,8 +1,9 @@
-export const MAX_UPLOAD_FILE_BYTES = 10 * 1024 * 1024;
-export const MAX_UPLOAD_FILE_SIZE_LABEL = "10 MB";
-export const MAX_UPLOAD_BATCH_BYTES = 20 * 1024 * 1024;
+export const MAX_UPLOAD_FILE_BYTES = 15 * 1024 * 1024;
+export const MAX_UPLOAD_FILE_SIZE_LABEL = "15 MB";
+export const MAX_UPLOAD_BATCH_BYTES = 30 * 1024 * 1024;
+export const MAX_UPLOAD_BATCH_SIZE_LABEL = "30 MB";
 /** Base64 JSON requests for two max-size workbooks need headroom above raw batch bytes. */
-export const MAX_UPLOAD_REQUEST_BYTES = 36 * 1024 * 1024;
+export const MAX_UPLOAD_REQUEST_BYTES = 48 * 1024 * 1024;
 
 export function isSupportedWorkbookFileName(fileName: string) {
   const normalizedName = fileName.trim().toLowerCase();

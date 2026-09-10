@@ -20,8 +20,8 @@ app.use("/api", noStoreApiResponse);
 app.use("/api", externalApiCors);
 app.use("/api", apiRequestGuards);
 // Workbook uploads are base64-encoded before reaching tRPC.
-app.use(express.json({ limit: "36mb" }));
-app.use(express.urlencoded({ limit: "36mb", extended: true }));
+app.use(express.json({ limit: "48mb" }));
+app.use(express.urlencoded({ limit: "48mb", extended: true }));
 app.use(
   "/api/trpc",
   createExpressMiddleware({

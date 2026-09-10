@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getFriendlyApiMessage } from "@/lib/apiFeedback";
+import { getWorkbookSelectionError } from "@shared/uploadLimits";
 import "@/privacy-diagram.css";
 import { WorkflowGuide, type WorkflowGuideContent } from "@/components/WorkflowGuide";
 import { ConditionalFileComparisonPanel, EMPTY_FILE_COMPARISON_SETTINGS, type FileComparisonSettings } from "@/components/ConditionalFileComparisonPanel";
@@ -283,11 +284,16 @@ export default function Home() {
   const isDuplicateBusy = duplicateMutation.isPending;
 
   function addFiles(fileList: FileList | File[]) {
-    const incoming = Array.from(fileList).filter(file => /\.(xlsx|csv)$/i.test(file.name));
-    if (incoming.length === 0) {
-      toast.error("Please choose files in .csv or .xlsx format.");
-      return;
+    const incoming: File[] = [];
+    for (const file of Array.from(fileList)) {
+      const error = getWorkbookSelectionError(file);
+      if (error) {
+        toast.error(error);
+        continue;
+      }
+      incoming.push(file);
     }
+    if (incoming.length === 0) return;
     setSelectedFiles(current => {
       const existing = new Set(current.map(item => item.file.name));
       const additions = incoming.filter(file => !existing.has(file.name)).map(file => ({ id: `${file.name}-${file.lastModified}-${Math.random()}`, file }));
@@ -302,6 +308,7 @@ export default function Home() {
   }
 
   async function processDuplicateFile(file: File) {
+    if (!validatePairedFile(file)) return;
     try {
       const data = await fileToBase64(file);
       duplicateMutation.mutate({ file: { name: file.name, data } });
@@ -311,6 +318,7 @@ export default function Home() {
   }
 
   async function processEntitySummaryFile(file: File) {
+    if (!validatePairedFile(file)) return;
     try {
       entitySummaryMutation.mutate({ file: { name: file.name, data: await fileToBase64(file) } });
     } catch (error) {
@@ -320,6 +328,7 @@ export default function Home() {
 
   async function processAdditionExitMatch() {
     if (!originalMatchFile || !exitMatchFile) return;
+    if (!validatePairedFile(originalMatchFile) || !validatePairedFile(exitMatchFile)) return;
     try {
       matchMutation.mutate({ original: { name: originalMatchFile.name, data: await fileToBase64(originalMatchFile) }, exit: { name: exitMatchFile.name, data: await fileToBase64(exitMatchFile) }, mapping: additionExitMapping });
     } catch (error) {
@@ -329,12 +338,14 @@ export default function Home() {
 
   async function processOnboardMatch() {
     if (!onboardFile || !deletionCheckFile) return;
+    if (!validatePairedFile(onboardFile) || !validatePairedFile(deletionCheckFile)) return;
     try { onboardMutation.mutate({ onboard: { name: onboardFile.name, data: await fileToBase64(onboardFile) }, deletion: { name: deletionCheckFile.name, data: await fileToBase64(deletionCheckFile) }, mapping: onboardMapping }); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Could not read the NRC match files."); }
   }
 
   async function processFileComparison() {
     if (!comparisonFile1 || !comparisonFile2) return;
+    if (!validatePairedFile(comparisonFile1) || !validatePairedFile(comparisonFile2)) return;
     try {
       fileComparisonMutation.mutate({
         file1: { name: comparisonFile1.name, data: await fileToBase64(comparisonFile1) },
@@ -354,18 +365,19 @@ export default function Home() {
   }
 
   async function processReadyUpload() {
-    if (!readyUploadFile) return;
+    if (!readyUploadFile || !validatePairedFile(readyUploadFile)) return;
     try { readyUploadMutation.mutate({ file: { name: readyUploadFile.name, data: await fileToBase64(readyUploadFile) } }); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Could not read the upload file."); }
   }
 
   async function processFacilityFile() {
-    if (!facilityFile) return;
+    if (!facilityFile || !validatePairedFile(facilityFile)) return;
     try { facilityMutation.mutate({ file: { name: facilityFile.name, data: await fileToBase64(facilityFile) } }); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Could not read the facility workbook."); }
   }
 
   async function processDeletionFile(file: File) {
+    if (!validatePairedFile(file)) return;
     try {
       const data = await fileToBase64(file);
       deletionMutation.mutate({ file: { name: file.name, data } });
@@ -376,6 +388,11 @@ export default function Home() {
 
   async function processFiles() {
     if (selectedFiles.length === 0) return;
+    const oversized = selectedFiles.find(({ file }) => getWorkbookSelectionError(file));
+    if (oversized) {
+      toast.error(getWorkbookSelectionError(oversized.file)!);
+      return;
+    }
     if (totalSize > MAX_CONSOLIDATION_BYTES) {
       toast.error(`Master consolidation supports up to 3 MB total per request. Your selected files are ${formatBytes(totalSize)}. Remove a file or split the work into smaller batches.`);
       return;
@@ -421,7 +438,15 @@ export default function Home() {
       toast.error(getFriendlyApiMessage(error, "The column names could not be read. You can still try processing the file."));
     }
   }
-  function validatePairedFile(file: File) { if (!/\.(xlsx|csv)$/i.test(file.name)) { toast.error("Please choose a .csv or .xlsx file."); return false; } return true; }
+  function validatePairedFile(file: File) {
+    const error = getWorkbookSelectionError(file);
+    if (error) { toast.error(error); return false; }
+    return true;
+  }
+  function acceptWorkbookFile(file: File | undefined, onAccepted: (file: File) => void) {
+    if (!file || !validatePairedFile(file)) return;
+    onAccepted(file);
+  }
   function selectAdditionExitOriginal(file: File) { if (!validatePairedFile(file)) return; setOriginalMatchFile(file); setMatchResult(null); setAdditionExitOriginalColumns([]); void inspectColumns(file, setAdditionExitOriginalColumns); }
   function selectAdditionExitSecond(file: File) { if (!validatePairedFile(file)) return; setExitMatchFile(file); setMatchResult(null); setAdditionExitSecondColumns([]); void inspectColumns(file, setAdditionExitSecondColumns); }
   function selectOnboardOriginal(file: File) { if (!validatePairedFile(file)) return; setOnboardFile(file); setOnboardResult(null); setOnboardOriginalColumns([]); void inspectColumns(file, setOnboardOriginalColumns); }
@@ -517,7 +542,7 @@ export default function Home() {
           <CardContent>
             <div className="deletion-grid">
               <div className="deletion-upload">
-                <input ref={deletionInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={event => { const file = event.target.files?.[0]; if (file) { setDeletionFile(file); setDeletionSummary(null); } }} />
+                <input ref={deletionInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={event => { acceptWorkbookFile(event.target.files?.[0], file => { setDeletionFile(file); setDeletionSummary(null); }); }} />
                 <div className="mini-dropzone" onClick={() => deletionInputRef.current?.click()} role="button" tabIndex={0} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") deletionInputRef.current?.click(); }}><div className="upload-icon"><ListTree size={20} /></div><strong>{deletionFile ? deletionFile.name : "Choose a deletion workbook"}</strong><span>{deletionFile ? formatBytes(deletionFile.size) : "One .csv or .xlsx file"}</span></div>
                 <div className="action-row"><Button variant="ghost" onClick={resetDeletionSummary} disabled={!deletionFile || isDeletionBusy}><RotateCcw size={16} /> Clear</Button><Button className="process-button" onClick={() => deletionFile && processDeletionFile(deletionFile)} disabled={!deletionFile || isDeletionBusy}>{isDeletionBusy ? <><Loader2 className="animate-spin" size={17} /> Counting entities…</> : <><ListTree size={17} /> Build summary list</>}</Button></div>
               </div>
@@ -532,7 +557,7 @@ export default function Home() {
           <CardContent>
             <div className="deletion-grid">
               <div className="deletion-upload">
-                <input ref={duplicateInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={event => { const file = event.target.files?.[0]; if (file) { setDuplicateFile(file); setDuplicateResult(null); } }} />
+                <input ref={duplicateInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={event => { acceptWorkbookFile(event.target.files?.[0], file => { setDuplicateFile(file); setDuplicateResult(null); }); }} />
                 <div className="mini-dropzone" onClick={() => duplicateInputRef.current?.click()} role="button" tabIndex={0} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") duplicateInputRef.current?.click(); }}><div className="upload-icon"><Layers3 size={20} /></div><strong>{duplicateFile ? duplicateFile.name : "Choose a deletion list"}</strong><span>{duplicateFile ? formatBytes(duplicateFile.size) : "One .csv or .xlsx file"}</span></div>
                 <div className="action-row"><Button variant="ghost" onClick={resetDuplicates} disabled={!duplicateFile || isDuplicateBusy}><RotateCcw size={16} /> Clear</Button><Button className="process-button" onClick={() => duplicateFile && processDuplicateFile(duplicateFile)} disabled={!duplicateFile || isDuplicateBusy}>{isDuplicateBusy ? <><Loader2 className="animate-spin" size={17} /> Separating duplicates…</> : <><Layers3 size={17} /> Separate duplicate list</>}</Button></div>
               </div>
@@ -543,7 +568,7 @@ export default function Home() {
       </section>
       <section className="container duplicate-section tool-section tool-entity-summary">
         <div className="deletion-heading"><div><Badge className="soft-badge">DELETION WITH THE SUMMARY</Badge><h2>See every entity <em>across every sheet.</em></h2><p>Upload an exported workbook to create one Entity Summary while preserving every source worksheet.</p></div><div className="deletion-heading-icon"><ListTree size={28} /></div></div>
-        <Card className="deletion-card"><CardContent><div className="deletion-grid"><div className="deletion-upload"><input ref={entitySummaryInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={event => { const file = event.target.files?.[0]; if (file) { setEntitySummaryFile(file); setEntitySummaryResult(null); } }} /><div className="mini-dropzone" onClick={() => entitySummaryInputRef.current?.click()} role="button" tabIndex={0}><div className="upload-icon"><ListTree size={20} /></div><strong>{entitySummaryFile ? entitySummaryFile.name : "Choose a multi-sheet workbook"}</strong><span>{entitySummaryFile ? formatBytes(entitySummaryFile.size) : "One .csv or .xlsx file"}</span></div><div className="action-row"><Button variant="ghost" onClick={resetEntitySummary} disabled={!entitySummaryFile || entitySummaryMutation.isPending}><RotateCcw size={16} /> Clear</Button><Button className="process-button" onClick={() => entitySummaryFile && processEntitySummaryFile(entitySummaryFile)} disabled={!entitySummaryFile || entitySummaryMutation.isPending}>{entitySummaryMutation.isPending ? <><Loader2 className="animate-spin" size={17} /> Building summary…</> : <><ListTree size={17} /> Build entity summary</>}</Button></div></div><div className="deletion-result">{!entitySummaryResult ? <div className="deletion-empty"><ListTree size={25} /><strong>Entity summary preview waiting</strong><span>Choose a multi-sheet workbook to compare entity counts.</span></div> : <><div className="deletion-metrics"><div><span>Source sheets</span><strong>{entitySummaryResult.sourceSheetCount}</strong></div><div><span>Unique entities</span><strong>{entitySummaryResult.entityCount}</strong></div><div><span>Output</span><strong>Entity Summary</strong></div></div><PreviewTable preview={entitySummaryResult.summary} /><div className="download-panel"><div><strong>Ready to export</strong><span>{entitySummaryResult.outputFilename}</span></div><Button className="download-button" onClick={() => downloadBytes(entitySummaryResult.workbookBase64, entitySummaryResult.outputFilename)}><Download size={17} /> Download summary</Button></div></>}</div></div></CardContent></Card>
+        <Card className="deletion-card"><CardContent><div className="deletion-grid"><div className="deletion-upload"><input ref={entitySummaryInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={event => { acceptWorkbookFile(event.target.files?.[0], file => { setEntitySummaryFile(file); setEntitySummaryResult(null); }); }} /><div className="mini-dropzone" onClick={() => entitySummaryInputRef.current?.click()} role="button" tabIndex={0}><div className="upload-icon"><ListTree size={20} /></div><strong>{entitySummaryFile ? entitySummaryFile.name : "Choose a multi-sheet workbook"}</strong><span>{entitySummaryFile ? formatBytes(entitySummaryFile.size) : "One .csv or .xlsx file"}</span></div><div className="action-row"><Button variant="ghost" onClick={resetEntitySummary} disabled={!entitySummaryFile || entitySummaryMutation.isPending}><RotateCcw size={16} /> Clear</Button><Button className="process-button" onClick={() => entitySummaryFile && processEntitySummaryFile(entitySummaryFile)} disabled={!entitySummaryFile || entitySummaryMutation.isPending}>{entitySummaryMutation.isPending ? <><Loader2 className="animate-spin" size={17} /> Building summary…</> : <><ListTree size={17} /> Build entity summary</>}</Button></div></div><div className="deletion-result">{!entitySummaryResult ? <div className="deletion-empty"><ListTree size={25} /><strong>Entity summary preview waiting</strong><span>Choose a multi-sheet workbook to compare entity counts.</span></div> : <><div className="deletion-metrics"><div><span>Source sheets</span><strong>{entitySummaryResult.sourceSheetCount}</strong></div><div><span>Unique entities</span><strong>{entitySummaryResult.entityCount}</strong></div><div><span>Output</span><strong>Entity Summary</strong></div></div><PreviewTable preview={entitySummaryResult.summary} /><div className="download-panel"><div><strong>Ready to export</strong><span>{entitySummaryResult.outputFilename}</span></div><Button className="download-button" onClick={() => downloadBytes(entitySummaryResult.workbookBase64, entitySummaryResult.outputFilename)}><Download size={17} /> Download summary</Button></div></>}</div></div></CardContent></Card>
       </section>
       <section className="container duplicate-section tool-section tool-addition-exit">
         <div className="deletion-heading"><div><Badge className="soft-badge">ADDITION ORIGINAL & EXIT MATCH</Badge><h2>Validate exit data against <em>the original addition list.</em></h2><p>Upload the original Addition workbook and the Exit Data workbook. Mobile matching is prioritized before NRC matching, and every result is grouped for review.</p></div><div className="deletion-heading-icon"><Layers3 size={28} /></div></div>
@@ -554,8 +579,8 @@ export default function Home() {
         <Card className="deletion-card paired-workflow-card"><CardContent><div className="paired-workflow-layout"><ConditionalFileComparisonPanel file1={comparisonFile1} file2={comparisonFile2} file1Columns={comparisonFile1Columns} file2Columns={comparisonFile2Columns} settings={comparisonSettings} isInspecting={workbookColumnsMutation.isPending} isProcessing={fileComparisonMutation.isPending} processingMessage="Running comparison…" onFile1={selectComparisonFile1} onFile2={selectComparisonFile2} onSettingsChange={(field, value) => setComparisonSettings(current => ({ ...current, [field]: value }))} onProcess={processFileComparison} onReset={resetFileComparison} /><div className="deletion-result">{!comparisonResult ? <div className="deletion-empty"><GitCompare size={25} /><strong>Comparison preview waiting</strong><span>Add both files, choose your columns and operation, then select <strong>Run analysis</strong>.</span></div> : <><div className="deletion-metrics"><div><span>Operation</span><strong>{comparisonResult.operationLabel}</strong></div><div><span>File 1 rows</span><strong>{comparisonResult.file1RowCount.toLocaleString()}</strong></div><div><span>Result rows</span><strong>{comparisonResult.resultRowCount.toLocaleString()}</strong></div></div><Tabs defaultValue="summary" className="preview-tabs"><TabsList><TabsTrigger value="summary">Summary</TabsTrigger><TabsTrigger value="result">Result</TabsTrigger></TabsList><TabsContent value="summary"><PreviewTable preview={comparisonResult.summary} /></TabsContent><TabsContent value="result"><PreviewTable preview={comparisonResult.result} /></TabsContent></Tabs><div className="download-panel paired-export-panel"><div><strong>Comparison workbook is ready</strong><span>{comparisonResult.outputFilename}</span></div><div><Button variant="outline" onClick={resetFileComparison}><RotateCcw size={16}/> Process new files</Button><Button className="download-button" onClick={() => downloadBytes(comparisonResult.workbookBase64, comparisonResult.outputFilename)}><Download size={17} /> Download Excel output</Button></div></div></>}</div></div></CardContent></Card>
       </section>
       <section className="container duplicate-section tool-section tool-onboard"><div className="deletion-heading"><div><Badge className="soft-badge">DELETION CHECK WITH ONBOARD</Badge><h2>Check deletion NRCs against <em>onboard records.</em></h2><p>Upload onboard data and a deletion list to enrich NRC matches and separate unmatched records.</p></div><div className="deletion-heading-icon"><ListTree size={28}/></div></div><Card className="deletion-card paired-workflow-card"><CardContent><div className="paired-workflow-layout"><PairedFileUploadPanel originalFile={onboardFile} secondFile={deletionCheckFile} originalLabel="Original File" originalDescription="Original onboard source" secondLabel="2nd File" secondDescription="Deletion file to check" originalColumns={onboardOriginalColumns} secondColumns={onboardSecondColumns} mapping={onboardMapping} showPhoneMapping={false} isInspecting={workbookColumnsMutation.isPending} isProcessing={onboardMutation.isPending} processingMessage="Parsing NRC data…" onOriginalFile={selectOnboardOriginal} onSecondFile={selectOnboardSecond} onMappingChange={(field, value) => setOnboardMapping(current => ({ ...current, [field]: value }))} onProcess={processOnboardMatch} onReset={resetOnboardMatch} /><div className="deletion-result">{!onboardResult?<div className="deletion-empty"><ListTree size={25}/><strong>NRC report preview waiting</strong><span>Add both files, optionally confirm columns, then select <strong>Parse and preview</strong>.</span></div>:<><Tabs defaultValue="summary" className="preview-tabs"><TabsList><TabsTrigger value="summary">Summary</TabsTrigger><TabsTrigger value="matched">Matched</TabsTrigger><TabsTrigger value="no-match">No Match</TabsTrigger></TabsList><TabsContent value="summary"><PreviewTable preview={onboardResult.summary}/></TabsContent><TabsContent value="matched"><PreviewTable preview={onboardResult.matched}/></TabsContent><TabsContent value="no-match"><PreviewTable preview={onboardResult.noMatch}/></TabsContent></Tabs><div className="download-panel paired-export-panel"><div><strong>Multi-sheet Excel output is ready</strong><span>{onboardResult.outputFilename}</span></div><div><Button variant="outline" onClick={resetOnboardMatch}><RotateCcw size={16}/> Process new files</Button><Button className="download-button" onClick={()=>downloadBytes(onboardResult.workbookBase64,onboardResult.outputFilename)}><Download size={17}/> Download Excel output</Button></div></div></>}</div></div></CardContent></Card></section>
-      <section className="container duplicate-section tool-section tool-ready-upload"><div className="deletion-heading"><div><Badge className="soft-badge">READY FILE TO UPLOAD</Badge><h2>Convert employee data into an <em>upload-ready file.</em></h2><p>Rename source fields, normalize dates, insert required blank fields, and apply the final upload schema in one downloadable workbook.</p></div><div className="deletion-heading-icon"><FileSpreadsheet size={28}/></div></div><Card className="deletion-card"><CardContent><div className="deletion-grid"><div className="deletion-upload"><input ref={readyUploadInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={e=>{const f=e.target.files?.[0];if(f){setReadyUploadFile(f);setReadyUploadResult(null)}}}/><div className="mini-dropzone" onClick={()=>readyUploadInputRef.current?.click()}><div className="upload-icon"><FileUp size={20}/></div><strong>{readyUploadFile?readyUploadFile.name:'Choose employee source file'}</strong><span>{readyUploadFile?formatBytes(readyUploadFile.size):'One .csv or .xlsx file'}</span></div><div className="action-row"><Button className="process-button" onClick={processReadyUpload} disabled={!readyUploadFile||readyUploadMutation.isPending}>{readyUploadMutation.isPending?<><Loader2 className="animate-spin" size={17}/> Converting…</>:<><FileSpreadsheet size={17}/> Convert and preview</>}</Button></div></div><div className="deletion-result">{!readyUploadResult?<div className="deletion-empty"><FileSpreadsheet size={25}/><strong>Upload-ready preview waiting</strong><span>Choose an employee file to apply the target upload schema.</span></div>:<><div className="deletion-metrics"><div><span>Rows</span><strong>{readyUploadResult.rowCount}</strong></div><div><span>Final columns</span><strong>{readyUploadResult.columnCount}</strong></div><div><span>Date format</span><strong>MM/DD/YYYY</strong></div></div><PreviewTable preview={readyUploadResult.preview}/><div className="download-panel"><div><strong>Ready to export</strong><span>{readyUploadResult.outputFilename}</span></div><Button className="download-button" onClick={()=>downloadBytes(readyUploadResult.workbookBase64,readyUploadResult.outputFilename)}><Download size={17}/> Download ready file</Button></div></>}</div></div></CardContent></Card></section>
-      <section className="container duplicate-section tool-section tool-facility"><div className="deletion-heading"><div><Badge className="soft-badge">ADDITION CONVERT FACILITY BY FACILITY</Badge><h2>Split addition records <em>facility by facility.</em></h2><p>Upload an Addition workbook to create an entity summary, retain all data, and export one worksheet for every Entity Name.</p></div><div className="deletion-heading-icon"><Layers3 size={28}/></div></div><Card className="deletion-card"><CardContent><div className="deletion-grid"><div className="deletion-upload"><input ref={facilityInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={e=>{const f=e.target.files?.[0];if(f){setFacilityFile(f);setFacilityResult(null)}}}/><div className="mini-dropzone" onClick={()=>facilityInputRef.current?.click()}><div className="upload-icon"><FileUp size={20}/></div><strong>{facilityFile?facilityFile.name:'Choose Addition facility file'}</strong><span>{facilityFile?formatBytes(facilityFile.size):'One .csv or .xlsx file'}</span></div><div className="action-row"><Button className="process-button" onClick={processFacilityFile} disabled={!facilityFile||facilityMutation.isPending}>{facilityMutation.isPending?<><Loader2 className="animate-spin" size={17}/> Creating tabs…</>:<><Layers3 size={17}/> Convert by facility</>}</Button></div></div><div className="deletion-result">{!facilityResult?<div className="deletion-empty"><Layers3 size={25}/><strong>Facility summary preview waiting</strong><span>Choose an Addition file to create facility sheets.</span></div>:<><div className="deletion-metrics"><div><span>Facilities</span><strong>{facilityResult.facilityCount}</strong></div><div><span>Total records</span><strong>{facilityResult.recordCount}</strong></div><div><span>Workbook tabs</span><strong>{facilityResult.facilityCount+2}</strong></div></div><PreviewTable preview={facilityResult.summary}/><div className="download-panel"><div><strong>Ready to export</strong><span>{facilityResult.outputFilename}</span></div><Button className="download-button" onClick={()=>downloadBytes(facilityResult.workbookBase64,facilityResult.outputFilename)}><Download size={17}/> Download facility workbook</Button></div></>}</div></div></CardContent></Card></section>
+      <section className="container duplicate-section tool-section tool-ready-upload"><div className="deletion-heading"><div><Badge className="soft-badge">READY FILE TO UPLOAD</Badge><h2>Convert employee data into an <em>upload-ready file.</em></h2><p>Rename source fields, normalize dates, insert required blank fields, and apply the final upload schema in one downloadable workbook.</p></div><div className="deletion-heading-icon"><FileSpreadsheet size={28}/></div></div><Card className="deletion-card"><CardContent><div className="deletion-grid"><div className="deletion-upload"><input ref={readyUploadInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={e=>{acceptWorkbookFile(e.target.files?.[0],f=>{setReadyUploadFile(f);setReadyUploadResult(null)})}}/><div className="mini-dropzone" onClick={()=>readyUploadInputRef.current?.click()}><div className="upload-icon"><FileUp size={20}/></div><strong>{readyUploadFile?readyUploadFile.name:'Choose employee source file'}</strong><span>{readyUploadFile?formatBytes(readyUploadFile.size):'One .csv or .xlsx file'}</span></div><div className="action-row"><Button className="process-button" onClick={processReadyUpload} disabled={!readyUploadFile||readyUploadMutation.isPending}>{readyUploadMutation.isPending?<><Loader2 className="animate-spin" size={17}/> Converting…</>:<><FileSpreadsheet size={17}/> Convert and preview</>}</Button></div></div><div className="deletion-result">{!readyUploadResult?<div className="deletion-empty"><FileSpreadsheet size={25}/><strong>Upload-ready preview waiting</strong><span>Choose an employee file to apply the target upload schema.</span></div>:<><div className="deletion-metrics"><div><span>Rows</span><strong>{readyUploadResult.rowCount}</strong></div><div><span>Final columns</span><strong>{readyUploadResult.columnCount}</strong></div><div><span>Date format</span><strong>MM/DD/YYYY</strong></div></div><PreviewTable preview={readyUploadResult.preview}/><div className="download-panel"><div><strong>Ready to export</strong><span>{readyUploadResult.outputFilename}</span></div><Button className="download-button" onClick={()=>downloadBytes(readyUploadResult.workbookBase64,readyUploadResult.outputFilename)}><Download size={17}/> Download ready file</Button></div></>}</div></div></CardContent></Card></section>
+      <section className="container duplicate-section tool-section tool-facility"><div className="deletion-heading"><div><Badge className="soft-badge">ADDITION CONVERT FACILITY BY FACILITY</Badge><h2>Split addition records <em>facility by facility.</em></h2><p>Upload an Addition workbook to create an entity summary, retain all data, and export one worksheet for every Entity Name.</p></div><div className="deletion-heading-icon"><Layers3 size={28}/></div></div><Card className="deletion-card"><CardContent><div className="deletion-grid"><div className="deletion-upload"><input ref={facilityInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={e=>{acceptWorkbookFile(e.target.files?.[0],f=>{setFacilityFile(f);setFacilityResult(null)})}}/><div className="mini-dropzone" onClick={()=>facilityInputRef.current?.click()}><div className="upload-icon"><FileUp size={20}/></div><strong>{facilityFile?facilityFile.name:'Choose Addition facility file'}</strong><span>{facilityFile?formatBytes(facilityFile.size):'One .csv or .xlsx file'}</span></div><div className="action-row"><Button className="process-button" onClick={processFacilityFile} disabled={!facilityFile||facilityMutation.isPending}>{facilityMutation.isPending?<><Loader2 className="animate-spin" size={17}/> Creating tabs…</>:<><Layers3 size={17}/> Convert by facility</>}</Button></div></div><div className="deletion-result">{!facilityResult?<div className="deletion-empty"><Layers3 size={25}/><strong>Facility summary preview waiting</strong><span>Choose an Addition file to create facility sheets.</span></div>:<><div className="deletion-metrics"><div><span>Facilities</span><strong>{facilityResult.facilityCount}</strong></div><div><span>Total records</span><strong>{facilityResult.recordCount}</strong></div><div><span>Workbook tabs</span><strong>{facilityResult.facilityCount+2}</strong></div></div><PreviewTable preview={facilityResult.summary}/><div className="download-panel"><div><strong>Ready to export</strong><span>{facilityResult.outputFilename}</span></div><Button className="download-button" onClick={()=>downloadBytes(facilityResult.workbookBase64,facilityResult.outputFilename)}><Download size={17}/> Download facility workbook</Button></div></>}</div></div></CardContent></Card></section>
     </main>
   );
 }

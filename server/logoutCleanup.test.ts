@@ -18,6 +18,7 @@ describe("logout processing-data cleanup", () => {
     expect(authHook).toContain("await logoutMutation.mutateAsync()");
     expect(authHook).toContain("await supabase.auth.signOut()");
     expect(authHook).toContain("sessionStorage.clear()");
+    expect(authHook).toContain("expireCookie(COOKIE_NAME)");
     expect(authHook).toContain("queryClient.clear()");
     expect(account).toContain("Sign out & clear history");
     expect(account).toContain("clearedProcessHistory");
@@ -31,6 +32,7 @@ describe("logout processing-data cleanup", () => {
       res: { clearCookie: (name: string, options: Record<string, unknown>) => clearedCookies.push({ name, options }) },
     } as TrpcContext;
     const routerSource = require("node:fs").readFileSync("server/routers.ts", "utf8");
+    expect(routerSource).toContain("await sdk.revokeRequestSession(ctx.req)");
     expect(routerSource).toContain("Session termination must not depend on the metadata cleanup outcome.");
     expect(routerSource).toContain("try {");
     expect(routerSource).toContain("} finally {");

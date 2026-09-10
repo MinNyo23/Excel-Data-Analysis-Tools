@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import * as XLSX from "xlsx";
 import type { NextFunction, Request, Response } from "express";
 import { GOOGLE_RECAPTCHA_ORIGINS } from "../shared/contentSecurityPolicy.js";
-import { MAX_UPLOAD_BATCH_BYTES, MAX_UPLOAD_FILE_BYTES, MAX_UPLOAD_REQUEST_BYTES } from "../shared/uploadLimits.js";
+import { MAX_UPLOAD_BATCH_BYTES, MAX_UPLOAD_BATCH_SIZE_LABEL, MAX_UPLOAD_FILE_BYTES, MAX_UPLOAD_FILE_SIZE_LABEL, MAX_UPLOAD_REQUEST_BYTES } from "../shared/uploadLimits.js";
 
 export { MAX_UPLOAD_FILE_BYTES, MAX_UPLOAD_BATCH_BYTES } from "../shared/uploadLimits.js";
 export const MAX_UPLOAD_FILES = 10;
@@ -49,8 +49,10 @@ export function validateUploadedWorkbook(file: UploadedFileLike): string | null 
   const lowerName = file.name.toLowerCase();
   if (!lowerName.endsWith(".xlsx") && !lowerName.endsWith(".csv")) return "Only CSV and XLSX files are allowed.";
   if (!isBase64(file.data)) return "File data is not valid base64.";
+  const estimatedBytes = Math.floor((file.data.length * 3) / 4);
+  if (estimatedBytes > MAX_UPLOAD_FILE_BYTES) return `File exceeds the ${MAX_UPLOAD_FILE_SIZE_LABEL} upload limit.`;
   const bytes = Buffer.from(file.data, "base64");
-  if (bytes.length === 0 || bytes.length > MAX_UPLOAD_FILE_BYTES) return "File exceeds the 10 MB upload limit.";
+  if (bytes.length === 0 || bytes.length > MAX_UPLOAD_FILE_BYTES) return `File exceeds the ${MAX_UPLOAD_FILE_SIZE_LABEL} upload limit.`;
   if (lowerName.endsWith(".csv")) {
     if (bytes.includes(0)) return "CSV files may not contain binary content.";
     return null;
@@ -65,7 +67,7 @@ export function validateUploadedWorkbookBatch(files: UploadedFileLike[]): string
     const error = validateUploadedWorkbook(file);
     if (error) return `${file.name || "Upload"}: ${error}`;
     totalBytes += Buffer.from(file.data, "base64").length;
-    if (totalBytes > MAX_UPLOAD_BATCH_BYTES) return "Combined upload size exceeds the 20 MB request limit.";
+    if (totalBytes > MAX_UPLOAD_BATCH_BYTES) return `Combined upload size exceeds the ${MAX_UPLOAD_BATCH_SIZE_LABEL} request limit.`;
   }
   return null;
 }

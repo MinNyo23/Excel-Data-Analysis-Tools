@@ -2,7 +2,7 @@ import { and, desc, eq, gte, lt, lte } from "drizzle-orm";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { InsertProcessHistory, InsertUser, adminAuthSettings, processHistory, securityAuditEvents, userProcessSettings, userProfiles, users } from "../drizzle/schema.js";
-import { ALLOW_ALL_EMAIL_DOMAINS, isAllowAllEmailDomains, isEmailAllowedForDomain, isValidAllowedEmailDomain, MASTER_ADMIN_EMAIL, normalizeAllowedEmailDomain } from "../shared/authPolicy.js";
+import { ALLOW_ALL_EMAIL_DOMAINS, isAllowAllEmailDomains, isEmailAllowedForDomain, isPrivilegedAdminEmail, isValidAllowedEmailDomain, getAdminEmails, normalizeAllowedEmailDomain } from "../shared/authPolicy.js";
 import { decryptProfileValue, encryptProfileValue } from "./profileEncryption.js";
 import { ENV } from './_core/env.js';
 
@@ -89,7 +89,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
+    } else if (isPrivilegedAdminEmail(user.email) || user.openId === ENV.ownerOpenId) {
       values.role = 'admin';
       updateSet.role = 'admin';
     }
@@ -303,7 +303,7 @@ export async function saveLocalAllowedEmailDomain(actorUserId: number, domain: s
     throw new Error("Enter a valid email domain, such as gmail.com, or * to allow any email.");
   }
   const normalized = normalizeAllowedEmailDomain(domain);
-  if (normalized !== ALLOW_ALL_EMAIL_DOMAINS && !isEmailAllowedForDomain(MASTER_ADMIN_EMAIL, normalized)) {
+  if (normalized !== ALLOW_ALL_EMAIL_DOMAINS && getAdminEmails().some(email => !isEmailAllowedForDomain(email, normalized))) {
     throw new Error("The allowed domain must keep the Master Account eligible to sign in.");
   }
   const db = await getDb();

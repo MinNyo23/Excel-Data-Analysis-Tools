@@ -19,6 +19,9 @@ export const ENV = {
   get ownerOpenId() {
     return env("OWNER_OPEN_ID");
   },
+  get adminEmails() {
+    return env("ADMIN_EMAILS");
+  },
   get isProduction() {
     return env("NODE_ENV") === "production";
   },

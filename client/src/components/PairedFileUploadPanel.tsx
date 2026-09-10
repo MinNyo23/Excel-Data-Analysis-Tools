@@ -3,6 +3,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { getWorkbookSelectionError, MAX_UPLOAD_FILE_SIZE_LABEL } from "@shared/uploadLimits";
+import { toast } from "sonner";
 import "./PairedFileUploadPanel.css";
 
 export type PairMapping = {
@@ -59,6 +60,7 @@ export function PairedFileUploadPanel({ originalFile, secondFile, originalLabel,
     const error = getWorkbookSelectionError(file);
     if (error) {
       setSelectionError({ target, message: error });
+      toast.error(error);
       if (target === "original" && originalInputRef.current) originalInputRef.current.value = "";
       if (target === "second" && secondInputRef.current) secondInputRef.current.value = "";
       return;

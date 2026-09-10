@@ -48,8 +48,8 @@ async function startServer() {
   app.use("/api", apiRequestGuards);
   // Uploads are base64-encoded in JSON. Route-level validation enforces decoded
   // workbook limits after parsing; keep the parser limit above paired uploads.
-  app.use(express.json({ limit: "36mb" }));
-  app.use(express.urlencoded({ limit: "36mb", extended: true }));
+  app.use(express.json({ limit: "48mb" }));
+  app.use(express.urlencoded({ limit: "48mb", extended: true }));
   app.use("/local-storage", express.static(path.resolve(process.env.STORAGE_DIR ?? "./storage"), { index: false }));
   registerOAuthRoutes(app);
   registerRecaptchaRoutes(app);

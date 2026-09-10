@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { getWorkbookSelectionError, MAX_UPLOAD_FILE_SIZE_LABEL } from "@shared/uploadLimits";
+import { toast } from "sonner";
 import "./PairedFileUploadPanel.css";
 
 export type FileComparisonOperation = "exists_in_file2" | "find_duplicates" | "missing_in_file2";
@@ -99,6 +100,7 @@ export function ConditionalFileComparisonPanel({
     const error = getWorkbookSelectionError(file);
     if (error) {
       setSelectionError({ target, message: error });
+      toast.error(error);
       if (target === "file1" && file1InputRef.current) file1InputRef.current.value = "";
       if (target === "file2" && file2InputRef.current) file2InputRef.current.value = "";
       return;

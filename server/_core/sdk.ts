@@ -8,6 +8,7 @@ import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema.js";
 import * as db from "../db.js";
 import { ENV } from "./env.js";
+import { isSessionRevoked, newSessionId, revokeSessionToken } from "../sessionRevocation.js";
 import type {
   ExchangeTokenRequest,
   ExchangeTokenResponse,
@@ -195,6 +196,8 @@ class SDKServer {
       name: payload.name,
     })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      .setJti(newSessionId())
+      .setIssuedAt()
       .setExpirationTime(expirationSeconds)
       .sign(secretKey);
   }
@@ -212,7 +215,11 @@ class SDKServer {
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
-      const { openId, appId, name } = payload as Record<string, unknown>;
+      const { openId, appId, name, jti } = payload as Record<string, unknown>;
+      if (isSessionRevoked(cookieValue, typeof jti === "string" ? jti : null)) {
+        console.warn("[Auth] Session token has been revoked");
+        return null;
+      }
 
       if (
         !isNonEmptyString(openId) ||
@@ -231,6 +238,25 @@ class SDKServer {
     } catch (error) {
       console.warn("[Auth] Session verification failed", String(error));
       return null;
+    }
+  }
+
+  async revokeRequestSession(req: any) {
+    const cookies = this.parseCookies(req?.headers?.cookie);
+    let sessionToken = cookies.get(COOKIE_NAME);
+    if (!sessionToken) {
+      const authHeader = req?.headers?.authorization;
+      if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+        sessionToken = authHeader.slice(7);
+      }
+    }
+    if (!sessionToken) return;
+    try {
+      const { payload } = await jwtVerify(sessionToken, this.getSessionSecret(), { algorithms: ["HS256"] });
+      const expiresAtMs = typeof payload.exp === "number" ? payload.exp * 1000 : Date.now() + SESSION_MAX_AGE_MS;
+      revokeSessionToken(sessionToken, expiresAtMs, typeof payload.jti === "string" ? payload.jti : null);
+    } catch {
+      revokeSessionToken(sessionToken, Date.now() + SESSION_MAX_AGE_MS);
     }
   }
 

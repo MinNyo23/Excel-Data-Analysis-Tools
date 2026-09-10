@@ -26,17 +26,24 @@ import { usesSupabaseServerAuth } from "./supabaseIntegration.js";
 import { LOCAL_SESSION_APP_ID, requestLocalSignInOtp, verifyLocalSignInOtp } from "./localOtpAuth.js";
 
 
+function rejectOversizedUpload(error: string | null) {
+  if (error && /upload limit|Combined upload size exceeds/i.test(error)) {
+    throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: error });
+  }
+  return error;
+}
+
 export const uploadedFile = z.object({
   name: z.string().min(1).max(255),
   data: z.string().min(4),
 }).superRefine((file, ctx) => {
-  const error = validateUploadedWorkbook(file);
+  const error = rejectOversizedUpload(validateUploadedWorkbook(file));
   if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
 });
 
 function uploadedFiles(min: number, max = MAX_UPLOAD_FILES) {
   return z.array(uploadedFile).min(min).max(max).superRefine((files, ctx) => {
-    const error = validateUploadedWorkbookBatch(files);
+    const error = rejectOversizedUpload(validateUploadedWorkbookBatch(files));
     if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
   });
 }
@@ -221,11 +228,10 @@ export const appRouter = router({
         // The session cookie is cleared below so the user can always leave the workspace.
         console.warn("[Auth] Logout cleanup was not completed.", error instanceof Error ? error.message : "unknown error");
       } finally {
+        try { await sdk.revokeRequestSession(ctx.req); } catch {}
         // Session termination must not depend on the metadata cleanup outcome.
-        if (ctx.user.authProvider !== "supabase") {
-          const cookieOptions = getSessionCookieOptions(ctx.req);
-          (ctx.res as typeof ctx.res & { clearCookie: (name: string, options?: Record<string, unknown>) => void }).clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-        }
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        (ctx.res as typeof ctx.res & { clearCookie: (name: string, options?: Record<string, unknown>) => void }).clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       }
       return { success: true, ...cleanup } as const;
     }),
@@ -254,9 +260,9 @@ export const appRouter = router({
       .mutation(async ({ input }) => sanitizeGeneratedWorkbookOutput(await processDeletionWithSummary((await normalizeUploadedFiles([input.file]))[0]!))),
   }),
   additionExitMatch: router({
-    process: uploadProcedure.input(z.object({ original: uploadedFile, exit: uploadedFile, mapping: pairedColumnMappingSchema }).superRefine((input, ctx) => { const error = validateUploadedWorkbookBatch([input.original, input.exit]); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({ input }) => { const [original, exit] = await normalizeUploadedFiles([input.original, input.exit]); return sanitizeGeneratedWorkbookOutput(await processAdditionExitMatch(original!, exit!, input.mapping)); }),
+    process: uploadProcedure.input(z.object({ original: uploadedFile, exit: uploadedFile, mapping: pairedColumnMappingSchema }).superRefine((input, ctx) => { const error = rejectOversizedUpload(validateUploadedWorkbookBatch([input.original, input.exit])); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({ input }) => { const [original, exit] = await normalizeUploadedFiles([input.original, input.exit]); return sanitizeGeneratedWorkbookOutput(await processAdditionExitMatch(original!, exit!, input.mapping)); }),
   }),
-  deletionOnboardMatch: router({ process: uploadProcedure.input(z.object({ onboard: uploadedFile, deletion: uploadedFile, mapping: pairedColumnMappingSchema }).superRefine((input, ctx) => { const error = validateUploadedWorkbookBatch([input.onboard, input.deletion]); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({input}) => { const [onboard, deletion] = await normalizeUploadedFiles([input.onboard, input.deletion]); return sanitizeGeneratedWorkbookOutput(await processDeletionOnboardMatch(onboard!, deletion!, input.mapping)); }) }),
+  deletionOnboardMatch: router({ process: uploadProcedure.input(z.object({ onboard: uploadedFile, deletion: uploadedFile, mapping: pairedColumnMappingSchema }).superRefine((input, ctx) => { const error = rejectOversizedUpload(validateUploadedWorkbookBatch([input.onboard, input.deletion])); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({input}) => { const [onboard, deletion] = await normalizeUploadedFiles([input.onboard, input.deletion]); return sanitizeGeneratedWorkbookOutput(await processDeletionOnboardMatch(onboard!, deletion!, input.mapping)); }) }),
   readyUpload: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => sanitizeGeneratedWorkbookOutput(await processReadyUpload((await normalizeUploadedFiles([input.file]))[0]!))) }),
   facilityConversion: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => sanitizeGeneratedWorkbookOutput(await processFacilityConversion((await normalizeUploadedFiles([input.file]))[0]!))) }),
   fileComparison: router({
@@ -265,7 +271,7 @@ export const appRouter = router({
       file2: uploadedFile,
       config: fileComparisonConfigSchema,
     }).superRefine((input, ctx) => {
-      const error = validateUploadedWorkbookBatch([input.file1, input.file2]);
+      const error = rejectOversizedUpload(validateUploadedWorkbookBatch([input.file1, input.file2]));
       if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
     })).mutation(async ({ input }) => {
       const [file1, file2] = await normalizeUploadedFiles([input.file1, input.file2]);

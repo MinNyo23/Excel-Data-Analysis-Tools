@@ -164,7 +164,18 @@ export const appRouter = router({
     users: adminProcedure.query(({ ctx }) => listManagedUsers(ctx.user)),
     actionHistory: adminProcedure.query(({ ctx }) => listUserActionHistory(ctx.user)),
     emailPolicy: adminProcedure.query(({ ctx }) => getAllowedEmailDomain(ctx.user)),
-    updateEmailPolicy: adminProcedure.input(z.object({ domain: z.string().trim().min(1).max(253) })).mutation(({ ctx, input }) => updateAllowedEmailDomain(ctx.user, input.domain)),
+    updateEmailPolicy: adminProcedure.input(z.object({ domain: z.string().trim().min(1).max(253) })).mutation(async ({ ctx, input }) => {
+      try {
+        return await updateAllowedEmailDomain(ctx.user, input.domain);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        console.error("[Admin] updateEmailPolicy failed", error instanceof Error ? error.message : error);
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "The email-domain policy could not be saved. Confirm the database is reachable and try again.",
+        });
+      }
+    }),
     moderate: adminProcedure.input(z.object({ userId: z.string().min(1).max(64), action: z.enum(["ban", "unban", "delete"]) })).mutation(({ ctx, input }) => moderateUser(ctx.user, input.userId, input.action)),
   }),
   auth: router({

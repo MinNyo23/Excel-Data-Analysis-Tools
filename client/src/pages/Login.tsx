@@ -5,6 +5,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { trpc } from "@/lib/trpc";
 import { getSafeReturnPath } from "@shared/loginPaths";
 import { ALLOW_ALL_EMAIL_DOMAINS, isAllowAllEmailDomains, isEmailAllowedForDomain } from "@shared/authPolicy";
+import { APP_VERSION } from "@shared/appVersion";
 import { KeyRound, Loader2, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import ReCAPTCHA from "react-google-recaptcha";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -164,6 +165,7 @@ export default function Login() {
         </form>}
         <div className="login-privacy-note"><ShieldCheck size={15}/><p><strong>What is saved:</strong> your provider-managed identity and limited account metadata. <strong>What is not saved:</strong> passwords, uploaded workbooks, worksheets, previews, or output files.</p></div>
         <p className="login-terms">By continuing, you agree to use the workspace responsibly. Terms &amp; Conditions are available after sign-in.</p>
+        <p className="login-version" aria-label={`Application version ${APP_VERSION}`}>Version {APP_VERSION}</p>
       </div>
     </section>
   </main>;

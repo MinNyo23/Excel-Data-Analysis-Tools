@@ -4,6 +4,7 @@ import { defineConfig } from "vite";
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { APP_VERSION } from "./shared/appVersion";
 
 dotenv.config({ path: "/vercel/share/.env.project" });
 dotenv.config();
@@ -18,6 +19,7 @@ export default defineConfig({
     "import.meta.env.VITE_PROCESSING_API_URL": JSON.stringify(process.env.VITE_PROCESSING_API_URL),
     "import.meta.env.VITE_RECAPTCHA_SITE_KEY": JSON.stringify(process.env.VITE_RECAPTCHA_SITE_KEY?.trim() || ""),
     "import.meta.env.VITE_ADMIN_EMAILS": JSON.stringify(process.env.ADMIN_EMAILS ?? process.env.VITE_ADMIN_EMAILS ?? ""),
+    "import.meta.env.VITE_APP_VERSION": JSON.stringify(process.env.VITE_APP_VERSION ?? APP_VERSION),
   },
   resolve: {
     alias: {

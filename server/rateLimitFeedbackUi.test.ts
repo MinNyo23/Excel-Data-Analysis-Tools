@@ -16,4 +16,10 @@ describe("rate-limit feedback UI contract", () => {
     expect(feedback).toContain("rateLimited");
     expect(styles).toContain('html[data-rate-limited="true"] .process-button');
   });
+
+  it("caps heavy analysis routes at 10 requests per minute per user and IP", () => {
+    const trpc = readFileSync(path.resolve(process.cwd(), "server/_core/trpc.ts"), "utf8");
+    expect(trpc).toContain("export const uploadProcedure = protectedProcedure.use(rateLimited(10, 60_000));");
+    expect(trpc).toContain("ip:${requestIdentity(opts.ctx.req)}");
+  });
 });

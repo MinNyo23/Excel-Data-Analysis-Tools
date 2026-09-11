@@ -15,7 +15,7 @@ describe("API feedback helpers", () => {
 
   it("returns clear, non-technical messages for common client-safe failure types", () => {
     expect(getFriendlyApiMessage({ data: { code: "UNAUTHORIZED", httpStatus: 401 } }, "Fallback")).toMatch(/sign in again/i);
-    expect(getFriendlyApiMessage({ message: "File exceeds the 10 MB upload limit.", data: { code: "BAD_REQUEST", httpStatus: 400 } }, "Fallback")).toBe("File exceeds the 10 MB upload limit.");
+    expect(getFriendlyApiMessage({ message: "File exceeds the 15 MB upload limit.", data: { code: "PAYLOAD_TOO_LARGE", httpStatus: 413 } }, "Fallback")).toBe("File exceeds the 15 MB upload limit.");
     expect(getFriendlyApiMessage({ data: { code: "BAD_REQUEST", httpStatus: 400 } }, "Fallback")).toMatch(/selected file or settings/i);
     expect(getFriendlyApiMessage(new Error("internal detail"), "The requested workbook could not be processed. Please try again.")).toBe("The requested workbook could not be processed. Please try again.");
   });

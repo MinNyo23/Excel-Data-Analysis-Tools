@@ -1,5 +1,6 @@
 import { supabase, usesSupabaseAuth } from "@/lib/supabase";
 import { trpc } from "@/lib/trpc";
+import { COOKIE_NAME } from "@shared/const";
 import { useQueryClient } from "@tanstack/react-query";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -55,10 +56,26 @@ export function useAuth(options?: UseAuthOptions) {
       // the protected workspace unmounts after navigation to /login.
       try {
         sessionStorage.clear();
+        const keepLocal = new Set([INACTIVITY_TIMEOUT_STORAGE_KEY, "theme"]);
         for (let index = localStorage.length - 1; index >= 0; index -= 1) {
           const key = localStorage.key(index);
-          if (key?.startsWith("excel-master-file-") || key?.startsWith("sb-")) localStorage.removeItem(key);
+          if (!key || keepLocal.has(key)) continue;
+          if (
+            key.startsWith("excel-master-file-") ||
+            key.startsWith("sb-") ||
+            /jwt|token|session|openid|supabase|manus-cookie|app_session/i.test(key)
+          ) {
+            localStorage.removeItem(key);
+          }
         }
+        const expireCookie = (name: string) => {
+          document.cookie = `${name}=; Max-Age=0; path=/`;
+        };
+        expireCookie(COOKIE_NAME);
+        document.cookie.split(";").forEach(part => {
+          const name = part.split("=")[0]?.trim();
+          if (name && /session|token|jwt|sb-|supabase|manus/i.test(name)) expireCookie(name);
+        });
       } catch {}
       queryClient.clear();
       utils.auth.me.setData(undefined, null);

@@ -48,13 +48,13 @@ export function getFriendlyApiMessage(error: unknown, fallback: string) {
   if (getRateLimitRetrySeconds(error)) return "You have reached a temporary request limit. Please wait for the countdown before trying again.";
   if (isUnauthenticatedApiError(error)) return "Your session has ended. Please sign in again and retry your action.";
   if (details.code === "FORBIDDEN" || details.httpStatus === 403) return "This action is not available for your account or request.";
-  if (details.code === "BAD_REQUEST") {
+  if (details.code === "BAD_REQUEST" || details.code === "PAYLOAD_TOO_LARGE" || details.httpStatus === 413) {
     if (details.message && /upload limit|too large|Only CSV and XLSX|valid ZIP|workbook|File name is invalid|Combined upload|not valid base64|exceeds the/i.test(details.message)) {
       return details.message;
     }
-    return "We could not use that request. Please check your selected file or settings and try again.";
+    if (details.code === "PAYLOAD_TOO_LARGE" || details.httpStatus === 413) return "The upload is too large. Choose a smaller CSV or XLSX file and try again.";
+    if (details.code === "BAD_REQUEST") return "We could not use that request. Please check your selected file or settings and try again.";
   }
-  if (details.httpStatus === 413 || /too large|exceeds the.*limit/i.test(details.message)) return "The upload is too large. Choose a smaller CSV or XLSX file and try again.";
   return fallback;
 }
 

@@ -16,11 +16,11 @@ describe("browser and API security contracts", () => {
 
   it("returns safe upload validation messages for bad workbook requests", () => {
     const redacted = redactTRPCErrorShape({
-      message: "File exceeds the 10 MB upload limit.",
-      data: { code: "BAD_REQUEST", httpStatus: 400, zodError: { issues: [{ message: "File exceeds the 10 MB upload limit." }] } },
-    }, "BAD_REQUEST");
+      message: "File exceeds the 15 MB upload limit.",
+      data: { code: "PAYLOAD_TOO_LARGE", httpStatus: 413, zodError: { issues: [{ message: "File exceeds the 15 MB upload limit." }] } },
+    }, "PAYLOAD_TOO_LARGE");
 
-    expect(redacted.message).toBe("File exceeds the 10 MB upload limit.");
+    expect(redacted.message).toBe("File exceeds the 15 MB upload limit.");
   });
 
   it("keeps unknown procedure names and user-editable Supabase metadata out of the authorization response path", () => {

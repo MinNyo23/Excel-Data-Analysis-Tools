@@ -132,8 +132,28 @@ button { cursor: pointer; }
 .admin-history-heading { padding: 0 4px; }
 @media (max-width: 760px) { .admin-policy-card { padding: 19px; }.admin-policy-form { align-items: stretch; }.admin-table { min-width: 860px; }.admin-history-section { margin-top: 34px; } }
 
-/* Master account ban/delete confirm: solid panel matching site cards. */
-.admin-confirm-dialog { position: relative; overflow: hidden; gap: 18px; padding: 24px; border: 1px solid #d7e5d7; border-radius: 18px; background: #ffffff !important; color: #1d2a26; opacity: 1 !important; box-shadow: 0 24px 60px rgba(37, 62, 51, .22); }
+/* Master account ban/delete confirm: center with inset/margin (never position:relative). */
+.admin-confirm-dialog {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 50 !important;
+  width: min(32rem, calc(100vw - 2rem)) !important;
+  max-width: min(32rem, calc(100vw - 2rem)) !important;
+  height: fit-content !important;
+  max-height: min(90vh, 560px) !important;
+  margin: auto !important;
+  transform: none !important;
+  overflow: hidden;
+  overflow-y: auto;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid #d7e5d7;
+  border-radius: 18px;
+  background: #ffffff !important;
+  color: #1d2a26;
+  opacity: 1 !important;
+  box-shadow: 0 24px 60px rgba(37, 62, 51, .22);
+}
 .admin-confirm-dialog::before { position: absolute; inset: 0 0 auto; height: 3px; border-radius: 18px 18px 0 0; background: #2f8a63; content: ""; }
 .admin-confirm-badge { display: inline-flex; align-items: center; width: fit-content; margin-bottom: 2px; padding: 6px 10px; border-radius: 999px; font: 800 10px 'DM Mono', monospace; letter-spacing: .1em; text-transform: uppercase; }
 .admin-confirm-badge.warn { color: #8b6a22; background: #fff7dd; }
@@ -142,7 +162,7 @@ button { cursor: pointer; }
 .admin-confirm-dialog [data-slot='alert-dialog-header'] { gap: 10px; text-align: left; }
 .admin-confirm-dialog [data-slot='alert-dialog-title'] { margin: 0; color: #1c3528; font-size: 22px; letter-spacing: -.045em; line-height: 1.2; }
 .admin-confirm-dialog [data-slot='alert-dialog-description'] { margin: 0; color: #718077; font-size: 13px; line-height: 1.65; }
-.admin-confirm-footer { gap: 10px; margin-top: 4px; }
+.admin-confirm-footer { display: flex; gap: 10px; margin-top: 4px; justify-content: flex-end; flex-wrap: wrap; }
 .admin-confirm-cancel, .admin-confirm-ban, .admin-confirm-unban, .admin-confirm-delete { min-height: 40px; border-radius: 10px; font-size: 13px; font-weight: 800; opacity: 1 !important; }
 .admin-confirm-cancel { border: 1px solid #d5e3d5 !important; background: #ffffff !important; color: #52655b !important; box-shadow: none !important; }
 .admin-confirm-cancel:hover { border-color: #b7cabb !important; background: #f4f9f2 !important; color: #1c3528 !important; }
@@ -151,3 +171,41 @@ button { cursor: pointer; }
 .admin-confirm-delete { border: 0 !important; background: #a44949 !important; color: #ffffff !important; box-shadow: 0 7px 16px rgba(164, 73, 73, .2) !important; }
 .admin-confirm-delete:hover { background: #8f3737 !important; color: #ffffff !important; }
 [data-slot='alert-dialog-overlay'] { background: rgba(29, 42, 38, .52) !important; backdrop-filter: blur(2px); }
+
+/* Site-wide responsive refinements */
+@media (max-width: 900px) {
+  .admin-page { padding: 28px 14px 48px; }
+  .admin-heading { align-items: stretch; flex-direction: column; gap: 14px; }
+  .admin-heading h1 { font-size: clamp(28px, 8vw, 42px); }
+  .admin-search { width: 100%; }
+  .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-policy-card { align-items: stretch; flex-direction: column; gap: 16px; padding: 18px; }
+  .admin-policy-form { width: 100%; min-width: 0; flex-direction: column; align-items: stretch; }
+  .admin-policy-form button { width: 100%; }
+  .admin-actions { flex-wrap: wrap; justify-content: flex-start; min-width: 0; }
+  .admin-actions button { flex: 1 1 auto; }
+  .admin-confirm-footer { flex-direction: column-reverse; }
+  .admin-confirm-cancel, .admin-confirm-ban, .admin-confirm-unban, .admin-confirm-delete { width: 100%; }
+  .admin-confirm-dialog { width: calc(100vw - 1.5rem) !important; max-width: calc(100vw - 1.5rem) !important; padding: 20px; }
+  .admin-confirm-dialog [data-slot='alert-dialog-title'] { font-size: 20px; }
+}
+
+@media (max-width: 560px) {
+  .admin-stats { grid-template-columns: 1fr; }
+  .admin-table-wrap, .admin-table-wrap { -webkit-overflow-scrolling: touch; }
+  main { overflow-x: hidden; }
+  .container { width: min(100% - 20px, 1180px); }
+}
+
+@media (max-width: 760px) {
+  [data-slot='alert-dialog-content'] {
+    width: calc(100vw - 1.5rem) !important;
+    max-width: calc(100vw - 1.5rem) !important;
+  }
+  [data-slot='alert-dialog-footer'] {
+    flex-direction: column-reverse;
+  }
+  [data-slot='alert-dialog-footer'] > * {
+    width: 100%;
+  }
+}

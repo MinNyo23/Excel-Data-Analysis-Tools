@@ -28,7 +28,7 @@ describe("application security controls", () => {
     expect(isSupportedWorkbookFileName("source.xls")).toBe(false);
     expect(isSupportedWorkbookFileName("source.pdf")).toBe(false);
     expect(getWorkbookSelectionError({ name: "source.xlsx", size: MAX_UPLOAD_FILE_BYTES })).toBeNull();
-    expect(getWorkbookSelectionError({ name: "too-large.xlsx", size: MAX_UPLOAD_FILE_BYTES + 1 })).toBe("too-large.xlsx is too large. Choose a file no larger than 10 MB.");
+    expect(getWorkbookSelectionError({ name: "too-large.xlsx", size: MAX_UPLOAD_FILE_BYTES + 1 })).toBe("too-large.xlsx is too large. Choose a file no larger than 15 MB.");
     expect(getWorkbookSelectionError({ name: "source.pdf", size: 10 })).toMatch(/Only CSV and XLSX/);
     expect(validateUploadedWorkbook({ name: "source.xlsx", data: minimalXlsxBase64() })).toBeNull();
     expect(validateUploadedWorkbook({ name: "source.csv", data: Buffer.from("Name,Entity\nA,One\n").toString("base64") })).toBeNull();

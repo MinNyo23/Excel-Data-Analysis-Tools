@@ -3,7 +3,7 @@ import { isSafeUploadValidationMessage } from '../../shared/uploadLimits.js';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context.js";
-import { consumeRateLimit } from "../security.js";
+import { consumeRateLimit, requestIdentity } from "../security.js";
 import { isAdminAccount } from "../../shared/authPolicy.js";
 
 type PublicErrorShape = {
@@ -24,10 +24,12 @@ export function redactTRPCErrorShape(shape: PublicErrorShape, errorCode: string,
     ? "Request could not be completed."
     : errorCode === "NOT_FOUND"
       ? "The requested API operation was not found."
-      : errorCode === "BAD_REQUEST"
+      : errorCode === "BAD_REQUEST" || errorCode === "PAYLOAD_TOO_LARGE"
         ? isSafeUploadValidationMessage(shape.message)
           ? shape.message
-          : "We could not use that request. Please check your selected file or settings and try again."
+          : errorCode === "PAYLOAD_TOO_LARGE"
+            ? "The uploaded workbook is too large."
+            : "We could not use that request. Please check your selected file or settings and try again."
       : shape.message;
   const retryAfterSeconds = errorCode === "TOO_MANY_REQUESTS" ? retryAfterSecondsFromCause(cause) : undefined;
   return {
@@ -74,13 +76,20 @@ function rateLimited(limit: number, windowMs: number) {
   return t.middleware(async opts => {
     const user = opts.ctx.user;
     if (!user) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
-    const rate = consumeRateLimit(`user:${user.id}:${opts.path}`, limit, windowMs);
-    if (!rate.allowed) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many requests. Please wait and try again.", cause: { retryAfterSeconds: Math.ceil(rate.retryAfterMs / 1000) } });
+    const retry = (rate: { retryAfterMs: number }) => new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many requests. Please wait and try again.",
+      cause: { retryAfterSeconds: Math.ceil(rate.retryAfterMs / 1000) },
+    });
+    const userRate = consumeRateLimit(`user:${user.id}:${opts.path}`, limit, windowMs);
+    if (!userRate.allowed) throw retry(userRate);
+    const ipRate = consumeRateLimit(`ip:${requestIdentity(opts.ctx.req)}:${opts.path}`, limit, windowMs);
+    if (!ipRate.allowed) throw retry(ipRate);
     return opts.next();
   });
 }
 
-export const uploadProcedure = protectedProcedure.use(rateLimited(12, 60_000));
+export const uploadProcedure = protectedProcedure.use(rateLimited(10, 60_000));
 export const sensitiveProcedure = protectedProcedure.use(rateLimited(30, 60_000));
 
 export const adminProcedure = t.procedure.use(

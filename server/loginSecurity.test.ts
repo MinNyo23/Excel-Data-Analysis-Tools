@@ -28,6 +28,8 @@ describe("dedicated login security", () => {
     expect(login).toContain("RESEND_COOLDOWN_SECONDS = 60");
     expect(login).not.toContain('href="/terms"');
     expect(login).toContain("Terms &amp; Conditions are available after sign-in.");
+    expect(login).toContain("Version {APP_VERSION}");
+    expect(source("shared/appVersion.ts")).toMatch(/export const APP_VERSION = "\d+\.\d+\.\d+"/);
     expect(app).toContain('<Route path={"/login"} component={Login} />');
     expect(app).toContain('<Route path={"/auth/callback"} component={AuthCallback} />');
     expect(app).toContain("<AuthGate><Home /></AuthGate>");

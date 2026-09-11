@@ -17,6 +17,8 @@ describe("API feedback helpers", () => {
     expect(getFriendlyApiMessage({ data: { code: "UNAUTHORIZED", httpStatus: 401 } }, "Fallback")).toMatch(/sign in again/i);
     expect(getFriendlyApiMessage({ message: "File exceeds the 15 MB upload limit.", data: { code: "PAYLOAD_TOO_LARGE", httpStatus: 413 } }, "Fallback")).toBe("File exceeds the 15 MB upload limit.");
     expect(getFriendlyApiMessage({ data: { code: "BAD_REQUEST", httpStatus: 400 } }, "Fallback")).toMatch(/selected file or settings/i);
+    expect(getFriendlyApiMessage({ message: "Bad Gateway", data: { httpStatus: 502 } }, "Fallback")).toMatch(/could not complete that save/i);
+    expect(getFriendlyApiMessage({ message: "The email policy table is not ready. Run database migrations (db:push), then try again.", data: { code: "PRECONDITION_FAILED", httpStatus: 412 } }, "Fallback")).toMatch(/email policy table is not ready/i);
     expect(getFriendlyApiMessage(new Error("internal detail"), "The requested workbook could not be processed. Please try again.")).toBe("The requested workbook could not be processed. Please try again.");
   });
 

@@ -6,6 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { getFriendlyApiMessage } from "@/lib/apiFeedback";
 import { isValidAllowedEmailDomain } from "@shared/authPolicy";
 
 type AdminUser = {
@@ -76,8 +77,7 @@ export default function Admin() {
     try {
       await updateEmailPolicy.mutateAsync({ domain });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Email-domain policy could not be saved.";
-      toast.error(message);
+      toast.error(getFriendlyApiMessage(error, "Email-domain policy could not be saved. Please try again."));
     }
   }
 

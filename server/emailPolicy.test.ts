@@ -47,6 +47,12 @@ describe("configurable email-domain policy", () => {
     process.env.ADMIN_EMAILS = previous;
   });
 
+  it("creates the local email-policy table when it is missing", () => {
+    const db = require("node:fs").readFileSync("server/db.ts", "utf8");
+    expect(db).toContain("CREATE TABLE IF NOT EXISTS \"admin_auth_settings\"");
+    expect(db).toContain("ensureAdminAuthSettingsTable");
+  });
+
   it("validates domains before they are saved", () => {
     expect(isValidAllowedEmailDomain("@company.com")).toBe(true);
     expect(isValidAllowedEmailDomain("company")).toBe(false);

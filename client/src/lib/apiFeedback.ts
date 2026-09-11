@@ -48,6 +48,10 @@ export function getFriendlyApiMessage(error: unknown, fallback: string) {
   if (getRateLimitRetrySeconds(error)) return "You have reached a temporary request limit. Please wait for the countdown before trying again.";
   if (isUnauthenticatedApiError(error)) return "Your session has ended. Please sign in again and retry your action.";
   if (details.code === "FORBIDDEN" || details.httpStatus === 403) return "This action is not available for your account or request.";
+  if (details.httpStatus === 502 || details.httpStatus === 504 || /bad gateway|gateway time/i.test(details.message)) {
+    return "The server could not complete that save. Please try again. If this continues after a redeploy, the email-policy database table may still be missing.";
+  }
+  if (details.code === "PRECONDITION_FAILED" && details.message) return details.message;
   if (details.code === "BAD_REQUEST" || details.code === "PAYLOAD_TOO_LARGE" || details.httpStatus === 413) {
     if (details.message && /upload limit|too large|Only CSV and XLSX|valid ZIP|workbook|File name is invalid|Combined upload|not valid base64|exceeds the/i.test(details.message)) {
       return details.message;

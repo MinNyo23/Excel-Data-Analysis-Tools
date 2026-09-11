@@ -9,6 +9,8 @@ import { ENV } from './_core/env.js';
 const EMAIL_DOMAIN_SETTING_KEY = "email_domain";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _sql: ReturnType<typeof postgres> | null = null;
+let adminAuthSettingsReady = false;
 
 function isLocalDatabaseHost(hostname: string) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
@@ -38,11 +40,12 @@ export async function getDb() {
       const databaseUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
       const connection = secureDatabaseConnectionOptions(databaseUrl);
       if (!connection) return null;
-      _db = drizzle(postgres(connection.uri, {
+      _sql = postgres(connection.uri, {
         max: connection.connectionLimit,
         connect_timeout: connection.connectTimeout / 1000,
         ssl: connection.ssl ? "require" : undefined,
-      }));
+      });
+      _db = drizzle(_sql);
     } catch {
       console.warn("[Database] Connection could not be initialized.");
       _db = null;
@@ -283,6 +286,21 @@ function allowedEmailDomainFromEnv() {
   return normalizeAllowedEmailDomain(raw);
 }
 
+async function ensureAdminAuthSettingsTable() {
+  if (adminAuthSettingsReady) return;
+  const db = await getDb();
+  if (!db || !_sql) throw new Error("Email-domain policy database is unavailable");
+  await _sql.unsafe(`
+    CREATE TABLE IF NOT EXISTS "admin_auth_settings" (
+      "settingKey" varchar(64) PRIMARY KEY NOT NULL,
+      "allowedEmailDomain" varchar(253) DEFAULT 'gmail.com' NOT NULL,
+      "updatedBy" integer,
+      "updatedAt" timestamp with time zone DEFAULT now() NOT NULL
+    )
+  `);
+  adminAuthSettingsReady = true;
+}
+
 /** Local / SMTP OTP: DB setting, then ALLOWED_EMAIL_DOMAIN env, then default. */
 export async function getLocalAllowedEmailDomain() {
   const db = await getDb();
@@ -306,16 +324,31 @@ export async function saveLocalAllowedEmailDomain(actorUserId: number, domain: s
   if (normalized !== ALLOW_ALL_EMAIL_DOMAINS && getAdminEmails().some(email => !isEmailAllowedForDomain(email, normalized))) {
     throw new Error("The allowed domain must keep the Master Account eligible to sign in.");
   }
+  await ensureAdminAuthSettingsTable();
   const db = await getDb();
-  if (!db) throw new Error("Email-domain policy database is unavailable");
-  await db.insert(adminAuthSettings).values({
-    settingKey: EMAIL_DOMAIN_SETTING_KEY,
-    allowedEmailDomain: normalized,
-    updatedBy: actorUserId,
-    updatedAt: new Date(),
-  }).onConflictDoUpdate({
-    target: adminAuthSettings.settingKey,
-    set: { allowedEmailDomain: normalized, updatedBy: actorUserId, updatedAt: new Date() },
-  });
+  if (!db || !_sql) throw new Error("Email-domain policy database is unavailable");
+  try {
+    await db.insert(adminAuthSettings).values({
+      settingKey: EMAIL_DOMAIN_SETTING_KEY,
+      allowedEmailDomain: normalized,
+      updatedBy: actorUserId,
+      updatedAt: new Date(),
+    }).onConflictDoUpdate({
+      target: adminAuthSettings.settingKey,
+      set: { allowedEmailDomain: normalized, updatedBy: actorUserId, updatedAt: new Date() },
+    });
+  } catch (error) {
+    adminAuthSettingsReady = false;
+    await ensureAdminAuthSettingsTable();
+    await _sql`
+      INSERT INTO "admin_auth_settings" ("settingKey", "allowedEmailDomain", "updatedBy", "updatedAt")
+      VALUES (${EMAIL_DOMAIN_SETTING_KEY}, ${normalized}, ${actorUserId}, ${new Date()})
+      ON CONFLICT ("settingKey") DO UPDATE SET
+        "allowedEmailDomain" = EXCLUDED."allowedEmailDomain",
+        "updatedBy" = EXCLUDED."updatedBy",
+        "updatedAt" = EXCLUDED."updatedAt"
+    `;
+    if (error instanceof Error) console.warn("[Database] Email-domain policy used SQL fallback after Drizzle insert failed.", error.message);
+  }
   return normalized;
 }

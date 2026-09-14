@@ -188,7 +188,10 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className={cn(
+            "w-(--sidebar-width) gap-0 border-[#bfd5bf] bg-[#e8f3e8] p-0 text-[#1d2923] shadow-[12px_0_32px_rgba(30,93,77,0.18)] [&>button]:hidden",
+            className
+          )}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -200,7 +203,7 @@ function Sidebar({
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className="flex h-full w-full flex-col bg-[#e8f3e8]">{children}</div>
         </SheetContent>
       </Sheet>
     );
@@ -222,7 +225,7 @@ function Sidebar({
           "relative w-(--sidebar-width) bg-transparent",
           disableTransition
             ? "transition-none"
-            : "transition-[width] duration-200 ease-linear",
+            : "transition-[width] duration-300 ease-[cubic-bezier(.23,1,.32,1)]",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -236,7 +239,7 @@ function Sidebar({
           "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) md:flex",
           disableTransition
             ? "transition-none"
-            : "transition-[left,right,width] duration-200 ease-linear",
+            : "transition-[left,right,width] duration-300 ease-[cubic-bezier(.23,1,.32,1)]",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -273,7 +276,7 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon"
-      className={cn("size-7", className)}
+      className={cn("sidebar-toggle size-7 transition-none", className)}
       onClick={event => {
         onClick?.(event);
         toggleSidebar();

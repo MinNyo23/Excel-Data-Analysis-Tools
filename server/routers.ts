@@ -13,6 +13,7 @@ import { processDeletionOnboardMatch } from "./deletionOnboardMatchProcessor.js"
 import { processReadyUpload } from "./readyUploadProcessor.js";
 import { processFacilityConversion } from "./facilityConversionProcessor.js";
 import { processFileComparison } from "./fileComparisonProcessor.js";
+import { processColumnTransform } from "./columnTransformProcessor.js";
 import { processExcelFiles } from "./excelProcessor.js";
 import { inspectWorkbookColumns } from "./workbookColumnInspector.js";
 import { applyProcessHistoryRetention, clearProcessHistory, createProcessHistory, createSecurityAuditEvent, deleteUserProfile, getProcessHistoryRetention, getUserProfile, listProcessHistory, listProcessHistoryForExport, listSecurityAuditEventsForUser, RETENTION_DAYS_OPTIONS, saveProcessHistoryRetention, saveUserProfile, type ProcessHistoryDateRange, type RetentionDays } from "./db.js";
@@ -81,6 +82,24 @@ export const pairedColumnMappingSchema = z.object({
   secondPhone: optionalColumnName,
   secondNrc: optionalColumnName,
 }).strict().optional();
+export const columnTransformStepSchema = z.object({
+  column: z.string().trim().min(1).max(120),
+  operation: z.enum(["none", "clean_spaces", "remove_duplicates", "flag_duplicates", "add_text_front", "add_text_end", "add_number_front", "delete_text", "change_case", "standardize_date"]),
+  param: z.string().max(80).optional(),
+  caseType: z.enum(["Proper Case", "UPPERCASE", "lowercase"]).optional(),
+}).strict();
+export const columnTransformConfigSchema = z.object({
+  option1: columnTransformStepSchema,
+  enableSecondOption: z.boolean(),
+  option2: columnTransformStepSchema.optional(),
+}).strict().superRefine((input, ctx) => {
+  if (input.option1.operation === "none") {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose a primary column operation." });
+  }
+  if (input.enableSecondOption && (!input.option2 || input.option2.operation === "none")) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose a second column operation or turn off the 2nd option." });
+  }
+});
 export const fileComparisonConfigSchema = z.object({
   file1Column1: z.string().trim().min(1).max(120),
   file2Column1: z.string().trim().min(1).max(120),
@@ -275,6 +294,12 @@ export const appRouter = router({
   }),
   deletionOnboardMatch: router({ process: uploadProcedure.input(z.object({ onboard: uploadedFile, deletion: uploadedFile, mapping: pairedColumnMappingSchema }).superRefine((input, ctx) => { const error = rejectOversizedUpload(validateUploadedWorkbookBatch([input.onboard, input.deletion])); if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error }); })).mutation(async ({input}) => { const [onboard, deletion] = await normalizeUploadedFiles([input.onboard, input.deletion]); return sanitizeGeneratedWorkbookOutput(await processDeletionOnboardMatch(onboard!, deletion!, input.mapping)); }) }),
   readyUpload: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => sanitizeGeneratedWorkbookOutput(await processReadyUpload((await normalizeUploadedFiles([input.file]))[0]!))) }),
+  columnTransform: router({
+    process: uploadProcedure.input(z.object({
+      file: uploadedFile,
+      config: columnTransformConfigSchema,
+    }).strict()).mutation(async ({ input }) => sanitizeGeneratedWorkbookOutput(await processColumnTransform((await normalizeUploadedFiles([input.file]))[0]!, input.config))),
+  }),
   facilityConversion: router({ process: uploadProcedure.input(z.object({ file: uploadedFile })).mutation(async ({input}) => sanitizeGeneratedWorkbookOutput(await processFacilityConversion((await normalizeUploadedFiles([input.file]))[0]!))) }),
   fileComparison: router({
     process: uploadProcedure.input(z.object({

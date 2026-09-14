@@ -97,6 +97,7 @@ const uploadRouteNames = new Set([
   "deletionOnboardMatch",
   "fileComparison",
   "readyUpload",
+  "columnTransform",
   "facilityConversion",
 ]);
 const shouldUseManagedBackend = (operation: { path: string }) => {

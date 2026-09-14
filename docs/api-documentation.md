@@ -174,6 +174,7 @@ The file name must be 1–255 characters and the data string must contain at lea
 | `additionExitMatch.process` | `{ "original": uploadedFile, "exit": uploadedFile, "mapping": pairedColumnMapping? }` | Matches original and exit workbooks. |
 | `deletionOnboardMatch.process` | `{ "onboard": uploadedFile, "deletion": uploadedFile, "mapping": pairedColumnMapping? }` | Matches onboard and deletion workbooks. |
 | `readyUpload.process` | `{ "file": uploadedFile }` | Runs the ready-upload preparation workflow. |
+| `columnTransform.process` | `{ "file": uploadedFile, "config": columnTransformConfig }` | Applies one or two column operations on a single workbook. |
 | `facilityConversion.process` | `{ "file": uploadedFile }` | Converts facility-related workbook data. |
 
 The optional `pairedColumnMapping` object can contain these trimmed column-name fields, each with a maximum length of 120 characters:
@@ -187,6 +188,18 @@ The optional `pairedColumnMapping` object can contain these trimmed column-name 
   "secondNrc": "NRC"
 }
 ```
+
+`columnTransformConfig` applies Option 1, then an optional Option 2:
+
+```json
+{
+  "option1": { "column": "Name", "operation": "clean_spaces" },
+  "enableSecondOption": true,
+  "option2": { "column": "Name", "operation": "add_text_front", "param": "EMP-", "caseType": "Proper Case" }
+}
+```
+
+Supported operations are `none`, `clean_spaces`, `remove_duplicates`, `flag_duplicates`, `add_text_front`, `add_text_end`, `add_number_front`, `delete_text`, `change_case`, and `standardize_date`. The primary operation cannot be `none`. Prefix, suffix, and delete operations use `param`. `change_case` uses `caseType`: `Proper Case`, `UPPERCASE`, or `lowercase`.
 
 Processed workbook results are passed through output sanitization before being returned. Clients must treat generated files as untrusted output until they are downloaded and verified by the user.
 

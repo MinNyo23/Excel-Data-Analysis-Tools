@@ -29,7 +29,10 @@ describe("dedicated login security", () => {
     expect(login).not.toContain('href="/terms"');
     expect(login).toContain("Terms &amp; Conditions are available after sign-in.");
     expect(login).toContain("Version {APP_VERSION}");
+    expect(login).toContain("WhatsNewOnLogin");
     expect(source("shared/appVersion.ts")).toMatch(/export const APP_VERSION = "\d+\.\d+\.\d+"/);
+    expect(source("shared/whatsNew.ts")).toContain("notesForVersion");
+    expect(source("shared/whatsNew.ts")).toContain(source("shared/appVersion.ts").match(/APP_VERSION = "([^"]+)"/)?.[1] ?? "missing-version");
     expect(app).toContain('<Route path={"/login"} component={Login} />');
     expect(app).toContain('<Route path={"/auth/callback"} component={AuthCallback} />');
     expect(app).toContain("<AuthGate><Home /></AuthGate>");

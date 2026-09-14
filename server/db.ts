@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lt, lte } from "drizzle-orm";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { InsertProcessHistory, InsertUser, adminAuthSettings, processHistory, securityAuditEvents, userProcessSettings, userProfiles, users } from "../drizzle/schema.js";
+import { InsertProcessHistory, InsertUser, adminActivityEvents, adminAuthSettings, processHistory, securityAuditEvents, userProcessSettings, userProfiles, users } from "../drizzle/schema.js";
 import { ALLOW_ALL_EMAIL_DOMAINS, isAllowAllEmailDomains, isEmailAllowedForDomain, isPrivilegedAdminEmail, isValidAllowedEmailDomain, getAdminEmails, normalizeAllowedEmailDomain } from "../shared/authPolicy.js";
 import { decryptProfileValue, encryptProfileValue } from "./profileEncryption.js";
 import { ENV } from './_core/env.js';
@@ -11,6 +11,7 @@ const EMAIL_DOMAIN_SETTING_KEY = "email_domain";
 let _db: ReturnType<typeof drizzle> | null = null;
 let _sql: ReturnType<typeof postgres> | null = null;
 let adminAuthSettingsReady = false;
+let adminActivityEventsReady = false;
 
 function isLocalDatabaseHost(hostname: string) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
@@ -351,4 +352,106 @@ export async function saveLocalAllowedEmailDomain(actorUserId: number, domain: s
     if (error instanceof Error) console.warn("[Database] Email-domain policy used SQL fallback after Drizzle insert failed.", error.message);
   }
   return normalized;
+}
+
+export type AdminActivityAction = "email_policy" | "ban" | "unban" | "delete" | "login_failed";
+export type AdminActivityStatus = "completed" | "failed";
+
+export type AdminActivityRecord = {
+  id: string;
+  actorEmail: string;
+  targetUserId: string;
+  targetEmail: string;
+  action: AdminActivityAction;
+  status: AdminActivityStatus;
+  detail: string;
+  createdAt: string;
+};
+
+async function ensureAdminActivityEventsTable() {
+  if (adminActivityEventsReady) return;
+  const db = await getDb();
+  if (!db || !_sql) throw new Error("Admin activity database is unavailable");
+  await _sql.unsafe(`
+    CREATE TABLE IF NOT EXISTS "admin_activity_events" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "actorEmail" varchar(320) DEFAULT '' NOT NULL,
+      "targetEmail" varchar(320) DEFAULT '' NOT NULL,
+      "targetUserId" varchar(64) DEFAULT '' NOT NULL,
+      "action" varchar(32) NOT NULL,
+      "status" varchar(16) DEFAULT 'completed' NOT NULL,
+      "detail" varchar(253) DEFAULT '' NOT NULL,
+      "createdAt" timestamp with time zone DEFAULT now() NOT NULL
+    )
+  `);
+  await _sql.unsafe(`CREATE INDEX IF NOT EXISTS "admin_activity_created_idx" ON "admin_activity_events" ("createdAt")`);
+  adminActivityEventsReady = true;
+}
+
+function clipActivityField(value: string, max = 253) {
+  const trimmed = value.trim();
+  return trimmed.length <= max ? trimmed : trimmed.slice(0, max);
+}
+
+export async function recordAdminActivity(event: {
+  actorEmail?: string | null;
+  targetEmail?: string | null;
+  targetUserId?: string | null;
+  action: AdminActivityAction;
+  status?: AdminActivityStatus;
+  detail?: string | null;
+}) {
+  await ensureAdminActivityEventsTable();
+  const db = await getDb();
+  if (!db || !_sql) return;
+  const values = {
+    actorEmail: clipActivityField(event.actorEmail ?? "", 320),
+    targetEmail: clipActivityField(event.targetEmail ?? "", 320),
+    targetUserId: clipActivityField(event.targetUserId ?? "", 64),
+    action: event.action,
+    status: event.status ?? "completed",
+    detail: clipActivityField(event.detail ?? ""),
+    createdAt: new Date(),
+  };
+  try {
+    await db.insert(adminActivityEvents).values(values);
+  } catch (error) {
+    adminActivityEventsReady = false;
+    await ensureAdminActivityEventsTable();
+    await _sql`
+      INSERT INTO "admin_activity_events" ("actorEmail", "targetEmail", "targetUserId", "action", "status", "detail", "createdAt")
+      VALUES (${values.actorEmail}, ${values.targetEmail}, ${values.targetUserId}, ${values.action}, ${values.status}, ${values.detail}, ${values.createdAt})
+    `;
+    if (error instanceof Error) console.warn("[Database] Admin activity used SQL fallback after Drizzle insert failed.", error.message);
+  }
+}
+
+export async function recordAdminActivitySafe(event: Parameters<typeof recordAdminActivity>[0]) {
+  try {
+    await recordAdminActivity(event);
+  } catch (error) {
+    console.warn("[Database] Admin activity was not recorded.", error instanceof Error ? error.message : error);
+  }
+}
+
+export async function listAdminActivityEvents(limit = 100): Promise<AdminActivityRecord[]> {
+  try {
+    await ensureAdminActivityEventsTable();
+    const db = await getDb();
+    if (!db) return [];
+    const rows = await db.select().from(adminActivityEvents).orderBy(desc(adminActivityEvents.createdAt)).limit(limit);
+    return rows.map(row => ({
+      id: `local-${row.id}`,
+      actorEmail: row.actorEmail ?? "",
+      targetUserId: row.targetUserId ?? "",
+      targetEmail: row.targetEmail ?? "",
+      action: row.action as AdminActivityAction,
+      status: (row.status === "failed" ? "failed" : "completed") as AdminActivityStatus,
+      detail: row.detail ?? "",
+      createdAt: new Date(row.createdAt).toISOString(),
+    }));
+  } catch (error) {
+    console.warn("[Database] Admin activity list failed.", error instanceof Error ? error.message : error);
+    return [];
+  }
 }

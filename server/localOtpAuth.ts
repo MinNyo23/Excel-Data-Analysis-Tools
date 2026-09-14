@@ -119,17 +119,38 @@ export async function verifyLocalSignInOtp(input: {
   const now = Date.now();
   if (!pending || pending.expiresAt <= now) {
     pendingOtps.delete(email);
+    await db.recordAdminActivitySafe({
+      actorEmail: email,
+      targetEmail: email,
+      action: "login_failed",
+      status: "failed",
+      detail: "Invalid or expired code",
+    });
     throw new TRPCError({ code: "UNAUTHORIZED", message: "That code is invalid or expired. Request a new code and try again." });
   }
 
   if (pending.attempts >= MAX_VERIFY_ATTEMPTS) {
     pendingOtps.delete(email);
+    await db.recordAdminActivitySafe({
+      actorEmail: email,
+      targetEmail: email,
+      action: "login_failed",
+      status: "failed",
+      detail: "Too many invalid attempts",
+    });
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many invalid attempts. Request a new code and try again." });
   }
 
   if (pending.codeHash !== hashOtp(email, otp)) {
     pending.attempts += 1;
     pendingOtps.set(email, pending);
+    await db.recordAdminActivitySafe({
+      actorEmail: email,
+      targetEmail: email,
+      action: "login_failed",
+      status: "failed",
+      detail: "Invalid or expired code",
+    });
     throw new TRPCError({ code: "UNAUTHORIZED", message: "That code is invalid or expired. Request a new code and try again." });
   }
 

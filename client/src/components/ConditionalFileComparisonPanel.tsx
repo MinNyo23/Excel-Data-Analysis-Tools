@@ -2,7 +2,7 @@ import { CheckCircle2, FileSpreadsheet, FileUp, GitCompare, Loader2, RotateCcw, 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
+import { ProcessButtonContent, WorkflowProgress } from "@/components/WorkflowProgress";
 import { getWorkbookSelectionError, MAX_UPLOAD_FILE_SIZE_LABEL } from "@shared/uploadLimits";
 import { toast } from "sonner";
 import "./PairedFileUploadPanel.css";
@@ -180,10 +180,10 @@ export function ConditionalFileComparisonPanel({
         <div><ShieldCheck size={15} /><span>Secure in-memory comparison · Excel summary and result sheets</span></div>
         <div>
           <Button variant="outline" onClick={reset} disabled={isProcessing || (!file1 && !file2)}><RotateCcw size={16} /> Reset / Process New Files</Button>
-          <Button className="process-button" onClick={onProcess} disabled={!canProcess}>{isProcessing ? <><Loader2 className="animate-spin" size={17} />{processingMessage}</> : <><GitCompare size={17} /> Run analysis</>}</Button>
+          <Button className="process-button" onClick={onProcess} disabled={!canProcess}><ProcessButtonContent active={isProcessing} idle={<><GitCompare size={17} /> Run analysis</>} /></Button>
         </div>
       </div>
-      {isProcessing && <div className="paired-progress-state" role="status" aria-live="polite"><Progress value={68} /><span>{processingMessage} Building composite keys and preparing your comparison workbook…</span></div>}
+      <WorkflowProgress active={isProcessing} className="paired-progress-state" hint={processingMessage} />
     </div>
   );
 }

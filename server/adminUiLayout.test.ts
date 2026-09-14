@@ -10,6 +10,9 @@ describe("Master Account user-management layout", () => {
     expect(adminPage).toContain("AlertDialogContent");
     expect(adminPage).toContain("setPendingAction");
     expect(adminPage).not.toContain("window.confirm");
+    expect(adminPage).toContain("Admin activity log");
+    expect(adminPage).toContain("Failed login");
+    expect(adminPage).toContain("Email domain saved");
   });
 
   it("styles the ban and delete confirm dialog with solid site UI classes", () => {

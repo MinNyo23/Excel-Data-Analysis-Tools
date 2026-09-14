@@ -28,7 +28,10 @@ describe("paired matching workflow UX", () => {
     expect(panel).toContain("NRC");
     expect(panel).toContain("Corporate Name");
     expect(panel).toContain("Reset / Process New Files");
-    expect(panel).toContain("Parsing records and preparing your multi-sheet workbook");
+    expect(panel).toContain("Reading files");
+    expect(panel).toContain("Matching records");
+    expect(panel).toContain("Building Excel");
+    expect(panel).toContain("WorkflowProgress");
     expect(home).toContain("<PairedFileUploadPanel");
     expect(home).toContain("Download Excel output");
   });

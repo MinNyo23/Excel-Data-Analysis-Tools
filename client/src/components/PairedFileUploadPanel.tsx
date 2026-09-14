@@ -1,7 +1,7 @@
 import { Building2, CheckCircle2, FileSpreadsheet, FileUp, Loader2, Phone, RotateCcw, ShieldCheck } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { ProcessButtonContent, WorkflowProgress } from "@/components/WorkflowProgress";
 import { getWorkbookSelectionError, MAX_UPLOAD_FILE_SIZE_LABEL } from "@shared/uploadLimits";
 import { toast } from "sonner";
 import "./PairedFileUploadPanel.css";
@@ -96,7 +96,7 @@ export function PairedFileUploadPanel({ originalFile, secondFile, originalLabel,
       </div>
       {isInspecting && <div className="mapping-inspection" role="status"><Loader2 className="animate-spin" size={15}/><span>Reading column names securely in memory…</span></div>}
     </details>
-    <div className="paired-process-actions"><div><ShieldCheck size={15}/><span>Secure in-memory comparison · multi-sheet Excel output</span></div><div><Button variant="outline" onClick={reset} disabled={isProcessing || (!originalFile && !secondFile)}><RotateCcw size={16}/> Reset / Process New Files</Button><Button className="process-button" onClick={onProcess} disabled={!originalFile || !secondFile || isInspecting || isProcessing}>{isProcessing ? <><Loader2 className="animate-spin" size={17}/>{processingMessage}</> : <><FileSpreadsheet size={17}/> Parse and preview</>}</Button></div></div>
-    {isProcessing && <div className="paired-progress-state" role="status" aria-live="polite"><Progress value={68}/><span>{processingMessage} Parsing records and preparing your multi-sheet workbook…</span></div>}
+    <div className="paired-process-actions"><div><ShieldCheck size={15}/><span>Secure in-memory comparison · multi-sheet Excel output</span></div><div><Button variant="outline" onClick={reset} disabled={isProcessing || (!originalFile && !secondFile)}><RotateCcw size={16}/> Reset / Process New Files</Button><Button className="process-button" onClick={onProcess} disabled={!originalFile || !secondFile || isInspecting || isProcessing}><ProcessButtonContent active={isProcessing} idle={<><FileSpreadsheet size={17}/> Parse and preview</>} /></Button></div></div>
+    <WorkflowProgress active={isProcessing} className="paired-progress-state" hint={processingMessage} />
   </div>;
 }

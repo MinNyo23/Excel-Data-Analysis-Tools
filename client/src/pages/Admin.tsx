@@ -25,10 +25,25 @@ type AdminActionHistory = {
   actorEmail: string;
   targetUserId: string;
   targetEmail: string;
-  action: "ban" | "unban" | "delete";
+  action: "ban" | "unban" | "delete" | "email_policy" | "login_failed";
   status: "pending" | "completed" | "failed";
+  detail?: string;
   createdAt: string | Date;
 };
+
+function activityLabel(action: AdminActionHistory["action"]) {
+  if (action === "delete") return "Deleted";
+  if (action === "ban") return "Banned";
+  if (action === "unban") return "Unbanned";
+  if (action === "email_policy") return "Email domain saved";
+  return "Failed login";
+}
+
+function activitySubject(item: AdminActionHistory) {
+  if (item.action === "email_policy") return item.detail || "Sign-in policy";
+  if (item.action === "login_failed") return item.targetEmail || item.actorEmail || "Unknown email";
+  return item.targetEmail || item.targetUserId || item.detail || "—";
+}
 
 export default function Admin() {
   const [search, setSearch] = useState("");
@@ -48,6 +63,7 @@ export default function Admin() {
       setEmailDomain(domain);
       toast.success(domain === "*" ? "Any valid email address can sign in." : `Sign-in restricted to @${domain} addresses.`);
       void emailPolicyQuery.refetch();
+      void actionHistoryQuery.refetch();
     },
   });
   useEffect(() => {
@@ -90,6 +106,7 @@ export default function Admin() {
       toast.success(action === "delete" ? "User deleted." : action === "ban" ? "User banned." : "User unbanned.");
     } catch {
       toast.error("Admin action could not be completed.");
+      void actionHistoryQuery.refetch();
     }
   }
 
@@ -158,19 +175,20 @@ export default function Admin() {
       <section className="admin-history-section" aria-labelledby="admin-history-title">
         <div className="admin-history-heading">
           <span className="soft-badge"><History size={14} /> ACTION HISTORY</span>
-          <h2 id="admin-history-title">Access and deletion history</h2>
-          <p>Ban, unban, and delete actions remain listed here, including users removed from Supabase Auth.</p>
+          <h2 id="admin-history-title">Admin activity log</h2>
+          <p>Who saved the email domain, who banned or deleted whom, and failed login attempts are listed here for audits.</p>
         </div>
         <div className="admin-table-wrap">
-          {actionHistoryQuery.isLoading ? <p className="admin-empty">Loading action history…</p> : actionHistoryQuery.error ? <p className="admin-empty">Could not load action history. Please verify the Supabase configuration and try again.</p> : history.length === 0 ? <p className="admin-empty">No administrative actions have been recorded.</p> : (
+          {actionHistoryQuery.isLoading ? <p className="admin-empty">Loading action history…</p> : actionHistoryQuery.error ? <p className="admin-empty">Could not load the activity log. Please try again.</p> : history.length === 0 ? <p className="admin-empty">No administrative actions have been recorded.</p> : (
             <table className="admin-table admin-history-table">
-              <thead><tr><th>User</th><th>Action</th><th>Status</th><th>Performed by</th><th>Date</th></tr></thead>
+              <thead><tr><th>Subject</th><th>Event</th><th>Detail</th><th>Status</th><th>Performed by</th><th>Date</th></tr></thead>
               <tbody>{history.map(item => (
                 <tr key={item.id}>
-                  <td><strong>{item.targetEmail}</strong><small>{item.targetUserId}</small></td>
-                  <td>{item.action === "delete" ? "Deleted" : item.action === "ban" ? "Banned" : "Unbanned"}</td>
+                  <td><strong>{activitySubject(item)}</strong>{item.targetUserId ? <small>{item.targetUserId}</small> : null}</td>
+                  <td>{activityLabel(item.action)}</td>
+                  <td>{item.detail || "—"}</td>
                   <td><span className={`admin-status ${item.status === "completed" ? "active" : item.status === "failed" ? "banned" : "pending"}`}>{item.status}</span></td>
-                  <td>{item.actorEmail}</td>
+                  <td>{item.actorEmail || "—"}</td>
                   <td>{new Date(item.createdAt).toLocaleString()}</td>
                 </tr>
               ))}</tbody>

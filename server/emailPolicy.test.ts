@@ -51,6 +51,7 @@ describe("configurable email-domain policy", () => {
     const db = require("node:fs").readFileSync("server/db.ts", "utf8");
     expect(db).toContain("CREATE TABLE IF NOT EXISTS \"admin_auth_settings\"");
     expect(db).toContain("ensureAdminAuthSettingsTable");
+    expect(db).toContain("ensureAdminActivityEventsTable");
   });
 
   it("validates domains before they are saved", () => {

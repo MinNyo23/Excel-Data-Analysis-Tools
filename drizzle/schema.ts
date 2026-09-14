@@ -73,3 +73,18 @@ export const adminAuthSettings = pgTable("admin_auth_settings", {
 
 export type AdminAuthSettings = typeof adminAuthSettings.$inferSelect;
 export type InsertAdminAuthSettings = typeof adminAuthSettings.$inferInsert;
+
+/** Master Account audit trail: policy saves, bans, failed logins. Auto-created if missing. */
+export const adminActivityEvents = pgTable("admin_activity_events", {
+  id: serial("id").primaryKey(),
+  actorEmail: varchar("actorEmail", { length: 320 }).notNull().default(""),
+  targetEmail: varchar("targetEmail", { length: 320 }).notNull().default(""),
+  targetUserId: varchar("targetUserId", { length: 64 }).notNull().default(""),
+  action: varchar("action", { length: 32 }).notNull(),
+  status: varchar("status", { length: 16 }).notNull().default("completed"),
+  detail: varchar("detail", { length: 253 }).notNull().default(""),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+}, table => [index("admin_activity_created_idx").on(table.createdAt)]);
+
+export type AdminActivityEvent = typeof adminActivityEvents.$inferSelect;
+export type InsertAdminActivityEvent = typeof adminActivityEvents.$inferInsert;

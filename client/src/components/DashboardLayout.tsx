@@ -10,7 +10,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { GitCompare, Layers3, ListTree, LogOut, ScanSearch, ShieldCheck, Sheet, UploadCloud, UserRoundCog } from "lucide-react";
+import { GitCompare, Layers3, ListTree, LogOut, ScanSearch, ShieldCheck, Sheet, Type, UploadCloud, UserRoundCog } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 import AppFooter from "./AppFooter";
@@ -26,6 +26,7 @@ const tools = [
   { icon: Layers3, label: "Duplicate separation", path: "/tools/duplicates" },
   { icon: GitCompare, label: "Multi-condition file compare", path: "/tools/file-comparison" },
   { icon: UploadCloud, label: "Ready file to upload", path: "/tools/ready-upload" },
+  { icon: Type, label: "Column transform", path: "/tools/column-transform" },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

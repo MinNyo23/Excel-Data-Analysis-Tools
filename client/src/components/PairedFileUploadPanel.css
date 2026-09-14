@@ -41,6 +41,11 @@
 .paired-export-panel > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 .paired-export-panel .download-button { white-space: nowrap; }
 .file-comparison-second-condition { margin-top: 10px; }
+.column-transform-panel { display: grid; gap: 10px; }
+.column-transform-panel > strong { color: #2d5f41; font-size: 12px; }
+.column-transform-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.column-transform-field { margin-top: 2px; }
+.column-transform-toggle { display: inline-flex; align-items: center; gap: 8px; color: #365844; font-size: 12px; font-weight: 700; }
 .file-comparison-checkbox > span { align-items: center; }
 @media (max-width: 940px) { .paired-workflow-layout { grid-template-columns: 1fr; } .paired-file-zone { min-height: 165px; } }
-@media (max-width: 580px) { .paired-dropzone-grid, .column-mapping-grid { grid-template-columns: 1fr; } .paired-file-zone { min-height: 144px; } .column-mapping-panel summary { align-items: flex-start; flex-direction: column; } .column-mapping-panel summary small { text-align: left; } .paired-process-actions { align-items: stretch; flex-direction: column; } .paired-process-actions > div, .paired-process-actions > div:last-child { align-items: stretch; flex-direction: column; } .paired-process-actions .process-button, .paired-process-actions button { width: 100%; } .paired-export-panel > div:last-child { align-items: stretch; flex-direction: column; } .paired-export-panel > div:last-child button { width: 100%; } }
+@media (max-width: 580px) { .paired-dropzone-grid, .column-mapping-grid, .column-transform-grid { grid-template-columns: 1fr; } .paired-file-zone { min-height: 144px; } .column-mapping-panel summary { align-items: flex-start; flex-direction: column; } .column-mapping-panel summary small { text-align: left; } .paired-process-actions { align-items: stretch; flex-direction: column; } .paired-process-actions > div, .paired-process-actions > div:last-child { align-items: stretch; flex-direction: column; } .paired-process-actions .process-button, .paired-process-actions button { width: 100%; } .paired-export-panel > div:last-child { align-items: stretch; flex-direction: column; } .paired-export-panel > div:last-child button { width: 100%; } }

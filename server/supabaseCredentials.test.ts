@@ -4,7 +4,7 @@ describe("Supabase split-architecture credentials", () => {
   it("authenticates a server-side metadata query without exposing secrets", async () => {
     const url = process.env.VITE_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const publishableKey = process.don't want to .VITE_SUPABASE_PUBLISHABLE_KEY;
 
     expect(url).toMatch(/^https:\/\/[a-z0-9-]+\.supabase\.co$/i);
     expect(serviceRoleKey).toBeTruthy();

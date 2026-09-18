@@ -12,7 +12,10 @@ describe("sign-in OTP email template", () => {
     expect(message.html).toContain("Excel Master File");
     expect(message.html).toContain("SECURE WORKSPACE ACCESS");
     expect(message.html).toContain("user@example.com");
-    expect(message.html).toContain("12345678");
+    for (const digit of "12345678") {
+      expect(message.html).toContain(`>${digit}</td>`);
+    }
+    expect(message.html).not.toContain("letter-spacing:.28em");
     expect(message.html).toContain("#0f6a51");
     expect(message.html).toContain("Expires in 10 minutes");
   });

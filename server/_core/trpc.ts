@@ -1,5 +1,5 @@
 import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '../../shared/const.js';
-import { isSafeUploadValidationMessage } from '../../shared/uploadLimits.js';
+import { isSafeClientFacingMessage } from '../../shared/uploadLimits.js';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context.js";
@@ -25,7 +25,7 @@ export function redactTRPCErrorShape(shape: PublicErrorShape, errorCode: string,
     : errorCode === "NOT_FOUND"
       ? "The requested API operation was not found."
       : errorCode === "BAD_REQUEST" || errorCode === "PAYLOAD_TOO_LARGE"
-        ? isSafeUploadValidationMessage(shape.message)
+        ? isSafeClientFacingMessage(shape.message)
           ? shape.message
           : errorCode === "PAYLOAD_TOO_LARGE"
             ? "The uploaded workbook is too large."

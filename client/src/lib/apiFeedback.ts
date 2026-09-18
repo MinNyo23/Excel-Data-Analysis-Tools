@@ -53,7 +53,7 @@ export function getFriendlyApiMessage(error: unknown, fallback: string) {
   }
   if (details.code === "PRECONDITION_FAILED" && details.message) return details.message;
   if (details.code === "BAD_REQUEST" || details.code === "PAYLOAD_TOO_LARGE" || details.httpStatus === 413) {
-    if (details.message && /upload limit|too large|Only CSV and XLSX|valid ZIP|workbook|File name is invalid|Combined upload|not valid base64|exceeds the/i.test(details.message)) {
+    if (details.message && /upload limit|too large|Only CSV and XLSX|valid ZIP|workbook|File name is invalid|Combined upload|not valid base64|exceeds the|column was not found|usable header row|second-condition columns|comparison output is too large|safe download limit/i.test(details.message)) {
       return details.message;
     }
     if (details.code === "PAYLOAD_TOO_LARGE" || details.httpStatus === 413) return "The upload is too large. Choose a smaller CSV or XLSX file and try again.";

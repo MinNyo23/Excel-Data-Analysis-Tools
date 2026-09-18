@@ -114,7 +114,6 @@ export function buildSignInOtpEmail(data: { email: string; otp: string }) {
                     <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto;">
                       <tr>${digitCells}</tr>
                     </table>
-                    <p style="margin:16px 0 0;color:#0f6a51;font-family:'DM Mono',ui-monospace,Consolas,monospace;font-size:28px;font-weight:700;letter-spacing:.28em;text-align:center;">${escapeHtml(digits)}</p>
                   </td>
                 </tr>
                 <tr>

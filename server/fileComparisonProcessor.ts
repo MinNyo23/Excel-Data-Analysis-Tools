@@ -39,8 +39,16 @@ function stripKey(value: CellValue): string {
   return String(value).trim();
 }
 
+function requireHeaderRow(table: Table, label: string): void {
+  if (table.columns.length === 0) {
+    throw new Error(`${label} does not contain a usable header row. Choose a file with column names in the first row.`);
+  }
+}
+
 function requireColumn(table: Table, column: string, label: string): void {
-  if (!table.columns.includes(column)) throw new Error(`Selected ${label} column was not found: ${column}`);
+  if (!table.columns.includes(column)) {
+    throw new Error(`The selected ${label} column was not found: "${column}". Re-upload the file or choose a different column.`);
+  }
 }
 
 function buildCompositeKey(row: Row, column1: string, column2?: string): string {
@@ -84,6 +92,8 @@ export async function processFileComparison(
   const file1Table = readFirstSheet(readWorkbook(file1.data), { asString: true }).table;
   const file2Table = readFirstSheet(readWorkbook(file2.data), { asString: true }).table;
 
+  requireHeaderRow(file1Table, "File 1");
+  requireHeaderRow(file2Table, "File 2");
   requireColumn(file1Table, config.file1Column1, "File 1 column 1");
   requireColumn(file2Table, config.file2Column1, "File 2 column 1");
   if (config.enableSecondCondition) {

@@ -3,6 +3,19 @@ import { sanitizeCellValue } from "./xlsx/workbook.js";
 
 const MAX_GENERATED_WORKBOOK_BYTES = 40 * 1024 * 1024;
 const MAX_GENERATED_WORKBOOK_BASE64_LENGTH = Math.ceil(MAX_GENERATED_WORKBOOK_BYTES / 3) * 4;
+/** Internally built workbooks are sanitized during buildWorkbookBase64; skip the rescan above this size. */
+const MAX_VERIFICATION_CELL_COUNT = 750_000;
+
+function estimateCellCount(workbook: XLSX.WorkBook): number {
+  let total = 0;
+  for (const sheetName of workbook.SheetNames) {
+    const worksheet = workbook.Sheets[sheetName];
+    if (!worksheet?.["!ref"]) continue;
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
+    total += (range.e.r - range.s.r + 1) * (range.e.c - range.s.c + 1);
+  }
+  return total;
+}
 
 type WorkbookResult = { workbookBase64: string; [key: string]: unknown };
 
@@ -29,6 +42,9 @@ export async function sanitizeGeneratedWorkbookOutput<T extends WorkbookResult>(
     }
 
     const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
+    if (estimateCellCount(workbook) > MAX_VERIFICATION_CELL_COUNT) {
+      return result;
+    }
     let mutated = false;
     for (const sheetName of workbook.SheetNames) {
       const worksheet = workbook.Sheets[sheetName];

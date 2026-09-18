@@ -45,6 +45,30 @@ describe("multi-condition file comparison", () => {
     expect(result.result.rows[0]?.[1]).toBe("HR");
   });
 
+  it("rejects a missing comparison column with a clear message", async () => {
+    const file1 = workbookBase64([{ id: "A1" }]);
+    const file2 = workbookBase64([{ code: "A1" }]);
+    await expect(processFileComparison(
+      { name: "file1.xlsx", data: file1 },
+      { name: "file2.xlsx", data: file2 },
+      { file1Column1: "missing", file2Column1: "code", enableSecondCondition: false, operation: "exists_in_file2" },
+    )).rejects.toThrow(/column was not found/i);
+  });
+
+  it("handles larger File 1 workbooks for exists-in-file-2 comparisons", async () => {
+    const rows = Array.from({ length: 5000 }, (_, index) => ({ id: `R${index}`, name: `Row ${index}` }));
+    const file1 = workbookBase64(rows);
+    const file2 = workbookBase64([{ code: "R0" }, { code: "R4999" }]);
+    const result = await processFileComparison(
+      { name: "file1.xlsx", data: file1 },
+      { name: "file2.xlsx", data: file2 },
+      { file1Column1: "id", file2Column1: "code", enableSecondCondition: false, operation: "exists_in_file2" },
+    );
+
+    expect(result.file1RowCount).toBe(5000);
+    expect(result.resultRowCount).toBe(5000);
+  });
+
   it("returns File 1 rows missing from File 2", async () => {
     const file1 = workbookBase64([{ id: "A1" }, { id: "B2" }, { id: "C3" }]);
     const file2 = workbookBase64([{ code: "A1" }, { code: "D4" }]);

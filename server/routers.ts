@@ -21,6 +21,7 @@ import { MAX_UPLOAD_FILES, validateUploadedWorkbook, validateUploadedWorkbookBat
 import { normalizeUploadedFiles } from "./uploadNormalization.js";
 import { metadataStore, type MetadataUserId } from "./metadataStore.js";
 import { sanitizeGeneratedWorkbookOutput } from "./workbookOutputSecurity.js";
+import { toWorkbookWorkflowError } from "./workbookWorkflowErrors.js";
 import { getAllowedEmailDomain, listManagedUsers, listUserActionHistory, moderateUser, updateAllowedEmailDomain } from "./admin.js";
 import { resolveAllowedEmailDomain } from "./emailDomainPolicy.js";
 import { usesSupabaseServerAuth } from "./supabaseIntegration.js";
@@ -310,8 +311,12 @@ export const appRouter = router({
       const error = rejectOversizedUpload(validateUploadedWorkbookBatch([input.file1, input.file2]));
       if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
     })).mutation(async ({ input }) => {
-      const [file1, file2] = await normalizeUploadedFiles([input.file1, input.file2]);
-      return sanitizeGeneratedWorkbookOutput(await processFileComparison(file1!, file2!, input.config));
+      try {
+        const [file1, file2] = await normalizeUploadedFiles([input.file1, input.file2]);
+        return await sanitizeGeneratedWorkbookOutput(await processFileComparison(file1!, file2!, input.config));
+      } catch (error) {
+        toWorkbookWorkflowError(error);
+      }
     }),
   }),
   processHistory: router({

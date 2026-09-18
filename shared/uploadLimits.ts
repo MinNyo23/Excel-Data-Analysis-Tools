@@ -17,6 +17,17 @@ export function isSafeUploadValidationMessage(message: string) {
   return /upload limit|too large|Only CSV and XLSX|valid ZIP|workbook|archive|File name is invalid|Combined upload size|Upload between|could not be read|not valid base64|binary content|exceeds the/i.test(normalized);
 }
 
+export function isSafeWorkbookWorkflowMessage(message: string) {
+  const normalized = message.trim();
+  if (!normalized || normalized.length > 240) return false;
+  if (/[\r\n]/.test(normalized)) return false;
+  return /column was not found|usable header row|does not contain any sheets|workbook is empty|second-condition columns|comparison output is too large|safe download limit|could not be prepared for download/i.test(normalized);
+}
+
+export function isSafeClientFacingMessage(message: string) {
+  return isSafeUploadValidationMessage(message) || isSafeWorkbookWorkflowMessage(message);
+}
+
 export function getWorkbookSelectionError(file: Pick<File, "name" | "size">): string | null {
   if (!isSupportedWorkbookFileName(file.name)) return "Only CSV and XLSX files are allowed. Choose a file ending in .csv or .xlsx.";
   if (file.size > MAX_UPLOAD_FILE_BYTES) return `${file.name} is too large. Choose a file no larger than ${MAX_UPLOAD_FILE_SIZE_LABEL}.`;

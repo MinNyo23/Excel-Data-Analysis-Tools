@@ -16,6 +16,7 @@ describe("Google reCAPTCHA server verification", () => {
 
   it("accepts a successful Google siteverify response", async () => {
     process.env.RECAPTCHA_SECRET_KEY = "server-secret";
+    process.env.RECAPTCHA_ALLOWED_HOSTNAMES = "localhost";
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ success: true, hostname: "localhost" }), { status: 200 }));
 
     await expect(verifyGoogleRecaptchaToken("captcha-token", "127.0.0.1")).resolves.toBe(true);

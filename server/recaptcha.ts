@@ -18,7 +18,8 @@ function configuredHostnames() {
 
 export async function verifyGoogleRecaptchaToken(token: string, remoteIp?: string): Promise<boolean> {
   const secret = process.env.RECAPTCHA_SECRET_KEY?.trim();
-  if (!secret || !token || token.length > MAX_TOKEN_LENGTH) return false;
+  const hostnames = configuredHostnames();
+  if (!secret || hostnames.length === 0 || !token || token.length > MAX_TOKEN_LENGTH) return false;
 
   const body = new URLSearchParams({ secret, response: token });
   if (remoteIp) body.set("remoteip", remoteIp);
@@ -33,8 +34,7 @@ export async function verifyGoogleRecaptchaToken(token: string, remoteIp?: strin
     const result = await response.json() as GoogleRecaptchaResponse;
     if (result.success !== true) return false;
 
-    const hostnames = configuredHostnames();
-    return hostnames.length > 0 && typeof result.hostname === "string" && hostnames.includes(result.hostname.toLowerCase());
+    return typeof result.hostname === "string" && hostnames.includes(result.hostname.toLowerCase());
   } catch {
     return false;
   }

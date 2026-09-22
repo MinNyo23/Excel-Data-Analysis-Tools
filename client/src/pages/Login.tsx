@@ -82,9 +82,20 @@ export default function Login() {
     try {
       saveLoginReturnPath(returnPath);
       if (usesSupabaseAuth && supabase) {
+        const captchaResponse = await fetch("/api/auth/verify-recaptcha", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: captchaToken }),
+        });
+        const captchaText = await captchaResponse.text();
+        let captchaResult: { verified?: boolean; error?: string } = {};
+        try { captchaResult = JSON.parse(captchaText) as typeof captchaResult; } catch { /* Keep the user-facing fallback below. */ }
+        if (!captchaResponse.ok || captchaResult.verified !== true) {
+          throw new Error(captchaResult.error ?? "CAPTCHA verification failed. Please try again.");
+        }
         const { error: authError } = await supabase.auth.signInWithOtp({
           email: normalizedEmail,
-          options: { shouldCreateUser: true, captchaToken: captchaToken ?? undefined },
+          options: { shouldCreateUser: true },
         });
         if (authError) throw authError;
         setOtpSent(true);

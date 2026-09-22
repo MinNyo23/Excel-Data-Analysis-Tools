@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getFriendlyApiMessage } from "@/lib/apiFeedback";
-import { getWorkbookSelectionError } from "@shared/uploadLimits";
+import { getWorkbookSelectionError, MAX_UPLOAD_BATCH_BYTES, MAX_UPLOAD_BATCH_SIZE_LABEL, MAX_UPLOAD_FILE_SIZE_LABEL } from "@shared/uploadLimits";
 import "@/privacy-diagram.css";
 import { WorkflowGuide, type WorkflowGuideContent } from "@/components/WorkflowGuide";
 import { ColumnTransformPanel, EMPTY_COLUMN_TRANSFORM_SETTINGS, type ColumnTransformSettings } from "@/components/ColumnTransformPanel";
@@ -21,9 +21,6 @@ import { WhatsNewBanner } from "@/components/WhatsNew";
 import { BriefcaseBusiness, Building2, Download, FileSpreadsheet, FileUp, GitCompare, Layers3, Loader2, ListTree, Phone, RotateCcw, ShieldCheck, Trash2, Type, UserRound, X } from "lucide-react";
 
 const ACCEPTED_TYPES = ".xlsx,.csv";
-// Vercel Functions cap request bodies at 4.5 MB. Base64 expands files by
-// roughly one third, so keep the raw consolidation payload below that ceiling.
-const MAX_CONSOLIDATION_BYTES = 3 * 1024 * 1024;
 const WORKFLOW_GUIDES: Record<string, WorkflowGuideContent> = {
   consolidation: {
     title: "Master consolidation",
@@ -427,8 +424,8 @@ export default function Home() {
       toast.error(getWorkbookSelectionError(oversized.file)!);
       return;
     }
-    if (totalSize > MAX_CONSOLIDATION_BYTES) {
-      toast.error(`Master consolidation supports up to 3 MB total per request. Your selected files are ${formatBytes(totalSize)}. Remove a file or split the work into smaller batches.`);
+    if (totalSize > MAX_UPLOAD_BATCH_BYTES) {
+      toast.error(`Master consolidation supports up to ${MAX_UPLOAD_FILE_SIZE_LABEL} per file and ${MAX_UPLOAD_BATCH_SIZE_LABEL} total per request. Your selected files are ${formatBytes(totalSize)}. Remove a file or split the work into smaller batches.`);
       return;
     }
     try {
@@ -565,7 +562,7 @@ export default function Home() {
           <CardContent>
             <div className={`dropzone ${isDragging ? "dragging" : ""}`} onDragOver={event => { event.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={event => { event.preventDefault(); setIsDragging(false); addFiles(event.dataTransfer.files); }} onClick={() => inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") inputRef.current?.click(); }}>
               <input ref={inputRef} type="file" accept={ACCEPTED_TYPES} multiple hidden onChange={event => event.target.files && addFiles(event.target.files)} />
-              <div className="upload-icon"><FileUp size={22} /></div><h3>Drop CSV or XLSX files here</h3><p>or <span>browse from your computer</span></p><small>Supports .csv and .xlsx · Up to 3 MB total per request on Vercel</small>
+              <div className="upload-icon"><FileUp size={22} /></div><h3>Drop CSV or XLSX files here</h3><p>or <span>browse from your computer</span></p><small>Supports .csv and .xlsx · Up to {MAX_UPLOAD_FILE_SIZE_LABEL} per file · {MAX_UPLOAD_BATCH_SIZE_LABEL} total per request</small>
             </div>
             {selectedFiles.length > 0 && <div className="file-list"><div className="file-list-heading"><span>{selectedFiles.length} file{selectedFiles.length === 1 ? "" : "s"} selected</span><span>{formatBytes(totalSize)} total</span></div>{selectedFiles.map(({ id, file }) => <div className="file-row" key={id}><FileSpreadsheet size={18} className="file-symbol" /><div className="file-name"><strong>{file.name}</strong><span>{formatBytes(file.size)}</span></div><button type="button" aria-label={`Remove ${file.name}`} onClick={() => removeFile(id)}><X size={16} /></button></div>)}</div>}
             <div className="action-row"><Button variant="ghost" onClick={reset} disabled={selectedFiles.length === 0 || isBusy}><RotateCcw size={16} /> Clear</Button><Button className="process-button" onClick={processFiles} disabled={selectedFiles.length === 0 || isBusy}><ProcessButtonContent active={isBusy} idle={<><Layers3 size={17} /> Merge and preview</>} /></Button></div>
@@ -600,7 +597,7 @@ export default function Home() {
             <div className="deletion-grid">
               <div className="deletion-upload">
                 <input ref={duplicateInputRef} type="file" accept={ACCEPTED_TYPES} hidden onChange={event => { acceptWorkbookFile(event.target.files?.[0], file => { setDuplicateFile(file); setDuplicateResult(null); }); }} />
-                <div className="mini-dropzone" onClick={() => duplicateInputRef.current?.click()} role="button" tabIndex={0} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") duplicateInputRef.current?.click(); }}><div className="upload-icon"><Layers3 size={20} /></div><strong>{duplicateFile ? duplicateFile.name : "Choose a deletion list"}</strong><span>{duplicateFile ? formatBytes(duplicateFile.size) : "One .csv or .xlsx file"}</span></div>
+                <div className="mini-dropzone" onClick={() => duplicateInputRef.current?.click()} role="button" tabIndex={0} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") duplicateInputRef.current?.click(); }}><div className="upload-icon"><Layers3 size={20} /></div><strong>{duplicateFile ? duplicateFile.name : "Choose a deletion list"}</strong><span>{duplicateFile ? formatBytes(duplicateFile.size) : `One .csv or .xlsx file · Up to ${MAX_UPLOAD_FILE_SIZE_LABEL}`}</span></div>
                 <div className="action-row"><Button variant="ghost" onClick={resetDuplicates} disabled={!duplicateFile || isDuplicateBusy}><RotateCcw size={16} /> Clear</Button><Button className="process-button" onClick={() => duplicateFile && processDuplicateFile(duplicateFile)} disabled={!duplicateFile || isDuplicateBusy}><ProcessButtonContent active={isDuplicateBusy} idle={<><Layers3 size={17} /> Separate duplicate list</>} /></Button></div>
                 <WorkflowProgress active={isDuplicateBusy} />
               </div>

@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 
-// v0 injects project variables outside the repository. Load that file explicitly
-// so the Vite client receives the configured Supabase and reCAPTCHA settings.
+  // v0 injects project variables outside the repository. Load that file explicitly
+  // so the Vite client receives the configured Supabase settings.
+
 dotenv.config({ path: "/vercel/share/.env.project" });
 dotenv.config();
 import express from "express";
@@ -10,7 +11,6 @@ import net from "net";
 import path from "node:path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth.js";
-import { registerRecaptchaRoutes } from "../recaptcha.js";
 import { appRouter } from "../routers.js";
 import { createContext } from "./context.js";
 import { apiRequestGuards, externalApiCors, securityHeaders } from "../security.js";
@@ -52,7 +52,6 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "48mb", extended: true }));
   app.use("/local-storage", express.static(path.resolve(process.env.STORAGE_DIR ?? "./storage"), { index: false }));
   registerOAuthRoutes(app);
-  registerRecaptchaRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

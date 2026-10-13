@@ -5,7 +5,6 @@ import { ENV } from "./_core/env.js";
 import * as db from "./db.js";
 import { sendSignInOtpEmail } from "./mail.js";
 import { resolveAllowedEmailDomain } from "./emailDomainPolicy.js";
-import { verifyGoogleRecaptchaToken } from "./recaptcha.js";
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -40,8 +39,6 @@ function generateOtpCode(): string {
 
 export async function requestLocalSignInOtp(input: {
   email: string;
-  captchaToken?: string;
-  remoteIp?: string;
 }): Promise<{ ok: true }> {
   const email = normalizeEmail(input.email);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -54,15 +51,6 @@ export async function requestLocalSignInOtp(input: {
       code: "FORBIDDEN",
       message: `Only email addresses ending in @${allowedDomain} can sign in.`,
     });
-  }
-
-  const captchaRequired = Boolean(process.env.RECAPTCHA_SECRET_KEY?.trim() && process.env.VITE_RECAPTCHA_SITE_KEY?.trim());
-  if (captchaRequired) {
-    const token = input.captchaToken?.trim() ?? "";
-    const valid = await verifyGoogleRecaptchaToken(token, input.remoteIp);
-    if (!valid) {
-      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "CAPTCHA verification failed. Please complete the check again." });
-    }
   }
 
   const existing = pendingOtps.get(email);

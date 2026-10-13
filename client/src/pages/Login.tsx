@@ -8,8 +8,7 @@ import { ALLOW_ALL_EMAIL_DOMAINS, isAllowAllEmailDomains, isEmailAllowedForDomai
 import { APP_VERSION } from "@shared/appVersion";
 import { WhatsNewOnLogin } from "@/components/WhatsNew";
 import { KeyRound, Loader2, Mail, ShieldCheck, Sparkles } from "lucide-react";
-import ReCAPTCHA from "react-google-recaptcha";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { takeLoginReturnPath, saveLoginReturnPath } from "@/lib/loginNavigation";
@@ -17,7 +16,6 @@ import { supabase, usesSupabaseAuth } from "@/lib/supabase";
 import "./Login.css";
 
 const RESEND_COOLDOWN_SECONDS = 60;
-const RECAPTCHA_SITE_KEY = (import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined)?.trim() || "";
 
 function getReturnPathFromLocation() {
   if (typeof window === "undefined") return "/";
@@ -42,9 +40,6 @@ export default function Login() {
   const [cooldown, setCooldown] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<ReCAPTCHA | null>(null);
-  const captchaRequired = Boolean(RECAPTCHA_SITE_KEY);
 
   useEffect(() => {
     if (!loading && isAuthenticated) setLocation(returnPath);
@@ -55,11 +50,6 @@ export default function Login() {
     const timer = window.setTimeout(() => setCooldown(value => value - 1), 1_000);
     return () => window.clearTimeout(timer);
   }, [cooldown]);
-
-  function resetCaptcha() {
-    setCaptchaToken(null);
-    captchaRef.current?.reset();
-  }
 
   async function requestOtp(event?: React.FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -74,25 +64,10 @@ export default function Login() {
       setError(`Only email addresses ending in @${allowedEmailDomain} can sign in.`);
       return;
     }
-    if (captchaRequired && !captchaToken) {
-      setError("Please complete the CAPTCHA check before requesting a code.");
-      return;
-    }
     setIsBusy(true);
     try {
       saveLoginReturnPath(returnPath);
       if (usesSupabaseAuth && supabase) {
-        const captchaResponse = await fetch("/api/auth/verify-recaptcha", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: captchaToken }),
-        });
-        const captchaText = await captchaResponse.text();
-        let captchaResult: { verified?: boolean; error?: string } = {};
-        try { captchaResult = JSON.parse(captchaText) as typeof captchaResult; } catch { /* Keep the user-facing fallback below. */ }
-        if (!captchaResponse.ok || captchaResult.verified !== true) {
-          throw new Error(captchaResult.error ?? "CAPTCHA verification failed. Please try again.");
-        }
         const { error: authError } = await supabase.auth.signInWithOtp({
           email: normalizedEmail,
           options: { shouldCreateUser: true },
@@ -101,20 +76,14 @@ export default function Login() {
         setOtpSent(true);
         setCooldown(RESEND_COOLDOWN_SECONDS);
         setMessage(`We sent an eight-digit code to ${normalizedEmail}. The code expires soon.`);
-        resetCaptcha();
       } else {
-        await requestLocalOtp.mutateAsync({
-          email: normalizedEmail,
-          captchaToken: captchaToken ?? undefined,
-        });
+        await requestLocalOtp.mutateAsync({ email: normalizedEmail });
         setOtpSent(true);
         setCooldown(RESEND_COOLDOWN_SECONDS);
         setMessage(`We sent an eight-digit code to ${normalizedEmail}. The code expires soon.`);
-        resetCaptcha();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "We could not send your one-time password. Please try again.");
-      resetCaptcha();
     } finally {
       setIsBusy(false);
     }
@@ -164,9 +133,8 @@ export default function Login() {
         <p className="login-description">{otpSent ? "Enter the eight-digit one-time password sent to your email. It can only be used once." : "We will send an eight-digit one-time password to your work email. No password is collected by this application."}</p>
         {!otpSent ? <form onSubmit={requestOtp} noValidate>
           <label className="login-field"><span>Work email address</span><div><Mail size={17}/><Input type="email" inputMode="email" autoComplete="email" autoFocus value={email} onChange={event => setEmail(event.target.value)} placeholder={allowAllEmails ? "you@example.com" : `you@${allowedEmailDomain}`} disabled={isBusy || cooldown > 0}/></div>{!allowAllEmails && <small className="login-domain-hint">Only <strong>@{allowedEmailDomain}</strong> addresses are accepted.</small>}</label>
-          {captchaRequired && <div className="login-captcha" aria-label="Spam protection"><ReCAPTCHA ref={captchaRef} sitekey={RECAPTCHA_SITE_KEY} onChange={token => setCaptchaToken(token)} onExpired={() => setCaptchaToken(null)} onErrored={() => { setCaptchaToken(null); setError("CAPTCHA could not be verified. Check your Google reCAPTCHA key and domain."); }} /></div>}
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}
-          <Button type="submit" className="login-submit" disabled={isBusy || cooldown > 0 || (captchaRequired && !captchaToken)}>{isBusy ? <><Loader2 className="animate-spin" size={17}/> Sending code…</> : cooldown > 0 ? `Code sent · wait ${cooldown}s` : <><Mail size={17}/> Email me a one-time password</>}</Button>
+          <Button type="submit" className="login-submit" disabled={isBusy || cooldown > 0}>{isBusy ? <><Loader2 className="animate-spin" size={17}/> Sending code…</> : cooldown > 0 ? `Code sent · wait ${cooldown}s` : <><Mail size={17}/> Email me a one-time password</>}</Button>
         </form> : <form onSubmit={verifyOtp} noValidate>
           <label className="login-field"><span>One-time password</span><InputOTP maxLength={8} value={otp} onChange={setOtp} autoFocus disabled={isBusy} aria-label="Eight-digit one-time password"><InputOTPGroup><InputOTPSlot index={0}/><InputOTPSlot index={1}/><InputOTPSlot index={2}/><InputOTPSlot index={3}/><InputOTPSlot index={4}/><InputOTPSlot index={5}/><InputOTPSlot index={6}/><InputOTPSlot index={7}/></InputOTPGroup></InputOTP></label>
           {error && <p className="login-feedback login-error" role="alert">{error}</p>}

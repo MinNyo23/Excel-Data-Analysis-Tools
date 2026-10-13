@@ -50,7 +50,7 @@ export async function setupVite(app: Express, server: Server) {
         // The managed preview proxy does not support Vite's HMR WebSocket.
         // Strip every Vite client form after all transformIndexHtml hooks run,
         // including module scripts and inline imports injected by plugins.
-        .replace(/<script\b[^>]*\bsrc=["'][^"']*(?:@vite\/client|vite\/dist\/client)[^"']*["'][^>]*>[\s\S]*?<\/script\s*>/gi, "")
+        .replace(/<script\b[^>]*(?:@vite\/client|vite\/dist\/client)[^>]*>(?:[\s\S]*?<\/script\s*>)?/gi, "")
         .replace(/<script\b[^>]*type=["']module["'][^>]*>[\s\S]*?import[\s\S]*?(?:@vite\/client|vite\/dist\/client)[\s\S]*?<\/script\s*>/gi, "")
         .replace(/(?:import\s+(?:[^;]*?\s+from\s+)?|import\s*\()["'][^"']*(?:@vite\/client|vite\/dist\/client)[^"']*["']\)?\s*;?/g, "");
       res.status(200).set({ "Content-Type": "text/html" }).end(page);

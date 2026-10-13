@@ -83,7 +83,10 @@ export default function Login() {
         setMessage(`We sent an eight-digit code to ${normalizedEmail}. The code expires soon.`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "We could not send your one-time password. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : "";
+      setError(/unregistered api key|captcha|recaptcha/i.test(errorMessage)
+        ? "Email login is blocked by CAPTCHA in the Supabase project settings. Disable CAPTCHA under Authentication → Settings → Bot and Abuse Protection, then redeploy."
+        : errorMessage || "We could not send your one-time password. Please try again.");
     } finally {
       setIsBusy(false);
     }

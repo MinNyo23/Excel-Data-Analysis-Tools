@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { listSecurityAuditEventsForUser, sanitizeSecurityAuditMetadata, secureDatabaseConnectionOptions } from "./db";
-import { GOOGLE_RECAPTCHA_ORIGINS } from "../shared/contentSecurityPolicy";
 import { consumeRateLimit, externalApiCors, mutationOriginIsTrusted, noStoreApiResponse, securityHeaders, validateUploadedWorkbook, validateUploadedWorkbookBatch } from "./security";
 import { uploadedFile } from "./routers";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -88,14 +87,13 @@ describe("application security controls", () => {
     expect(headers.get("Cache-Control")).toBe("no-store");
     expect(String(headers.get("Content-Security-Policy"))).toContain("object-src 'none'");
     expect(String(headers.get("Content-Security-Policy"))).toContain("script-src-attr 'none'");
-    for (const origin of GOOGLE_RECAPTCHA_ORIGINS) expect(String(headers.get("Content-Security-Policy"))).toContain(origin);
-    expect(headers.get("Strict-Transport-Security")).toContain("max-age=31536000");
+      expect(headers.get("Strict-Transport-Security")).toContain("max-age=31536000");
   });
 
-  it("permits cross-origin embedding only for the public managed-storage redirect", () => {
+  it("keeps all application resources same-origin", () => {
     const storageHeaders = new Map<string, unknown>();
     securityHeaders({ path: "/manus-storage/end-user-journey-flow_7a1b9923.webp", protocol: "https", headers: {} } as any, { setHeader: (name: string, value: unknown) => storageHeaders.set(name, value) } as any, () => undefined);
-    expect(storageHeaders.get("Cross-Origin-Resource-Policy")).toBe("cross-origin");
+    expect(storageHeaders.get("Cross-Origin-Resource-Policy")).toBe("same-origin");
 
     const applicationHeaders = new Map<string, unknown>();
     securityHeaders({ path: "/", protocol: "https", headers: {} } as any, { setHeader: (name: string, value: unknown) => applicationHeaders.set(name, value) } as any, () => undefined);

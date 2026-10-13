@@ -204,7 +204,6 @@ export const appRouter = router({
     requestOtp: publicProcedure
       .input(z.object({
         email: z.string().trim().email().max(320),
-        captchaToken: z.string().trim().max(4096).optional(),
       }).strict())
       .mutation(async ({ ctx, input }) => {
         if (usesSupabaseServerAuth) {
@@ -213,8 +212,7 @@ export const appRouter = router({
             message: "Local SMTP OTP is disabled while Supabase auth is configured.",
           });
         }
-        const remoteIp = typeof ctx.req.ip === "string" ? ctx.req.ip : undefined;
-        return requestLocalSignInOtp({ email: input.email, captchaToken: input.captchaToken, remoteIp });
+        return requestLocalSignInOtp({ email: input.email });
       }),
     verifyOtp: publicProcedure
       .input(z.object({

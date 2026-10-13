@@ -84,9 +84,7 @@ export default function Login() {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
-      setError(/unregistered api key|captcha|recaptcha/i.test(errorMessage)
-        ? "Email login is blocked by CAPTCHA in the Supabase project settings. Disable CAPTCHA under Authentication → Settings → Bot and Abuse Protection, then redeploy."
-        : errorMessage || "We could not send your one-time password. Please try again.");
+      setError(errorMessage || "We could not send your one-time password. Please try again.");
     } finally {
       setIsBusy(false);
     }

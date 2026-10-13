@@ -4,7 +4,10 @@ import { metadataStore } from "../../server/metadataStore.js";
 import { supabaseGetAllowedEmailDomain, supabaseListProcessHistory } from "../../server/supabaseIntegration.js";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL ?? "";
-const supabasePublishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
+  const supabasePublishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY
+    ?? process.env.VITE_SUPABASE_ANON_KEY
+    ?? process.env.SUPABASE_ANON_KEY
+    ?? "";
 const supabase: any = supabaseUrl && supabasePublishableKey
   ? createClient(supabaseUrl, supabasePublishableKey, {
       auth: { autoRefreshToken: false, persistSession: false },

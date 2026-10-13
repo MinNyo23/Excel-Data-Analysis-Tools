@@ -15,6 +15,8 @@ export default defineConfig({
     "import.meta.env.VITE_USE_SUPABASE_AUTH": JSON.stringify(process.env.VITE_USE_SUPABASE_AUTH),
     "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(process.env.VITE_SUPABASE_URL),
     "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(process.env.VITE_SUPABASE_PUBLISHABLE_KEY),
+    "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
+    "import.meta.env.SUPABASE_ANON_KEY": JSON.stringify(process.env.SUPABASE_ANON_KEY),
     "import.meta.env.VITE_USE_EXTERNAL_PROCESSING_API": JSON.stringify(process.env.VITE_USE_EXTERNAL_PROCESSING_API),
     "import.meta.env.VITE_PROCESSING_API_URL": JSON.stringify(process.env.VITE_PROCESSING_API_URL),
       "import.meta.env.VITE_ADMIN_EMAILS": JSON.stringify(process.env.ADMIN_EMAILS ?? process.env.VITE_ADMIN_EMAILS ?? ""),

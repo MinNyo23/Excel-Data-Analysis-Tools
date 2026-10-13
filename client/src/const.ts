@@ -26,8 +26,7 @@ export const startLogin = async (email?: string, returnPath = "/") => {
     });
     if (error) {
       const message = error.message.toLowerCase();
-      if (message.includes("captcha")) throw new Error("CAPTCHA verification failed. Please complete the check again.");
-      if (error.status === 429 || message.includes("rate") || message.includes("too many")) {
+          if (error.status === 429 || message.includes("rate") || message.includes("too many")) {
         throw new Error("Too many sign-in attempts. Please wait a moment and try again.");
       }
       throw new Error("We could not start secure sign-in. Please wait a moment and try again.");

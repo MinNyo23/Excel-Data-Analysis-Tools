@@ -29,6 +29,9 @@ export const startLogin = async (email?: string, returnPath = "/") => {
           if (error.status === 429 || message.includes("rate") || message.includes("too many")) {
         throw new Error("Too many sign-in attempts. Please wait a moment and try again.");
       }
+      if (message.includes("unregistered api key") || message.includes("invalid api key")) {
+        throw new Error("Supabase authentication is using a key from the wrong project. Update the deployed Supabase publishable/anon key to match the configured Supabase URL, then redeploy.");
+      }
       throw new Error("We could not start secure sign-in. Please wait a moment and try again.");
     }
     return;
